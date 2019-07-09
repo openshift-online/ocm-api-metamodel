@@ -1,0 +1,8 @@
+*.swp
+/.gopath/
+/.idea/
+/.vscode/
+/ocm-*-tool
+/tests/api/
+/vendor/
+antlr
