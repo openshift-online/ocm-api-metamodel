@@ -21,9 +21,9 @@
 	lint \
 	$(NULL)
 
-cmds: vendor generate
+cmds: generate
 	for cmd in $$(ls cmd); do \
-		go build -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
+		go build -mod=readonly -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
 		cp "$${cmd}" "$${HOME}/bin/."; \
 	done
 
@@ -38,9 +38,6 @@ antlr:
 	wget \
 		--output-document=$@ \
 		https://www.antlr.org/download/antlr-4.7.2-complete.jar
-
-vendor: Gopkg.lock
-	dep ensure -vendor-only -v
 
 fmt:
 	gofmt -s -l -w \
@@ -62,5 +59,4 @@ clean:
 		$$(ls cmd) \
 		antlr \
 		tests/api \
-		vendor \
 		$(NULL)
