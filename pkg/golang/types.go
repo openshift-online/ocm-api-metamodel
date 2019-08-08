@@ -116,6 +116,11 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 		ref.name = "int"
 		ref.text = "int"
 		return ref
+	case typ == version.Long():
+		ref := new(TypeReference)
+		ref.name = "int64"
+		ref.text = "int64"
+		return ref
 	case typ == version.Float():
 		ref := new(TypeReference)
 		ref.name = "float64"
@@ -405,6 +410,8 @@ func (c *TypesCalculator) ZeroValue(typ *concepts.Type) string {
 	case typ == version.Boolean():
 		return `false`
 	case typ == version.Integer():
+		return `0`
+	case typ == version.Long():
 		return `0`
 	case typ == version.Float():
 		return `0.0`

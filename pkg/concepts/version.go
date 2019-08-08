@@ -50,6 +50,7 @@ func NewVersion() *Version {
 	// Add the built-in scalar types:
 	version.addScalarType(nomenclator.Boolean)
 	version.addScalarType(nomenclator.Integer)
+	version.addScalarType(nomenclator.Long)
 	version.addScalarType(nomenclator.Float)
 	version.addScalarType(nomenclator.String)
 	version.addScalarType(nomenclator.Date)
@@ -120,6 +121,11 @@ func (v *Version) Boolean() *Type {
 // Integer returns the integer type.
 func (v *Version) Integer() *Type {
 	return v.FindType(nomenclator.Integer)
+}
+
+// Long returns the long type.
+func (v *Version) Long() *Type {
+	return v.FindType(nomenclator.Long)
 }
 
 // String returns the string type.
