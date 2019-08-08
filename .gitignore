@@ -1,7 +1,8 @@
 *.swp
-/.gopath/
+/.gobin/
 /.idea/
 /.vscode/
+/antlr
 /ocm-*-tool
 /tests/api/
-antlr
+/tests/docs/

@@ -14,19 +14,14 @@
 # limitations under the License.
 #
 
-.PHONY: \
-	clean \
-	cmds \
-	fmt \
-	lint \
-	$(NULL)
-
+.PHONY: cmds
 cmds: generate
 	for cmd in $$(ls cmd); do \
 		go build -mod=readonly -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
 		cp "$${cmd}" "$${HOME}/bin/."; \
 	done
 
+.PHONY: generate
 generate: antlr
 	cd pkg/language && \
 	java \
@@ -39,6 +34,7 @@ antlr:
 		--output-document=$@ \
 		https://www.antlr.org/download/antlr-4.7.2-complete.jar
 
+.PHONY: fmt
 fmt:
 	gofmt -s -l -w \
 		./cmd \
@@ -46,14 +42,16 @@ fmt:
 		./tests \
 		$(NULL)
 
+.PHONY: test
 test: cmds
 	./ocm-metamodel-tool generate \
 		--model=/files/go/src/gitlab.cee.redhat.com/service/ocm-api-model/model \
 		--base=gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api \
 		--output=tests/api \
 		--docs=tests/docs
-	ginkgo tests
+	ginkgo -mod=readonly tests
 
+.PHONY: clean
 clean:
 	rm -rf \
 		$$(ls cmd) \

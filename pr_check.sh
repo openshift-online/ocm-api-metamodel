@@ -18,6 +18,14 @@
 # This script is executed by a Jenkins job for each change request. If it
 # doesn't succeed the change won't be merged.
 
+# Set the `GOBIN` environment variable so that dependencies will be installed
+# always in the same place, regardless of the value of `GOPATH`:
+export GOBIN="${PWD}/.gobin"
+export PATH="${GOBIN}:${PATH}"
+
+# Install Go tools:
+go get github.com/onsi/ginkgo/ginkgo
+
 # Run the checks:
 make \
   cmds \
