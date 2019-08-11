@@ -160,6 +160,21 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	gens = append(gens, gen)
 
+	// Create the resource generator:
+	gen, err = generators.NewResourceGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Base(args.base).
+		Names(names).
+		Types(types).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create resource generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
 	// Create the builders generator:
 	gen, err = generators.NewBuildersGenerator().
 		Reporter(reporter).
