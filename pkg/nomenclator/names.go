@@ -92,6 +92,7 @@ var (
 	Set     = names.ParseUsingCase("Set")
 	Spec    = names.ParseUsingCase("Spec")
 	String  = names.ParseUsingCase("String")
+	Server  = names.ParseUsingCase("Server")
 
 	// T:
 	Type = names.ParseUsingCase("Type")
