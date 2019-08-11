@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 
+# Directory containing the model:
+model:=/files/projects/ocm-api-model/model
+
 .PHONY: cmds
 cmds: generate
 	for cmd in $$(ls cmd); do \
@@ -45,7 +48,7 @@ fmt:
 .PHONY: test
 test: cmds
 	./ocm-metamodel-tool generate \
-		--model=/files/go/src/gitlab.cee.redhat.com/service/ocm-api-model/model \
+		--model=$(model) \
 		--base=gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api \
 		--output=tests/api \
 		--docs=tests/docs
