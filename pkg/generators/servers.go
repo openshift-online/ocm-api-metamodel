@@ -27,9 +27,9 @@ import (
 	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
 )
 
-// ResourceGeneratorBuilder is an object used to configure and build the resources generator. Don't create
-// instances directly, use the NewResourcesGenerator function instead.
-type ResourceGeneratorBuilder struct {
+// ServersGeneratorBuilder is an object used to configure and build the servers generator. Don't create
+// instances directly, use the ServersGeneratorBuilder function instead.
+type ServersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
@@ -38,9 +38,9 @@ type ResourceGeneratorBuilder struct {
 	types    *golang.TypesCalculator
 }
 
-// ResourceGenerator generate resources for the model resources.
+// ServersGenerator generate resources for the model resources.
 // Don't create instances directly, use the builder instead.
-type ResourceGenerator struct {
+type ServersGenerator struct {
 	reporter *reporter.Reporter
 	errors   int
 	model    *concepts.Model
@@ -51,51 +51,51 @@ type ResourceGenerator struct {
 	buffer   *golang.Buffer
 }
 
-// NewResourceGenerator creates a new builder for resource generators.
-func NewResourceGenerator() *ResourceGeneratorBuilder {
-	return new(ResourceGeneratorBuilder)
+// NewServersGenerator creates a new builder for resource generators.
+func NewServersGenerator() *ServersGeneratorBuilder {
+	return new(ServersGeneratorBuilder)
 }
 
 // Reporter sets the object that will be used to report information about the generation process,
 // including errors.
-func (b *ResourceGeneratorBuilder) Reporter(value *reporter.Reporter) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Reporter(value *reporter.Reporter) *ServersGeneratorBuilder {
 	b.reporter = value
 	return b
 }
 
 // Model sets the model that will be used by the resource generator.
-func (b *ResourceGeneratorBuilder) Model(value *concepts.Model) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Model(value *concepts.Model) *ServersGeneratorBuilder {
 	b.model = value
 	return b
 }
 
 // Output sets import path of the output package.
-func (b *ResourceGeneratorBuilder) Output(value string) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Output(value string) *ServersGeneratorBuilder {
 	b.output = value
 	return b
 }
 
 // Base sets the import import path of the output package.
-func (b *ResourceGeneratorBuilder) Base(value string) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Base(value string) *ServersGeneratorBuilder {
 	b.base = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *ResourceGeneratorBuilder) Names(value *golang.NamesCalculator) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Names(value *golang.NamesCalculator) *ServersGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *ResourceGeneratorBuilder) Types(value *golang.TypesCalculator) *ResourceGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Types(value *golang.TypesCalculator) *ServersGeneratorBuilder {
 	b.types = value
 	return b
 }
 
 // Build checks the configuration stored in the builder and, if it is correct, creates a new
 // types generator using it.
-func (b *ResourceGeneratorBuilder) Build() (generator *ResourceGenerator, err error) {
+func (b *ServersGeneratorBuilder) Build() (generator *ServersGenerator, err error) {
 	// Check that the mandatory parameters have been provided:
 	if b.reporter == nil {
 		err = fmt.Errorf("reporter is mandatory")
@@ -123,7 +123,7 @@ func (b *ResourceGeneratorBuilder) Build() (generator *ResourceGenerator, err er
 	}
 
 	// Create the generator:
-	generator = new(ResourceGenerator)
+	generator = new(ServersGenerator)
 	generator.reporter = b.reporter
 	generator.model = b.model
 	generator.output = b.output
@@ -135,14 +135,14 @@ func (b *ResourceGeneratorBuilder) Build() (generator *ResourceGenerator, err er
 }
 
 // Run executes the code generator.
-func (g *ResourceGenerator) Run() error {
+func (g *ServersGenerator) Run() error {
 	var err error
 
 	// Generate the Go resource for each model resource:
 	for _, service := range g.model.Services() {
 		for _, version := range service.Versions() {
 			for _, resource := range version.Resources() {
-				err = g.generateResourceFile(resource)
+				err = g.generateServerFile(resource)
 				if err != nil {
 					return err
 				}
@@ -163,7 +163,7 @@ func (g *ResourceGenerator) Run() error {
 	return nil
 }
 
-func (g *ResourceGenerator) generateResourceFile(resource *concepts.Resource) error {
+func (g *ServersGenerator) generateServerFile(resource *concepts.Resource) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -184,33 +184,33 @@ func (g *ResourceGenerator) generateResourceFile(resource *concepts.Resource) er
 	}
 
 	// Generate the source:
-	g.generateResourceSource(resource)
+	g.generateServerSource(resource)
 
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
-func (g *ResourceGenerator) generateResourceSource(resource *concepts.Resource) {
+func (g *ServersGenerator) generateServerSource(resource *concepts.Resource) {
 	g.buffer.Emit(`
 		{{ $resourceName := resourceName .Resource }}
 
-		// {{ $resourceName }}Resource represents the interface the manages the '{{ .Resource.Name }}' resource.
-		type {{ $resourceName }}Resource interface {}
+		// {{ $resourceName }}Server represents the interface the manages the '{{ .Resource.Name }}' resource.
+		type {{ $resourceName }}Server interface {}
 		`,
 		"Resource", resource,
 	)
 }
 
-func (g *ResourceGenerator) pkgName(version *concepts.Version) string {
+func (g *ServersGenerator) pkgName(version *concepts.Version) string {
 	servicePkg := g.names.Package(version.Owner().Name())
 	versionPkg := g.names.Package(version.Name())
 	return filepath.Join(servicePkg, versionPkg)
 }
 
-func (g *ResourceGenerator) fileName(resource *concepts.Resource) string {
-	return g.names.File(names.Cat(resource.Name(), nomenclator.Resource))
+func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
+	return g.names.File(names.Cat(resource.Name(), nomenclator.Server))
 }
 
-func (g *ResourceGenerator) resourceName(resource *concepts.Resource) string {
+func (g *ServersGenerator) resourceName(resource *concepts.Resource) string {
 	return g.names.Public(resource.Name())
 }

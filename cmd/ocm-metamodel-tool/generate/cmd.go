@@ -161,7 +161,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the resource generator:
-	gen, err = generators.NewResourceGenerator().
+	gen, err = generators.NewServersGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
