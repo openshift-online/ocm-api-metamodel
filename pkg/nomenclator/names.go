@@ -63,6 +63,7 @@ var (
 	// L:
 	Link = names.ParseUsingCase("Link")
 	List = names.ParseUsingCase("List")
+	Long = names.ParseUsingCase("Long")
 
 	// M:
 	Map     = names.ParseUsingCase("Map")
