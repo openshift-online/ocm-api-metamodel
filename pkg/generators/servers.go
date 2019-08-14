@@ -181,6 +181,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("methodName", g.methodName).
 		Function("serverName", g.serverName).
 		Function("locatorName", g.locatorName).
+		Function("adapterName", g.adapterName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
@@ -200,6 +201,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 
 	// Generate the source:
 	g.generateResourceServerSource(resource)
+	g.generateServerAdapterSource(resource)
 
 	// Write the generated code:
 	return g.buffer.Write()
@@ -247,6 +249,32 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 		g.generateRequestSource(method)
 		g.generateResponseSource(method)
 	}
+}
+
+func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resource) {
+	g.buffer.Emit(`
+		{{ $adapterName := adapterName .Resource }}
+
+		// {{ $adapterName }} represents the structs that adapts Requests and Response to internal
+		// structs.
+		type {{ $adapterName }} struct {}
+
+		{{ range .Resource.Methods }}
+			{{ $requestName := requestName . }}
+			{{ $responseName := responseName . }}
+			
+			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
+				return nil, nil
+			}
+
+			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+				return nil
+			}
+		{{ end }}
+		`,
+		"Resource", resource,
+	)
+
 }
 
 func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
@@ -380,6 +408,10 @@ func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
 
 func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
 	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server))
+}
+
+func (g *ServersGenerator) adapterName(resource *concepts.Resource) string {
+	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server, nomenclator.Adapter))
 }
 
 func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {

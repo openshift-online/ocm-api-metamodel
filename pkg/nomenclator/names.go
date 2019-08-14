@@ -22,7 +22,8 @@ import (
 
 var (
 	// A:
-	Add = names.ParseUsingCase("Add")
+	Add     = names.ParseUsingCase("Add")
+	Adapter = names.ParseUsingCase("Adapter")
 
 	// B:
 	Boolean = names.ParseUsingCase("Boolean")
