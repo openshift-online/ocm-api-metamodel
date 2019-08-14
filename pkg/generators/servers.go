@@ -180,6 +180,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		File(fileName).
 		Function("methodName", g.methodName).
 		Function("serverName", g.serverName).
+		Function("locatorName", g.locatorName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
@@ -208,14 +209,25 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 	g.buffer.Emit(`
 		{{ $serverName := serverName .Resource }}
 
-		// {{ $serverName }}Server represents the interface the manages the '{{ .Resource.Name }}' resource.
-		type {{ $serverName }}Server interface {
+		// {{ $serverName }} represents the interface the manages the '{{ .Resource.Name }}' resource.
+		type {{ $serverName }} interface {
 			{{ range .Resource.Methods }}
 				{{ $methodName := methodName . }}
 				{{ $responseName := responseName . }}
 				{{ $requestName := requestName . }}
 
 				{{ $methodName }}(request *{{$requestName}}, response *{{$responseName}}) error
+			{{ end }}
+
+			{{ range .Resource.Locators }}
+				{{ $locatorName := locatorName . }}
+				{{ $targetName := serverName .Target }}
+
+				{{ if .Variable }}
+					{{ $locatorName }}(id string) {{ $targetName }}
+				{{ else }}
+					{{ $locatorName }}() {{ $targetName }}
+				{{ end }}
 			{{ end }}
 		}
 		`,
@@ -359,7 +371,11 @@ func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
 }
 
 func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
-	return g.names.Public(resource.Name())
+	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server))
+}
+
+func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
+	return g.names.Public(locator.Name())
 }
 
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
