@@ -254,10 +254,13 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resource) {
 	g.buffer.Emit(`
 		{{ $adapterName := adapterName .Resource }}
+		{{ $serverName := serverName .Resource }}
 
 		// {{ $adapterName }} represents the structs that adapts Requests and Response to internal
 		// structs.
-		type {{ $adapterName }} struct {}
+		type {{ $adapterName }} struct {
+			server {{ $serverName }}
+		}
 
 		{{ range .Resource.Methods }}
 			{{ $requestName := requestName . }}
@@ -270,7 +273,51 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				return nil
 			}
+
 		{{ end }}
+
+		func (a *{{ $adapterName }}) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			{{ range .Resource.Methods }}
+				{{ $methodName := methodName . }}
+				{{ $requestName := requestName . }}
+				{{ $responseName := responseName . }}
+				{{ if eq $methodName "Add" }}
+					case http.MethodPost:
+				{{ end }}
+				{{ if eq $methodName "Post" }}
+					case http.MethodPost:
+				{{ end }}
+				{{ if eq $methodName "List" }}
+					case http.MethodGet:
+				{{ end }}
+				{{ if eq $methodName "Get" }}
+					case http.MethodGet:
+				{{ end }}
+				{{ if eq $methodName "Update" }}
+					case http.MethodPatch:
+				{{ end }}
+				{{ if eq $methodName "Delete" }}
+					case http.MethodDelete:
+				{{ end }}
+					req, err := a.read{{ $requestName }}(r)
+					if err != nil {
+						// Do something.
+					}
+					resp := new({{ $responseName }})
+					err = a.server.{{ $methodName }}(req, resp)
+					if err != nil {
+						// Do another thing.
+					}
+					err = a.write{{ $responseName }}(w, resp)
+					if err != nil {
+						// Do a third thing.
+					}
+			{{ end }}
+				default: 
+				// return 405 here.
+			}
+		}
 		`,
 		"Resource", resource,
 	)
