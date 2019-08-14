@@ -215,7 +215,9 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 				{{ $methodName := methodName . }}
 				{{ $responseName := responseName . }}
 				{{ $requestName := requestName . }}
-
+				// {{ $methodName }} handles a request for the '{{ .Name }}' method.
+				//
+				{{ lineComment .Doc }}
 				{{ $methodName }}(request *{{$requestName}}, response *{{$responseName}}) error
 			{{ end }}
 
@@ -224,8 +226,14 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 				{{ $targetName := serverName .Target }}
 
 				{{ if .Variable }}
+					// {{ $locatorName }} returns the target '{{ .Target.Name }}' server for the given identifier.
+					//
+					{{ lineComment .Doc }}
 					{{ $locatorName }}(id string) {{ $targetName }}
 				{{ else }}
+					// {{ $locatorName }} returns the target '{{ .Target.Name }}' resource.
+					//
+					{{ lineComment .Doc }}
 					{{ $locatorName }}() {{ $targetName }}
 				{{ end }}
 			{{ end }}
