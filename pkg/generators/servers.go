@@ -184,12 +184,20 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("adapterName", g.adapterName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
+		Function("fieldTag", g.fieldTag).
+		Function("dataFieldName", g.dataFieldName).
+		Function("dataFieldType", g.dataFieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
+		Function("dataStruct", g.dataStruct).
 		Function("requestName", g.requestName).
 		Function("responseName", g.responseName).
 		Function("methodName", g.methodName).
+		Function("requestData", g.requestData).
+		Function("responseData", g.responseData).
 		Function("requestParameters", g.requestParameters).
+		Function("requestBodyParameters", g.requestBodyParameters).
+		Function("responseBodyParameters", g.responseBodyParameters).
 		Function("responseParameters", g.responseParameters).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
@@ -271,13 +279,35 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 		{{ range .Resource.Methods }}
 			{{ $requestName := requestName . }}
 			{{ $responseName := responseName . }}
-			
+			{{ $requestBodyParameters := requestBodyParameters . }}
+			{{ $responseBodyParameters := responseBodyParameters . }}
+			{{ $requestBodyLen := len $requestBodyParameters }}
+	
 			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
-				return nil, nil
+				result := new({{ $requestName }})
+				result.query = r.Form
+				result.path = r.URL.Path
+
+				{{ if $requestBodyParameters }}
+					err := result.unmarshal(r.Body)
+					if err != nil {
+						return nil, err
+					}
+				{{ end }}
+				return result, nil
 			}
 
+
 			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+				w.WriteHeader(r.status)
+				{{ if $responseBodyParameters }}
+					err := r.marshal(w)
+					if err != nil {
+						return err
+					}
+				{{ end }}
 				return nil
+				
 			}
 
 		{{ end }}
@@ -342,7 +372,10 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
 	g.buffer.Emit(`
 		{{ $requestName := requestName .Method }}
+		{{ $requestData := requestData .Method }}
 		{{ $requestParameters := requestParameters .Method }}
+		{{ $requestBodyParameters := requestBodyParameters .Method }}
+		{{ $requestBodyLen := len $requestBodyParameters }}
 
 		// {{ $requestName }} is the request for the '{{ .Method.Name }}' method.
 		type {{ $requestName }} struct {
@@ -392,6 +425,58 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 				return
 			}
 		{{ end }}
+
+		{{ if $requestBodyParameters }}
+			// unmarshal is the method used internally to unmarshal request to the
+			// '{{ .Method.Name }}' method.
+			func (r *{{ $requestName }}) unmarshal(reader io.Reader) error {
+				var err error
+				decoder := json.NewDecoder(reader)
+				{{ if eq $requestBodyLen 1 }}
+					{{ with index $requestBodyParameters 0 }}
+						data := new({{ dataStruct . }})
+					{{ end }}
+				{{ else }}
+					data := new({{ $requestData }})
+				{{ end }}
+				err = decoder.Decode(data)
+				if err != nil {
+					return err
+				}
+				{{ if eq $requestBodyLen 1 }}
+					{{ with index $requestBodyParameters 0 }}
+						r.{{ fieldName . }}, err = data.unwrap()
+						if err != nil {
+							return err
+						}
+					{{ end }}
+				{{ else }}
+					{{ range $requestBodyParameters }}
+						{{ $dataFieldName := dataFieldName . }}
+						{{ $fieldName := fieldName . }}
+						{{ if or .Type.IsScalar }}
+							r.{{ $fieldName }} = data.{{ $dataFieldName }}
+						{{ else }}
+							r.{{ $fieldName }}, err = data.{{ $dataFieldName }}.unwrap()
+							if err != nil {
+								return err
+							}
+						{{ end }}
+					{{ end }}
+				{{ end }}
+				return err
+			}
+
+			{{ if gt $requestBodyLen 1 }}
+				// {{ $requestData }} is the structure used internally to unmarshal
+				// the response of the '{{ .Method.Name }}' method.
+				type {{ $requestData }} struct {
+					{{ range $requestBodyParameters }}
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+					{{ end }}
+				}
+			{{ end }}
+		{{ end }}
 		`,
 		"Method", method,
 	)
@@ -404,6 +489,9 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseParameters := responseParameters .Method }}
+		{{ $responseData := responseData .Method }}
+		{{ $responseBodyParameters := responseBodyParameters .Method }}
+		{{ $responseBodyLen := len $responseBodyParameters }}
 
 		// {{ $responseName }} is the response for the '{{ .Method.Name }}' method.
 		type  {{ $responseName }} struct {
@@ -438,6 +526,49 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 			r.status = status
 			return r
 		}
+
+		{{ if $responseBodyParameters }}
+			// marshall is the method used internally to marshal requests for the
+			// '{{ .Method.Name }}' method.
+			func (r *{{ $responseName }}) marshal(writer io.Writer) error {
+				var err error
+				encoder := json.NewEncoder(writer)
+				{{ if eq $responseBodyLen 1 }}
+					{{ with index $responseBodyParameters 0 }}
+						data, err := r.{{ fieldName . }}.wrap()
+						if err != nil {
+							return err
+						}
+					{{ end }}
+				{{ else }}
+					data := new({{ $responseData }})
+					{{ range $responseBodyParameters }}
+						{{ $dataFieldName := dataFieldName . }}
+						{{ $fieldName := fieldName . }}
+						{{ if or .Type.IsScalar }}
+							data.{{ $dataFieldName }} = r.{{ $fieldName }}
+						{{ else }}
+							data.{{ $dataFieldName }}, err = r.{{ $fieldName }}.wrap()
+							if err != nil {
+								return err
+							}
+						{{ end }}
+					{{ end }}
+				{{ end }}
+				err = encoder.Encode(data)
+				return err
+			}
+
+			{{ if gt $responseBodyLen 1 }}
+				// {{ $responseData }} is the structure used internally to write the request of the
+				// '{{ .Method.Name }}' method.
+				type {{ $responseData }} struct {
+					{{ range $responseBodyParameters }}
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+					{{ end }}
+				}
+			{{ end }}
+		{{ end }}
 		`,
 		"Method", method,
 	)
@@ -486,6 +617,21 @@ func (g *ServersGenerator) requestName(method *concepts.Method) string {
 	return g.names.Public(name)
 }
 
+func (g *ServersGenerator) requestData(method *concepts.Method) string {
+	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Request, nomenclator.Data)
+	return g.names.Private(name)
+}
+
+func (g *ServersGenerator) requestBodyParameters(method *concepts.Method) []*concepts.Parameter {
+	result := make([]*concepts.Parameter, 0)
+	for _, parameter := range method.Parameters() {
+		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
+			result = append(result, parameter)
+		}
+	}
+	return result
+}
+
 func (g *ServersGenerator) requestParameters(method *concepts.Method) []*concepts.Parameter {
 	result := make([]*concepts.Parameter, 0)
 	for _, parameter := range method.Parameters() {
@@ -501,10 +647,25 @@ func (g *ServersGenerator) responseName(method *concepts.Method) string {
 	return g.names.Public(name)
 }
 
+func (g *ServersGenerator) responseData(method *concepts.Method) string {
+	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response, nomenclator.Data)
+	return g.names.Private(name)
+}
+
 func (g *ServersGenerator) responseParameters(method *concepts.Method) []*concepts.Parameter {
 	result := make([]*concepts.Parameter, 0)
 	for _, parameter := range method.Parameters() {
 		if parameter.Out() {
+			result = append(result, parameter)
+		}
+	}
+	return result
+}
+
+func (g *ServersGenerator) responseBodyParameters(method *concepts.Method) []*concepts.Parameter {
+	result := make([]*concepts.Parameter, 0)
+	for _, parameter := range method.Parameters() {
+		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
 			result = append(result, parameter)
 		}
 	}
@@ -539,6 +700,22 @@ func (g *ServersGenerator) setterName(parameter *concepts.Parameter) string {
 
 func (g *ServersGenerator) setterType(parameter *concepts.Parameter) *golang.TypeReference {
 	return g.accessorType(parameter.Type())
+}
+
+func (g *ServersGenerator) dataStruct(parameter *concepts.Parameter) string {
+	return g.types.DataReference(parameter.Type()).Name()
+}
+
+func (g *ServersGenerator) dataFieldName(parameter *concepts.Parameter) string {
+	return g.names.Public(parameter.Name())
+}
+
+func (g *ServersGenerator) dataFieldType(parameter *concepts.Parameter) *golang.TypeReference {
+	return g.types.DataReference(parameter.Type())
+}
+
+func (g *ServersGenerator) fieldTag(parameter *concepts.Parameter) string {
+	return g.names.Tag(parameter.Name())
 }
 
 func (g *ServersGenerator) accessorType(typ *concepts.Type) *golang.TypeReference {

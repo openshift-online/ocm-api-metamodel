@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This file contains tests for builders.
+// This file contains tests for servers.
 
 package tests
 
@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	v1 "gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
@@ -47,12 +48,13 @@ func (s *MyTestClustersServer) Cluster(id string) v1.ClusterServer {
 }
 
 var _ = Describe("Server", func() {
-	It("Can recieve a request and return response", func() {
+	It("Can receive a request and return response", func() {
 		myTestClustersServer := new(MyTestClustersServer)
 		clustersAdapter := v1.NewClustersServerAdapter(myTestClustersServer)
 
 		request := httptest.NewRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters", nil)
 		recorder := httptest.NewRecorder()
 		clustersAdapter.ServeHTTP(recorder, request)
+		Expect(recorder.Result().StatusCode).To(Equal(200))
 	})
 })
