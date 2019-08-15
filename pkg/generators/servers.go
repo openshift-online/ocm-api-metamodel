@@ -262,6 +262,12 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			server {{ $serverName }}
 		}
 
+		func New{{ $adapterName }}(server  {{ $serverName }}) *{{ $adapterName }} {
+			adapter := new({{ $adapterName }})
+			adapter.server = server
+			return adapter
+		}
+
 		{{ range .Resource.Methods }}
 			{{ $requestName := requestName . }}
 			{{ $responseName := responseName . }}
