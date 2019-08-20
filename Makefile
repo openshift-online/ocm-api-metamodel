@@ -20,7 +20,7 @@ model:=/files/projects/ocm-api-model/model
 .PHONY: cmds
 cmds: generate
 	for cmd in $$(ls cmd); do \
-		go build -mod=readonly -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
+		go build -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
 		cp "$${cmd}" "$${HOME}/bin/."; \
 	done
 

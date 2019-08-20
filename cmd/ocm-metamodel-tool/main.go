@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"gitlab.cee.redhat.com/service/ocm-api-metamodel/cmd/ocm-metamodel-tool/generate"
+	"gitlab.cee.redhat.com/service/ocm-api-metamodel/cmd/ocm-metamodel-tool/version"
 )
 
 // Root command:
@@ -40,6 +41,7 @@ func init() {
 
 	// Register the subcommands:
 	root.AddCommand(generate.Cmd)
+	root.AddCommand(version.Cmd)
 }
 
 func main() {
