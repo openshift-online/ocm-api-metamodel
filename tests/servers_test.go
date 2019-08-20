@@ -25,15 +25,43 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/gorilla/mux"
 	v1 "gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
+
+type MyTestRootServer struct{}
+
+func (s *MyTestRootServer) Clusters() v1.ClustersServer {
+	return &MyTestClustersServer{}
+}
+
+func (s *MyTestRootServer) Dashboards() v1.DashboardsServer {
+	return nil
+}
+
+func (s *MyTestRootServer) Flavours() v1.FlavoursServer {
+	return nil
+}
+
+func (s *MyTestRootServer) Versions() v1.VersionsServer {
+	return nil
+}
 
 type MyTestClustersServer struct{}
 
 func (s *MyTestClustersServer) List(request *v1.ClustersListServerRequest,
 	response *v1.ClustersListServerResponse) error {
+	items, err := v1.NewClusterList().Items(v1.NewCluster().Name("test-list-clusters")).Build()
+	if err != nil {
+		return err
+	}
 	// Set a status code 200. Return empty response.
 	response.SetStatusCode(200)
+	// Set body of response
+	response.Items(items)
+	response.Page(1)
+	response.Size(1)
+	response.Total(1)
 	return nil
 }
 
@@ -44,17 +72,96 @@ func (s *MyTestClustersServer) Add(request *v1.ClustersAddServerRequest, respons
 }
 
 func (s *MyTestClustersServer) Cluster(id string) v1.ClusterServer {
+	return &MyTestClusterServer{}
+}
+
+type MyTestClusterServer struct{}
+
+func (s *MyTestClusterServer) Get(request *v1.ClusterGetServerRequest, response *v1.ClusterGetServerResponse) error {
+	response.SetStatusCode(200)
+	cluster, err := v1.NewCluster().Name("test-get-cluster-by-id").Build()
+	if err != nil {
+		return err
+	}
+	response.Body(cluster)
+	return nil
+}
+
+func (s *MyTestClusterServer) Update(request *v1.ClusterUpdateServerRequest, response *v1.ClusterUpdateServerResponse) error {
+	response.SetStatusCode(200)
+	return nil
+}
+
+func (s *MyTestClusterServer) Delete(request *v1.ClusterDeleteServerRequest, response *v1.ClusterDeleteServerResponse) error {
+	response.SetStatusCode(200)
+	return nil
+}
+
+func (s *MyTestClusterServer) Status() v1.ClusterStatusServer {
+	return nil
+}
+
+func (s *MyTestClusterServer) Credentials() v1.CredentialsServer {
+	return nil
+}
+
+func (s *MyTestClusterServer) Logs() v1.LogsServer {
+	return nil
+}
+
+func (s *MyTestClusterServer) Groups() v1.GroupsServer {
+	return nil
+}
+
+func (s *MyTestClusterServer) IdentityProviders() v1.IdentityProvidersServer {
 	return nil
 }
 
 var _ = Describe("Server", func() {
 	It("Can receive a request and return response", func() {
-		myTestClustersServer := new(MyTestClustersServer)
-		clustersAdapter := v1.NewClustersServerAdapter(myTestClustersServer)
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
 
-		request := httptest.NewRequest(http.MethodGet, "/api/clusters_mgmt/v1/clusters", nil)
+		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
 		recorder := httptest.NewRecorder()
-		clustersAdapter.ServeHTTP(recorder, request)
+		rootAdapter.ServeHTTP(recorder, request)
+
+		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Can get a list of clusters", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		expected := `{
+			"page":1,
+			"size":1,
+			"total":1,
+			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
+			}`
+
+		Expect(recorder.Body).To(MatchJSON(expected))
+		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Can get a cluster by id", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters/123/", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		expected := `{
+			"kind":"Cluster",
+			"name":"test-get-cluster-by-id"
+			}`
+
+		Expect(recorder.Body).To(MatchJSON(expected))
 		Expect(recorder.Result().StatusCode).To(Equal(200))
 	})
 })

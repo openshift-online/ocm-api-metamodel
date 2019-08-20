@@ -18,6 +18,7 @@ package generators
 
 import (
 	"fmt"
+	"net/http"
 	"path"
 	"path/filepath"
 
@@ -182,6 +183,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("serverName", g.serverName).
 		Function("locatorName", g.locatorName).
 		Function("adapterName", g.adapterName).
+		Function("urlSegment", g.urlSegment).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
 		Function("fieldTag", g.fieldTag).
@@ -202,6 +204,8 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
 		Function("zeroValue", g.types.ZeroValue).
+		Function("mapMethodNameToHTTPMethod", g.mapMethodNameToHTTPMethod).
+		Function("locatorHandlerName", g.locatorHandlerName).
 		Build()
 	if err != nil {
 		return err
@@ -260,6 +264,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 }
 
 func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resource) {
+	g.buffer.Import("github.com/gorilla/mux", "")
 	g.buffer.Emit(`
 		{{ $adapterName := adapterName .Resource }}
 		{{ $serverName := serverName .Resource }}
@@ -268,20 +273,63 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 		// structs.
 		type {{ $adapterName }} struct {
 			server {{ $serverName }}
+			router *mux.Router
 		}
 
-		func New{{ $adapterName }}(server  {{ $serverName }}) *{{ $adapterName }} {
+		func New{{ $adapterName }}(server  {{ $serverName }}, router *mux.Router) *{{ $adapterName }} {
 			adapter := new({{ $adapterName }})
 			adapter.server = server
+			adapter.router = router
+
+			{{ range .Resource.Locators }}
+				{{ $locatorHandlerName :=  locatorHandlerName . }}
+				{{ $locatorURLSegment := urlSegment .Name }}
+
+				{{ if .Variable }}
+					adapter.router.PathPrefix("/{id}/").HandlerFunc(adapter.{{ $locatorHandlerName }})
+				{{ else }}
+					adapter.router.PathPrefix("/{{ $locatorURLSegment }}/").HandlerFunc(adapter.{{ $locatorHandlerName }})
+				{{ end }}
+			{{ end }}
+
+			{{ range .Resource.Methods }}
+				{{ $httpMethod := mapMethodNameToHTTPMethod .Name }}
+				
+				adapter.router.HandleFunc("/", adapter.{{ .Name }}Handler).Methods("{{ $httpMethod  }}")
+			{{ end }}
 			return adapter
 		}
 
+		{{ range .Resource.Locators }}
+			{{ $targerAdapterName := adapterName .Target }}
+			{{ $targerServerName := serverName .Target }}
+			{{ $locatorName := locatorName . }}
+			{{ $locatorHandlerName :=  locatorHandlerName . }}
+			{{ $locatorURLSegment := urlSegment .Name }}
+
+			func (a *{{ $adapterName }}) {{ $locatorHandlerName }}(w http.ResponseWriter, r *http.Request) {
+				{{ if .Variable }}
+					id := mux.Vars(r)["id"]
+					target := a.server.{{ $locatorName }}(id)
+					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{id}/").Subrouter())
+					targetAdapter.ServeHTTP(w,r)
+					return
+				{{ else }}
+					target := a.server.{{ $locatorName }}()
+					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{{ $locatorURLSegment }}/").Subrouter())
+					targetAdapter.ServeHTTP(w,r)
+					return 
+				{{ end }}
+			}
+		{{ end }}
+
 		{{ range .Resource.Methods }}
+			{{ $methodName := methodName . }}
 			{{ $requestName := requestName . }}
 			{{ $responseName := responseName . }}
 			{{ $requestBodyParameters := requestBodyParameters . }}
-			{{ $responseBodyParameters := responseBodyParameters . }}
 			{{ $requestBodyLen := len $requestBodyParameters }}
+			{{ $responseParameters := responseParameters . }}
 	
 			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				result := new({{ $requestName }})
@@ -300,43 +348,17 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 
 			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				w.WriteHeader(r.status)
-				{{ if $responseBodyParameters }}
+				{{ if $responseParameters }}
 					err := r.marshal(w)
 					if err != nil {
 						return err
 					}
 				{{ end }}
-				return nil
-				
+				return nil	
 			}
 
-		{{ end }}
-
-		func (a *{{ $adapterName }}) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			{{ range .Resource.Methods }}
-				{{ $methodName := methodName . }}
-				{{ $requestName := requestName . }}
-				{{ $responseName := responseName . }}
-				{{ if eq $methodName "Add" }}
-					case http.MethodPost:
-				{{ end }}
-				{{ if eq $methodName "Post" }}
-					case http.MethodPost:
-				{{ end }}
-				{{ if eq $methodName "List" }}
-					case http.MethodGet:
-				{{ end }}
-				{{ if eq $methodName "Get" }}
-					case http.MethodGet:
-				{{ end }}
-				{{ if eq $methodName "Update" }}
-					case http.MethodPatch:
-				{{ end }}
-				{{ if eq $methodName "Delete" }}
-					case http.MethodDelete:
-				{{ end }}
-					req, err := a.read{{ $requestName }}(r)
+			func (a *{{ $adapterName }} ) {{ .Name }}Handler (w http.ResponseWriter, r *http.Request) {
+				req, err := a.read{{ $requestName }}(r)
 					if err != nil {
 						// Do something.
 					}
@@ -349,10 +371,11 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 					if err != nil {
 						// Do a third thing.
 					}
-			{{ end }}
-				default: 
-				// return 405 here.
 			}
+		{{ end }}
+
+		func (a *{{ $adapterName }} ) ServeHTTP (w http.ResponseWriter, r *http.Request) {
+			a.router.ServeHTTP(w,r)
 		}
 		`,
 		"Resource", resource,
@@ -488,10 +511,9 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
-		{{ $responseParameters := responseParameters .Method }}
 		{{ $responseData := responseData .Method }}
-		{{ $responseBodyParameters := responseBodyParameters .Method }}
-		{{ $responseBodyLen := len $responseBodyParameters }}
+		{{ $responseParameters := responseParameters .Method }}
+		{{ $responseLen := len $responseParameters }}
 
 		// {{ $responseName }} is the response for the '{{ .Method.Name }}' method.
 		type  {{ $responseName }} struct {
@@ -501,7 +523,6 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 				{{ fieldName . }} {{ fieldType . }}
 			{{ end }}
 		}
-		
 		
 		{{ range $responseParameters }}
 			{{ $fieldName := fieldName . }}
@@ -527,14 +548,14 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 			return r
 		}
 
-		{{ if $responseBodyParameters }}
-			// marshall is the method used internally to marshal requests for the
+		{{ if $responseParameters }}
+			// marshall is the method used internally to marshal responses for the
 			// '{{ .Method.Name }}' method.
 			func (r *{{ $responseName }}) marshal(writer io.Writer) error {
 				var err error
 				encoder := json.NewEncoder(writer)
-				{{ if eq $responseBodyLen 1 }}
-					{{ with index $responseBodyParameters 0 }}
+				{{ if eq $responseLen 1 }}
+					{{ with index $responseParameters 0 }}
 						data, err := r.{{ fieldName . }}.wrap()
 						if err != nil {
 							return err
@@ -542,7 +563,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 					{{ end }}
 				{{ else }}
 					data := new({{ $responseData }})
-					{{ range $responseBodyParameters }}
+					{{ range $responseParameters }}
 						{{ $dataFieldName := dataFieldName . }}
 						{{ $fieldName := fieldName . }}
 						{{ if or .Type.IsScalar }}
@@ -559,11 +580,11 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 				return err
 			}
 
-			{{ if gt $responseBodyLen 1 }}
+			{{ if gt $responseLen 1 }}
 				// {{ $responseData }} is the structure used internally to write the request of the
 				// '{{ .Method.Name }}' method.
 				type {{ $responseData }} struct {
-					{{ range $responseBodyParameters }}
+					{{ range $responseParameters }}
 						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
 					{{ end }}
 				}
@@ -608,6 +629,10 @@ func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
 	return g.names.Public(locator.Name())
 }
 
+func (g *ServersGenerator) urlSegment(name *names.Name) string {
+	return g.names.Tag(name)
+}
+
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
 	return g.names.Public(method.Name())
 }
@@ -648,7 +673,12 @@ func (g *ServersGenerator) responseName(method *concepts.Method) string {
 }
 
 func (g *ServersGenerator) responseData(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response, nomenclator.Data)
+	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Response, nomenclator.Data)
+	return g.names.Private(name)
+}
+
+func (g *ServersGenerator) locatorHandlerName(locator *concepts.Locator) string {
+	name := names.Cat(locator.Name(), nomenclator.Handler)
 	return g.names.Private(name)
 }
 
@@ -742,4 +772,23 @@ func (g *ServersGenerator) avoidBuiltin(name string, builtins map[string]interfa
 		name = name + "_"
 	}
 	return name
+}
+
+func (g *ServersGenerator) mapMethodNameToHTTPMethod(name *names.Name) string {
+	switch {
+	case name.Equals(nomenclator.Post):
+		return http.MethodPost
+	case name.Equals(nomenclator.Add):
+		return http.MethodPost
+	case name.Equals(nomenclator.List):
+		return http.MethodGet
+	case name.Equals(nomenclator.Get):
+		return http.MethodGet
+	case name.Equals(nomenclator.Update):
+		return http.MethodPatch
+	case name.Equals(nomenclator.Delete):
+		return http.MethodDelete
+	default:
+		return http.MethodGet
+	}
 }
