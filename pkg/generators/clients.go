@@ -243,6 +243,7 @@ func (g *ClientsGenerator) generateErrors() error {
 			return e
 		}
 
+		// Build builds a new error type or returns an error.
 		func (e *ErrorBuilder) Build() (*Error, error) {
 			err := new(Error)
 			err.reason = e.reason
