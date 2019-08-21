@@ -360,16 +360,32 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			func (a *{{ $adapterName }} ) {{ .Name }}Handler (w http.ResponseWriter, r *http.Request) {
 				req, err := a.read{{ $requestName }}(r)
 					if err != nil {
-						// Do something.
+						reason := fmt.Sprintf("An error occured while trying to read request from client: %v", err)
+						errorBody, _ := errors.NewError().
+							Reason(reason).
+							ID("500").
+							Build()
+						errors.SendError(w, r, errorBody)
+						return										
 					}
 					resp := new({{ $responseName }})
 					err = a.server.{{ $methodName }}(req, resp)
 					if err != nil {
-						// Do another thing.
+						reason := fmt.Sprintf("An error occured while trying to run method {{ $methodName }}: %v", err)
+						errorBody, _ := errors.NewError().
+							Reason(reason).
+							ID("500").
+							Build()
+						errors.SendError(w, r, errorBody)
 					}
 					err = a.write{{ $responseName }}(w, resp)
 					if err != nil {
-						// Do a third thing.
+						reason := fmt.Sprintf("An error occured while trying to write response for client: %v", err)
+						errorBody, _ := errors.NewError().
+							Reason(reason).
+							ID("500").
+							Build()
+						errors.SendError(w, r, errorBody)
 					}
 			}
 		{{ end }}

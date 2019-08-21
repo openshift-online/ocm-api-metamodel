@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/antlr/antlr4 v0.0.0-20181218183524-be58ebffde8e
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/onsi/ginkgo v1.8.0
