@@ -19,6 +19,7 @@ limitations under the License.
 package tests
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 
@@ -49,7 +50,7 @@ func (s *MyTestRootServer) Versions() v1.VersionsServer {
 
 type MyTestClustersServer struct{}
 
-func (s *MyTestClustersServer) List(request *v1.ClustersListServerRequest,
+func (s *MyTestClustersServer) List(ctx context.Context, request *v1.ClustersListServerRequest,
 	response *v1.ClustersListServerResponse) error {
 	items, err := v1.NewClusterList().Items(v1.NewCluster().Name("test-list-clusters")).Build()
 	if err != nil {
@@ -65,7 +66,7 @@ func (s *MyTestClustersServer) List(request *v1.ClustersListServerRequest,
 	return nil
 }
 
-func (s *MyTestClustersServer) Add(request *v1.ClustersAddServerRequest, response *v1.ClustersAddServerResponse) error {
+func (s *MyTestClustersServer) Add(ctx context.Context, request *v1.ClustersAddServerRequest, response *v1.ClustersAddServerResponse) error {
 	// Set a status code 200. Return empty response.
 	response.SetStatusCode(200)
 	return nil
@@ -77,7 +78,7 @@ func (s *MyTestClustersServer) Cluster(id string) v1.ClusterServer {
 
 type MyTestClusterServer struct{}
 
-func (s *MyTestClusterServer) Get(request *v1.ClusterGetServerRequest, response *v1.ClusterGetServerResponse) error {
+func (s *MyTestClusterServer) Get(ctx context.Context, request *v1.ClusterGetServerRequest, response *v1.ClusterGetServerResponse) error {
 	response.SetStatusCode(200)
 	cluster, err := v1.NewCluster().Name("test-get-cluster-by-id").Build()
 	if err != nil {
@@ -87,12 +88,12 @@ func (s *MyTestClusterServer) Get(request *v1.ClusterGetServerRequest, response 
 	return nil
 }
 
-func (s *MyTestClusterServer) Update(request *v1.ClusterUpdateServerRequest, response *v1.ClusterUpdateServerResponse) error {
+func (s *MyTestClusterServer) Update(ctx context.Context, request *v1.ClusterUpdateServerRequest, response *v1.ClusterUpdateServerResponse) error {
 	response.SetStatusCode(200)
 	return nil
 }
 
-func (s *MyTestClusterServer) Delete(request *v1.ClusterDeleteServerRequest, response *v1.ClusterDeleteServerResponse) error {
+func (s *MyTestClusterServer) Delete(ctx context.Context, request *v1.ClusterDeleteServerRequest, response *v1.ClusterDeleteServerResponse) error {
 	response.SetStatusCode(200)
 	return nil
 }

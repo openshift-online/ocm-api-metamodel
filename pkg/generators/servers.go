@@ -232,7 +232,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 				// {{ $methodName }} handles a request for the '{{ .Name }}' method.
 				//
 				{{ lineComment .Doc }}
-				{{ $methodName }}(request *{{$requestName}}, response *{{$responseName}}) error
+				{{ $methodName }}(ctx context.Context, request *{{$requestName}}, response *{{$responseName}}) error
 			{{ end }}
 
 			{{ range .Resource.Locators }}
@@ -335,7 +335,6 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 				result := new({{ $requestName }})
 				result.query = r.Form
 				result.path = r.URL.Path
-				result.ctx = r.Context()
 
 				{{ if $requestBodyParameters }}
 					err := result.unmarshal(r.Body)
@@ -370,7 +369,7 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 						return										
 					}
 					resp := new({{ $responseName }})
-					err = a.server.{{ $methodName }}(req, resp)
+					err = a.server.{{ $methodName }}(r.Context(), req, resp)
 					if err != nil {
 						reason := fmt.Sprintf("An error occured while trying to run method {{ $methodName }}: %v", err)
 						errorBody, _ := errors.NewError().
@@ -421,20 +420,9 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 		type {{ $requestName }} struct {
 			path      string
 			query     url.Values
-			ctx       context.Context
 			{{ range $requestParameters }}
 				{{ fieldName . }} {{ fieldType . }}
 			{{ end }}
-		}
-
-		// GetContext returns the request Context and
-		// a flag indicating if the parameter has a value.
-		func (r *{{ $requestName }}) GetContext() (value context.Context, ok bool) {
-			ok = r != nil && r.ctx != nil
-			if ok {
-				value = r.ctx
-			}
-			return
 		}
 
 		{{ range $requestParameters }}
