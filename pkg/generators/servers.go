@@ -335,6 +335,7 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 				result := new({{ $requestName }})
 				result.query = r.Form
 				result.path = r.URL.Path
+				result.ctx = r.Context()
 
 				{{ if $requestBodyParameters }}
 					err := result.unmarshal(r.Body)
@@ -420,9 +421,20 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 		type {{ $requestName }} struct {
 			path      string
 			query     url.Values
+			ctx       context.Context
 			{{ range $requestParameters }}
 				{{ fieldName . }} {{ fieldType . }}
 			{{ end }}
+		}
+
+		// GetContext returns the request Context and
+		// a flag indicating if the parameter has a value.
+		func (r *{{ $requestName }}) GetContext() (value context.Context, ok bool) {
+			ok = r != nil && r.ctx != nil
+			if ok {
+				value = r.ctx
+			}
+			return
 		}
 
 		{{ range $requestParameters }}
