@@ -14,6 +14,11 @@
 # limitations under the License.
 #
 
+# Details of the version of 'antlr' to use:
+antlr_version:=4.7.2
+antlr_url:=https://www.antlr.org/download/antlr-$(antlr_version)-complete.jar
+antlr_sum:=6852386d7975eff29171dae002cc223251510d35f291ae277948f381a7b380b4
+
 # Directory containing the model:
 model:=/files/projects/ocm-api-model/model
 
@@ -33,9 +38,8 @@ generate: antlr
 		*.g4
 
 antlr:
-	wget \
-		--output-document=$@ \
-		https://www.antlr.org/download/antlr-4.7.2-complete.jar
+	wget --output-document="$@" "$(antlr_url)"
+	echo "$(antlr_sum) $@" | sha256sum --check
 
 .PHONY: fmt
 fmt:
