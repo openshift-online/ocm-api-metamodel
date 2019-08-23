@@ -39,12 +39,32 @@ func ParseUsingSeparator(text string, separator string) *Name {
 // ParseUsingCase separates the given text into words, using the case transitions as separators, and
 // creates a new name containing those words.
 func ParseUsingCase(text string) *Name {
+	// Convert the text to an array of runes so that we can easily access the previous, current
+	// and next runes:
+	var runes []rune
+	for _, r := range text {
+		runes = append(runes, r)
+	}
+
+	// Iterate the runes looking for case transitions and storing the words:
 	buffer := new(bytes.Buffer)
 	var words []*Word
-	var previous rune
-	for _, current := range text {
-		if unicode.IsUpper(current) {
-			if previous != 0 && unicode.IsLower(previous) {
+	size := len(runes)
+	for i := 0; i < size; i++ {
+		var previous rune
+		if i > 0 {
+			previous = runes[i-1]
+		}
+		current := runes[i]
+		var next rune
+		if i < size-1 {
+			next = runes[i+1]
+		}
+		currentUpper := unicode.IsUpper(current)
+		previousLower := unicode.IsLower(previous)
+		nextLower := unicode.IsLower(next)
+		if currentUpper && (previousLower || nextLower) {
+			if buffer.Len() > 0 {
 				chunk := buffer.String()
 				word := NewWord(chunk)
 				words = append(words, word)
@@ -52,12 +72,13 @@ func ParseUsingCase(text string) *Name {
 			}
 		}
 		buffer.WriteRune(current)
-		previous = current
 	}
 	if buffer.Len() > 0 {
 		chunk := buffer.String()
 		word := NewWord(chunk)
 		words = append(words, word)
 	}
+
+	// Create the name from the stored words:
 	return NewName(words...)
 }
