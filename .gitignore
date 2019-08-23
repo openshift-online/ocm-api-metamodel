@@ -3,6 +3,7 @@
 /.idea/
 /.vscode/
 /antlr
+/model/
 /ocm-*-tool
 /tests/api/
 /tests/docs/
