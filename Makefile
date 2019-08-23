@@ -45,14 +45,21 @@ fmt:
 		./tests \
 		$(NULL)
 
-.PHONY: test
-test: cmds
+.PHONY: tests
+tests: unit_tests model_tests
+
+.PHONY: unit_tests
+unit_tests:
+	ginkgo -r pkg
+
+.PHONY: model_tests
+model_tests: cmds
 	./ocm-metamodel-tool generate \
 		--model=$(model) \
 		--base=gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api \
 		--output=tests/api \
 		--docs=tests/docs
-	ginkgo -mod=readonly tests
+	ginkgo -r tests
 
 .PHONY: clean
 clean:

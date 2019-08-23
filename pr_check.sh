@@ -29,5 +29,5 @@ go get github.com/onsi/ginkgo/ginkgo
 # Run the checks:
 make \
   cmds \
-  test \
+  tests \
   lint
