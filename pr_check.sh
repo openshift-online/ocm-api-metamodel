@@ -26,8 +26,5 @@ export PATH="${GOBIN}:${PATH}"
 # Install Go tools:
 go get github.com/onsi/ginkgo/ginkgo
 
-# Run the checks:
-make \
-  cmds \
-  tests \
-  lint
+# Run the tests:
+make tests
