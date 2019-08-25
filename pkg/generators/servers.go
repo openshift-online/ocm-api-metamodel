@@ -286,16 +286,16 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 				{{ $locatorURLSegment := urlSegment .Name }}
 
 				{{ if .Variable }}
-					adapter.router.PathPrefix("/{id}/").HandlerFunc(adapter.{{ $locatorHandlerName }})
+					adapter.router.PathPrefix("/{id}").HandlerFunc(adapter.{{ $locatorHandlerName }})
 				{{ else }}
-					adapter.router.PathPrefix("/{{ $locatorURLSegment }}/").HandlerFunc(adapter.{{ $locatorHandlerName }})
+					adapter.router.PathPrefix("/{{ $locatorURLSegment }}").HandlerFunc(adapter.{{ $locatorHandlerName }})
 				{{ end }}
 			{{ end }}
 
 			{{ range .Resource.Methods }}
 				{{ $httpMethod := mapMethodNameToHTTPMethod .Name }}
 				
-				adapter.router.HandleFunc("/", adapter.{{ .Name }}Handler).Methods("{{ $httpMethod  }}")
+				adapter.router.Methods("{{ $httpMethod  }}").HandlerFunc(adapter.{{ .Name }}Handler)
 			{{ end }}
 			return adapter
 		}
@@ -311,12 +311,12 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 				{{ if .Variable }}
 					id := mux.Vars(r)["id"]
 					target := a.server.{{ $locatorName }}(id)
-					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{id}/").Subrouter())
+					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{id}").Subrouter())
 					targetAdapter.ServeHTTP(w,r)
 					return
 				{{ else }}
 					target := a.server.{{ $locatorName }}()
-					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{{ $locatorURLSegment }}/").Subrouter())
+					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{{ $locatorURLSegment }}").Subrouter())
 					targetAdapter.ServeHTTP(w,r)
 					return 
 				{{ end }}
