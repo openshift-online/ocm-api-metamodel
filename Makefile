@@ -27,7 +27,6 @@ model_url:=https://github.com/openshift-online/ocm-api-model.git
 cmds: generate
 	for cmd in $$(ls cmd); do \
 		go build -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
-		cp "$${cmd}" "$${HOME}/bin/."; \
 	done
 
 .PHONY: generate
