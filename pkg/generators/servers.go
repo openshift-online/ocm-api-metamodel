@@ -295,7 +295,7 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			{{ range .Resource.Methods }}
 				{{ $httpMethod := mapMethodNameToHTTPMethod .Name }}
 				
-				adapter.router.Methods("{{ $httpMethod  }}").HandlerFunc(adapter.{{ .Name }}Handler)
+				adapter.router.Methods("{{ $httpMethod  }}").Path("").HandlerFunc(adapter.{{ .Name }}Handler)
 			{{ end }}
 			return adapter
 		}

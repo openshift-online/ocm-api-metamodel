@@ -152,17 +152,6 @@ var _ = Describe("Server", func() {
 		myTestRootServer := new(MyTestRootServer)
 		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
 
-		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		Expect(recorder.Result().StatusCode).To(Equal(200))
-	})
-
-	It("Can receive a request and return response for routes without trailing slash", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
-
 		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
@@ -170,11 +159,33 @@ var _ = Describe("Server", func() {
 		Expect(recorder.Result().StatusCode).To(Equal(200))
 	})
 
-	It("Can get a list of clusters", func() {
+	It("Returns a 404 for a path with a trailing slash", func() {
 		myTestRootServer := new(MyTestRootServer)
 		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		Expect(recorder.Result().StatusCode).To(Equal(404))
+	})
+
+	It("Returns a 404 for an unkown resource", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/foo", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		Expect(recorder.Result().StatusCode).To(Equal(404))
+	})
+
+	It("Can get a list of clusters", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
@@ -193,23 +204,6 @@ var _ = Describe("Server", func() {
 		myTestRootServer := new(MyTestRootServer)
 		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
 
-		request := httptest.NewRequest(http.MethodGet, "/clusters/123/", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"kind":"Cluster",
-			"name":"test-get-cluster-by-id"
-			}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
-	})
-
-	It("Can get a cluster by id without a trailing slash", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
-
 		request := httptest.NewRequest(http.MethodGet, "/clusters/123", nil)
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
@@ -223,7 +217,7 @@ var _ = Describe("Server", func() {
 		Expect(recorder.Result().StatusCode).To(Equal(200))
 	})
 
-	It("Can get a cluster sub resource by id without a trailing slash", func() {
+	It("Can get a cluster sub resource by id", func() {
 		myTestRootServer := new(MyTestRootServer)
 		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
 
@@ -240,5 +234,16 @@ var _ = Describe("Server", func() {
 
 		Expect(recorder.Body).To(MatchJSON(expected))
 		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Returns a 404 for an unkown sub resource", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters/123/foo", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		Expect(recorder.Result().StatusCode).To(Equal(404))
 	})
 })
