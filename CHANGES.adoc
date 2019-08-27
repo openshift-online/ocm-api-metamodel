@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.2 Aug 27 2019
+
+- Added new `check` command that loads and checks the model but doesn't
+  generate any code.
+
 == 0.0.1 Aug 23 2019
 
 - Initial release.
