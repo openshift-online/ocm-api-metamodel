@@ -22,8 +22,8 @@ package language
 import (
 	"fmt"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/concepts"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // Writer is used to write a model to a set of files. Don't create objects of this type directly,

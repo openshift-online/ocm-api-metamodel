@@ -26,7 +26,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // BufferBuilder is used to create a new Asciidoc buffer. Don't create it directly, use the

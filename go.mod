@@ -1,4 +1,4 @@
-module gitlab.cee.redhat.com/service/ocm-api-metamodel
+module github.com/openshift-online/ocm-api-metamodel
 
 go 1.12
 

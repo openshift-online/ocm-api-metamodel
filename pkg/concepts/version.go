@@ -17,8 +17,8 @@ limitations under the License.
 package concepts
 
 import (
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
 // Version is the representation of a version of a service.

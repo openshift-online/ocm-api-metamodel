@@ -23,8 +23,8 @@ options {
 
 @header {
   import (
-    "gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/concepts"
-    "gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
+    "github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+    "github.com/openshift-online/ocm-api-metamodel/pkg/names"
   )
 }
 

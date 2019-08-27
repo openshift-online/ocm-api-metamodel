@@ -17,7 +17,7 @@ limitations under the License.
 package nomenclator
 
 import (
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 var (

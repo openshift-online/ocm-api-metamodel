@@ -21,10 +21,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/generators"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/golang"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/language"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/generators"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/language"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // Cmd is the dt definition of the command:
