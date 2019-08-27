@@ -347,6 +347,7 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 
 
 			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(r.status)
 				{{ if $responseParameters }}
 					err := r.marshal(w)
