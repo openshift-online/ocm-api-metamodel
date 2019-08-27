@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/cmd/ocm-metamodel-tool/generate"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/cmd/ocm-metamodel-tool/version"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/ocm-metamodel-tool/generate"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/ocm-metamodel-tool/version"
 )
 
 // Root command:

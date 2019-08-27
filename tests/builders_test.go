@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Builder", func() {

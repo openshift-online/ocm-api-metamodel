@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // NamesCalculatorBuilder is an object used to configure and build the Asciidoc names calculators.

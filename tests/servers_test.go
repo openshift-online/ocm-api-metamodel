@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gorilla/mux"
-	v1 "gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	v1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 type MyTestRootServer struct{}

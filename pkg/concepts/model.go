@@ -17,7 +17,7 @@ limitations under the License.
 package concepts
 
 import (
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // Model is the representation of the set of services, each with a set of versions.

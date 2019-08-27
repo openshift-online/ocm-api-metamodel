@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"path"
 
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/concepts"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/golang"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/nomenclator"
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // ClientsGeneratorBuilder is an object used to configure and build a client generator. Don't create

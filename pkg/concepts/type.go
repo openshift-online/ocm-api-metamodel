@@ -17,7 +17,7 @@ limitations under the License.
 package concepts
 
 import (
-	"gitlab.cee.redhat.com/service/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // TypeKind specifies the kind of a type. It can be scalar, enum, struct, list or class.

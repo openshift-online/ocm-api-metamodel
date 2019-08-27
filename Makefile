@@ -21,7 +21,7 @@ antlr_sum:=6852386d7975eff29171dae002cc223251510d35f291ae277948f381a7b380b4
 
 # Details of the model to use:
 model_version:=v0.0.1
-model_url:=https://gitlab.cee.redhat.com/service/ocm-api-model.git
+model_url:=https://github.com/openshift-online/ocm-api-model.git
 
 .PHONY: cmds
 cmds: generate
@@ -61,7 +61,7 @@ unit_tests:
 model_tests: cmds model
 	./ocm-metamodel-tool generate \
 		--model=model/model \
-		--base=gitlab.cee.redhat.com/service/ocm-api-metamodel/tests/api \
+		--base=github.com/openshift-online/ocm-api-metamodel/tests/api \
 		--output=tests/api \
 		--docs=tests/docs
 	ginkgo -r tests
