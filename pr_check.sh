@@ -25,6 +25,7 @@ export PATH="${GOBIN}:${PATH}"
 
 # Install Go tools:
 go get github.com/onsi/ginkgo/ginkgo
+go get golang.org/x/tools/cmd/goimports
 
 # Run the tests:
 make tests
