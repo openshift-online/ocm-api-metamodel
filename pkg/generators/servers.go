@@ -266,7 +266,10 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 }
 
 func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resource) {
+	g.buffer.Import("fmt", "")
+	g.buffer.Import("net/http", "")
 	g.buffer.Import("github.com/gorilla/mux", "")
+	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
 	g.buffer.Emit(`
 		{{ $adapterName := adapterName .Resource }}
 		{{ $serverName := serverName .Resource }}
@@ -413,14 +416,8 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 }
 
 func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
-	g.buffer.Import("bytes", "")
-	g.buffer.Import("context", "")
 	g.buffer.Import("encoding/json", "")
-	g.buffer.Import("fmt", "")
-	g.buffer.Import("io/ioutil", "")
-	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import("io", "")
 	g.buffer.Emit(`
 		{{ $requestName := requestName .Method }}
 		{{ $requestData := requestData .Method }}
@@ -533,7 +530,6 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 
 func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
-	g.buffer.Import("net/http", "")
 	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
