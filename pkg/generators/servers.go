@@ -337,18 +337,17 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				var err error
 				result := new({{ $requestName }})
-				result.query = r.URL.Query()
-				result.path = r.URL.Path
-
-				{{ range  $requestQueryParameters }}
-					{{ $readerName := readerName .Type }}
-					{{ $parameterName := parameterName . }}
-					result.{{ $parameterName }}, err = helpers.{{ $readerName }}(result.query, "{{ $parameterName }}")
-					if err != nil {
-						return nil, err
-					}
+				{{ if $requestQueryParameters }}
+					query := r.URL.Query()
+					{{ range  $requestQueryParameters }}
+						{{ $readerName := readerName .Type }}
+						{{ $parameterName := parameterName . }}
+						result.{{ $parameterName }}, err = helpers.{{ $readerName }}(query, "{{ $parameterName }}")
+						if err != nil {
+							return nil, err
+						}
+					{{ end }}
 				{{ end }}
-
 				{{ if $requestBodyParameters }}
 					err = result.unmarshal(r.Body)
 					if err != nil {
@@ -420,7 +419,6 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import("net/url", "")
 	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
 	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
 	g.buffer.Emit(`
@@ -432,8 +430,6 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 
 		// {{ $requestName }} is the request for the '{{ .Method.Name }}' method.
 		type {{ $requestName }} struct {
-			path      string
-			query     url.Values
 			{{ range $requestParameters }}
 				{{ fieldName . }} {{ fieldType . }}
 			{{ end }}
