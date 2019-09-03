@@ -188,20 +188,20 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
-		Function("locatorName", g.locatorName).
 		Function("locatorHandlerName", g.locatorHandlerName).
+		Function("locatorName", g.locatorName).
 		Function("mapMethodNameToHTTPMethod", g.mapMethodNameToHTTPMethod).
 		Function("methodName", g.methodName).
-		Function("parameterName", g.parameterName).
+		Function("queryParameterName", g.queryParameterName).
 		Function("readerName", g.readerName).
-		Function("requestName", g.requestName).
-		Function("responseName", g.responseName).
-		Function("requestData", g.requestData).
-		Function("responseData", g.responseData).
-		Function("requestParameters", g.requestParameters).
 		Function("requestBodyParameters", g.requestBodyParameters).
+		Function("requestData", g.requestData).
+		Function("requestName", g.requestName).
+		Function("requestParameters", g.requestParameters).
 		Function("requestQueryParameters", g.requestQueryParameters).
 		Function("responseBodyParameters", g.responseBodyParameters).
+		Function("responseData", g.responseData).
+		Function("responseName", g.responseName).
 		Function("responseParameters", g.responseParameters).
 		Function("serverName", g.serverName).
 		Function("setterName", g.setterName).
@@ -343,9 +343,10 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 				{{ if $requestQueryParameters }}
 					query := r.URL.Query()
 					{{ range  $requestQueryParameters }}
+						{{ $fieldName := fieldName . }}
+						{{ $queryParameterName := queryParameterName . }}
 						{{ $readerName := readerName .Type }}
-						{{ $parameterName := parameterName . }}
-						result.{{ $parameterName }}, err = helpers.{{ $readerName }}(query, "{{ $parameterName }}")
+						result.{{ $fieldName }}, err = helpers.{{ $readerName }}(query, "{{ $queryParameterName }}")
 						if err != nil {
 							return nil, err
 						}
@@ -740,7 +741,7 @@ func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ServersGenerator) parameterName(parameter *concepts.Parameter) string {
+func (g *ServersGenerator) queryParameterName(parameter *concepts.Parameter) string {
 	return g.names.Tag(parameter.Name())
 }
 
