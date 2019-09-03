@@ -179,33 +179,35 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Base(g.base).
 		Package(pkgName).
 		File(fileName).
-		Function("methodName", g.methodName).
-		Function("serverName", g.serverName).
-		Function("locatorName", g.locatorName).
 		Function("adapterName", g.adapterName).
-		Function("urlSegment", g.urlSegment).
-		Function("fieldName", g.fieldName).
-		Function("fieldType", g.fieldType).
-		Function("fieldTag", g.fieldTag).
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
+		Function("dataStruct", g.dataStruct).
+		Function("fieldName", g.fieldName).
+		Function("fieldTag", g.fieldTag).
+		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
-		Function("dataStruct", g.dataStruct).
+		Function("locatorName", g.locatorName).
+		Function("locatorHandlerName", g.locatorHandlerName).
+		Function("mapMethodNameToHTTPMethod", g.mapMethodNameToHTTPMethod).
+		Function("methodName", g.methodName).
+		Function("parameterName", g.parameterName).
+		Function("readerName", g.readerName).
 		Function("requestName", g.requestName).
 		Function("responseName", g.responseName).
-		Function("methodName", g.methodName).
 		Function("requestData", g.requestData).
 		Function("responseData", g.responseData).
 		Function("requestParameters", g.requestParameters).
 		Function("requestBodyParameters", g.requestBodyParameters).
+		Function("requestQueryParameters", g.requestQueryParameters).
 		Function("responseBodyParameters", g.responseBodyParameters).
 		Function("responseParameters", g.responseParameters).
+		Function("serverName", g.serverName).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
+		Function("urlSegment", g.urlSegment).
 		Function("zeroValue", g.types.ZeroValue).
-		Function("mapMethodNameToHTTPMethod", g.mapMethodNameToHTTPMethod).
-		Function("locatorHandlerName", g.locatorHandlerName).
 		Build()
 	if err != nil {
 		return err
@@ -330,19 +332,30 @@ func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resour
 			{{ $requestBodyParameters := requestBodyParameters . }}
 			{{ $requestBodyLen := len $requestBodyParameters }}
 			{{ $responseParameters := responseParameters . }}
+			{{ $requestQueryParameters := requestQueryParameters . }}
 	
 			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
+				var err error
 				result := new({{ $requestName }})
-				result.query = r.Form
+				result.query = r.URL.Query()
 				result.path = r.URL.Path
 
-				{{ if $requestBodyParameters }}
-					err := result.unmarshal(r.Body)
+				{{ range  $requestQueryParameters }}
+					{{ $readerName := readerName .Type }}
+					{{ $parameterName := parameterName . }}
+					result.{{ $parameterName }}, err = helpers.{{ $readerName }}(result.query, "{{ $parameterName }}")
 					if err != nil {
 						return nil, err
 					}
 				{{ end }}
-				return result, nil
+
+				{{ if $requestBodyParameters }}
+					err = result.unmarshal(r.Body)
+					if err != nil {
+						return nil, err
+					}
+				{{ end }}
+				return result, err
 			}
 
 
@@ -674,6 +687,16 @@ func (g *ServersGenerator) requestBodyParameters(method *concepts.Method) []*con
 	return result
 }
 
+func (g *ServersGenerator) requestQueryParameters(method *concepts.Method) []*concepts.Parameter {
+	result := make([]*concepts.Parameter, 0)
+	for _, parameter := range method.Parameters() {
+		if parameter.In() && parameter.Type().IsScalar() {
+			result = append(result, parameter)
+		}
+	}
+	return result
+}
+
 func (g *ServersGenerator) requestParameters(method *concepts.Method) []*concepts.Parameter {
 	result := make([]*concepts.Parameter, 0)
 	for _, parameter := range method.Parameters() {
@@ -723,6 +746,10 @@ func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
 	name := g.names.Private(parameter.Name())
 	name = g.avoidBuiltin(name, builtinFields)
 	return name
+}
+
+func (g *ServersGenerator) parameterName(parameter *concepts.Parameter) string {
+	return g.names.Tag(parameter.Name())
 }
 
 func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
@@ -807,5 +834,25 @@ func (g *ServersGenerator) mapMethodNameToHTTPMethod(name *names.Name) string {
 		return http.MethodDelete
 	default:
 		return http.MethodGet
+	}
+}
+
+func (g *ServersGenerator) readerName(typ *concepts.Type) string {
+	// see helpers.go file where the following methods are defined.
+	version := typ.Owner()
+	switch typ {
+	case version.Integer():
+		return "ParseInteger"
+	case version.Float():
+		return "ParseFloat"
+	case version.String():
+		return "ParseString"
+	case version.Date():
+		return "ParseDate"
+	case version.Boolean():
+		return "ParseBoolean"
+	default:
+		g.reporter.Errorf("We do not know how to handle type %v", typ.Name().String())
+		return ""
 	}
 }

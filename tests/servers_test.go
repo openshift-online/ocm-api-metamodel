@@ -62,9 +62,9 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *v1.ClustersLis
 	response.SetStatusCode(200)
 	// Set body of response
 	response.Items(items)
-	response.Page(1)
-	response.Size(1)
-	response.Total(1)
+	response.Page(request.Page())
+	response.Size(request.Size())
+	response.Total(items.Len())
 	return nil
 }
 
@@ -190,8 +190,65 @@ var _ = Describe("Server", func() {
 		rootAdapter.ServeHTTP(recorder, request)
 
 		expected := `{
+			"page":0,
+			"size":0,
+			"total":1,
+			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
+			}`
+
+		Expect(recorder.Body).To(MatchJSON(expected))
+		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Can get a list of clusters by page", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters?page=2", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		expected := `{
+			"page":2,
+			"size":0,
+			"total":1,
+			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
+			}`
+
+		Expect(recorder.Body).To(MatchJSON(expected))
+		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Can get a list of clusters by size", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		expected := `{
+			"page":0,
+			"size":2,
+			"total":1,
+			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
+			}`
+
+		Expect(recorder.Body).To(MatchJSON(expected))
+		Expect(recorder.Result().StatusCode).To(Equal(200))
+	})
+
+	It("Can get a list of clusters by size and page", func() {
+		myTestRootServer := new(MyTestRootServer)
+		rootAdapter := v1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+
+		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2&page=1", nil)
+		recorder := httptest.NewRecorder()
+		rootAdapter.ServeHTTP(recorder, request)
+
+		expected := `{
 			"page":1,
-			"size":1,
+			"size":2,
 			"total":1,
 			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
 			}`
