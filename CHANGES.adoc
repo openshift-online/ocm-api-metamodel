@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.5 Sep 10 2019
+
+- Fix generation of field names for query parameters.
+- Remove `query` and `path` fields from request objects.
+- Remove unused imports.
+
 == 0.0.4 Sep 03 2019
 
 - Generated servers parse request query arguments.
