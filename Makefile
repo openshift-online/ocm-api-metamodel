@@ -23,6 +23,11 @@ antlr_sum:=6852386d7975eff29171dae002cc223251510d35f291ae277948f381a7b380b4
 model_version:=v0.0.1
 model_url:=https://github.com/openshift-online/ocm-api-model.git
 
+# Explicitly enable Go modules so that compilation will work correctly even when
+# the project directory is inside the directory indicated by the 'GOPATH'
+# environment variable:
+export GO111MODULE=on
+
 .PHONY: cmds
 cmds: generate
 	for cmd in $$(ls cmd); do \
