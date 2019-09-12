@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.6 Sep 12 2019
+
+- Explicitly enable Go modules so that the build works correctly when the
+  project is located inside the Go path.
+
 == 0.0.5 Sep 10 2019
 
 - Fix generation of field names for query parameters.
