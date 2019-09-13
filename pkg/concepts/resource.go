@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -25,8 +27,8 @@ type Resource struct {
 	owner    *Version
 	doc      string
 	name     *names.Name
-	methods  []*Method
-	locators []*Locator
+	methods  MethodSlice
+	locators LocatorSlice
 }
 
 // NewResource creates a new resource.
@@ -65,7 +67,7 @@ func (r *Resource) SetName(value *names.Name) {
 }
 
 // Methods returns the methods of the resource.
-func (r *Resource) Methods() []*Method {
+func (r *Resource) Methods() MethodSlice {
 	return r.methods
 }
 
@@ -73,12 +75,13 @@ func (r *Resource) Methods() []*Method {
 func (r *Resource) AddMethod(method *Method) {
 	if method != nil {
 		r.methods = append(r.methods, method)
+		sort.Sort(r.methods)
 		method.SetOwner(r)
 	}
 }
 
 // Locators returns the locators of the resource.
-func (r *Resource) Locators() []*Locator {
+func (r *Resource) Locators() LocatorSlice {
 	return r.locators
 }
 
@@ -86,6 +89,22 @@ func (r *Resource) Locators() []*Locator {
 func (r *Resource) AddLocator(locator *Locator) {
 	if locator != nil {
 		r.locators = append(r.locators, locator)
+		sort.Sort(r.locators)
 		locator.SetOwner(r)
 	}
+}
+
+// ResourceSlice is used to simplify sorting of slices of resources by name.
+type ResourceSlice []*Resource
+
+func (s ResourceSlice) Len() int {
+	return len(s)
+}
+
+func (s ResourceSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s ResourceSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

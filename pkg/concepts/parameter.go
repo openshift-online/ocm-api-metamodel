@@ -94,3 +94,18 @@ func (p *Parameter) Out() bool {
 func (p *Parameter) SetOut(value bool) {
 	p.out = value
 }
+
+// ParameterSlice is used to simplify sorting of slices of attributes by name.
+type ParameterSlice []*Parameter
+
+func (s ParameterSlice) Len() int {
+	return len(s)
+}
+
+func (s ParameterSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s ParameterSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}

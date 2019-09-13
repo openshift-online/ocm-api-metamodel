@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
@@ -79,14 +81,15 @@ func (v *Version) SetName(value *names.Name) {
 }
 
 // Types returns the list of types that are part of this version.
-func (v *Version) Types() []*Type {
+func (v *Version) Types() TypeSlice {
 	count := len(v.types)
-	types := make([]*Type, count)
+	types := make(TypeSlice, count)
 	index := 0
 	for _, typ := range v.types {
 		types[index] = typ
 		index++
 	}
+	sort.Sort(types)
 	return types
 }
 
@@ -144,14 +147,15 @@ func (v *Version) Date() *Type {
 }
 
 // Resources returns the list of resources that are part of this version.
-func (v *Version) Resources() []*Resource {
+func (v *Version) Resources() ResourceSlice {
 	count := len(v.resources)
-	resources := make([]*Resource, count)
+	resources := make(ResourceSlice, count)
 	index := 0
 	for _, resource := range v.resources {
 		resources[index] = resource
 		index++
 	}
+	sort.Sort(resources)
 	return resources
 }
 
@@ -184,14 +188,15 @@ func (v *Version) Root() *Resource {
 }
 
 // Errors returns the list of errors that are part of this version.
-func (v *Version) Errors() []*Error {
+func (v *Version) Errors() ErrorSlice {
 	count := len(v.errors)
-	errors := make([]*Error, count)
+	errors := make(ErrorSlice, count)
 	index := 0
 	for _, err := range v.errors {
 		errors[index] = err
 		index++
 	}
+	sort.Sort(errors)
 	return errors
 }
 
@@ -231,4 +236,19 @@ func (v *Version) addScalarType(name *names.Name) {
 	listType.SetName(names.Cat(name, nomenclator.List))
 	listType.SetElement(scalarType)
 	v.AddType(listType)
+}
+
+// VersionSlice is used to simplify sorting of slices of versions by name.
+type VersionSlice []*Version
+
+func (s VersionSlice) Len() int {
+	return len(s)
+}
+
+func (s VersionSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s VersionSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

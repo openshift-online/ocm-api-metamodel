@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -34,14 +36,15 @@ func NewModel() *Model {
 }
 
 // Services returns the list of services that are part of this model.
-func (m *Model) Services() []*Service {
+func (m *Model) Services() ServiceSlice {
 	count := len(m.services)
-	services := make([]*Service, count)
+	services := make(ServiceSlice, count)
 	index := 0
 	for _, service := range m.services {
 		services[index] = service
 		index++
 	}
+	sort.Sort(services)
 	return services
 }
 

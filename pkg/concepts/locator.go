@@ -86,3 +86,18 @@ func (l *Locator) Target() *Resource {
 func (l *Locator) SetTarget(value *Resource) {
 	l.target = value
 }
+
+// LocatorSlice is used to simplify sorting of slices of locators by name.
+type LocatorSlice []*Locator
+
+func (s LocatorSlice) Len() int {
+	return len(s)
+}
+
+func (s LocatorSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s LocatorSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
