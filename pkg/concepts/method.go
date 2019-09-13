@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -25,7 +27,7 @@ type Method struct {
 	owner      *Resource
 	doc        string
 	name       *names.Name
-	parameters []*Parameter
+	parameters ParameterSlice
 }
 
 // NewMethod creates a new method.
@@ -64,7 +66,7 @@ func (m *Method) SetName(value *names.Name) {
 }
 
 // Parameters returns the parameters of the method.
-func (m *Method) Parameters() []*Parameter {
+func (m *Method) Parameters() ParameterSlice {
 	return m.parameters
 }
 
@@ -72,6 +74,7 @@ func (m *Method) Parameters() []*Parameter {
 func (m *Method) AddParameter(parameter *Parameter) {
 	if parameter != nil {
 		m.parameters = append(m.parameters, parameter)
+		sort.Sort(m.parameters)
 		parameter.SetOwner(m)
 	}
 }
@@ -88,4 +91,19 @@ func (m *Method) GetParameter(name *names.Name) *Parameter {
 		}
 	}
 	return nil
+}
+
+// MethodSlice is used to simplify sorting of slices of methods by name.
+type MethodSlice []*Method
+
+func (s MethodSlice) Len() int {
+	return len(s)
+}
+
+func (s MethodSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s MethodSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

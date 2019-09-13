@@ -72,3 +72,18 @@ func (e *Error) Code() int {
 func (e *Error) SetCode(value int) {
 	e.code = value
 }
+
+// ErrorSlice is used to simplify sorting of slices of errors by name.
+type ErrorSlice []*Error
+
+func (s ErrorSlice) Len() int {
+	return len(s)
+}
+
+func (s ErrorSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s ErrorSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}

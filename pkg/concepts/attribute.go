@@ -83,3 +83,18 @@ func (a *Attribute) Type() *Type {
 func (a *Attribute) SetType(value *Type) {
 	a.typ = value
 }
+
+// AttributeSlice is used to simplify sorting of slices of attributes by name.
+type AttributeSlice []*Attribute
+
+func (s AttributeSlice) Len() int {
+	return len(s)
+}
+
+func (s AttributeSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s AttributeSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}

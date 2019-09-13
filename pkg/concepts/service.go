@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -61,14 +63,15 @@ func (s *Service) SetName(value *names.Name) {
 }
 
 // Versions returns the list of versions of the service.
-func (s *Service) Versions() []*Version {
+func (s *Service) Versions() VersionSlice {
 	count := len(s.versions)
-	versions := make([]*Version, count)
+	versions := make(VersionSlice, count)
 	index := 0
 	for _, version := range s.versions {
 		versions[index] = version
 		index++
 	}
+	sort.Sort(versions)
 	return versions
 }
 
@@ -95,4 +98,19 @@ func (s *Service) AddVersions(versions []*Version) {
 			s.AddVersion(version)
 		}
 	}
+}
+
+// ServiceSlice is used to simplify sorting of slices of services by name.
+type ServiceSlice []*Service
+
+func (s ServiceSlice) Len() int {
+	return len(s)
+}
+
+func (s ServiceSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s ServiceSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

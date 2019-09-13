@@ -17,6 +17,8 @@ limitations under the License.
 package concepts
 
 import (
+	"sort"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -67,8 +69,8 @@ type Type struct {
 	doc        string
 	kind       TypeKind
 	name       *names.Name
-	attributes []*Attribute
-	values     []*EnumValue
+	attributes AttributeSlice
+	values     EnumValueSlice
 	element    *Type
 	index      *Type
 }
@@ -146,7 +148,7 @@ func (t *Type) SetName(value *names.Name) {
 
 // Attributes returns the list of attributes of an struct type. If called for any other kind of type
 // it will return nil.
-func (t *Type) Attributes() []*Attribute {
+func (t *Type) Attributes() AttributeSlice {
 	return t.attributes
 }
 
@@ -154,13 +156,14 @@ func (t *Type) Attributes() []*Attribute {
 func (t *Type) AddAttribute(attribute *Attribute) {
 	if attribute != nil {
 		t.attributes = append(t.attributes, attribute)
+		sort.Sort(t.attributes)
 		attribute.SetOwner(t)
 	}
 }
 
 // Values returns the list of values of an enumerated type. If called for any other kind of type it
 // will return nil.
-func (t *Type) Values() []*EnumValue {
+func (t *Type) Values() EnumValueSlice {
 	return t.values
 }
 
@@ -168,6 +171,7 @@ func (t *Type) Values() []*EnumValue {
 func (t *Type) AddValue(value *EnumValue) {
 	if value != nil {
 		t.values = append(t.values, value)
+		sort.Sort(t.values)
 		value.SetType(t)
 	}
 }
@@ -183,7 +187,7 @@ func (t *Type) SetElement(value *Type) {
 	t.element = value
 }
 
-// Index returns the index type for a list tpype. If called for any other kind of type it will
+// Index returns the index type for a list type. If called for any other kind of type it will
 // return nil.
 func (t *Type) Index() *Type {
 	return t.index
@@ -192,6 +196,21 @@ func (t *Type) Index() *Type {
 // SetIndex sets the index type for a map type.
 func (t *Type) SetIndex(value *Type) {
 	t.index = value
+}
+
+// TypeSlice is used to simplify sorting of slices of types by name.
+type TypeSlice []*Type
+
+func (s TypeSlice) Len() int {
+	return len(s)
+}
+
+func (s TypeSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s TypeSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 // EnumValue represents each of the values of an enum type.
@@ -234,4 +253,19 @@ func (v *EnumValue) Name() *names.Name {
 // SetName sets the name of this enum value.
 func (v *EnumValue) SetName(value *names.Name) {
 	v.name = value
+}
+
+// EnumValueSlice is used to simplify sorting of slices of enum values by name.
+type EnumValueSlice []*EnumValue
+
+func (s EnumValueSlice) Len() int {
+	return len(s)
+}
+
+func (s EnumValueSlice) Less(i, j int) bool {
+	return names.Compare(s[i].name, s[j].name) == -1
+}
+
+func (s EnumValueSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
