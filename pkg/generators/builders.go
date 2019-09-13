@@ -295,6 +295,50 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ end }}
 		{{ end }}
 
+		// Copy copies the attributes of the given object into this builder, discarding any previous values.
+		func (b *{{ $builderName }}) Copy(object *{{ $objectName }}) *{{ $builderName }} {
+			if object == nil {
+				return b
+			}
+			{{ if .Type.IsClass }}
+				b.id = object.id
+				b.href = object.href
+				b.link = object.link
+			{{ end }}
+			{{ range .Type.Attributes }}
+				{{ $fieldName := fieldName . }}
+				{{ $fieldType := fieldType . }}
+				{{ if .Type.IsStruct }}
+					if object.{{ $fieldName }} != nil {
+						b.{{ $fieldName }} = {{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
+					} else {
+						b.{{ $fieldName }} = nil
+					}
+				{{ else if .Type.IsList }}
+					{{ if .Type.Element.IsScalar }}
+						if len(object.{{ $fieldName }}) > 0 {
+							b.{{ $fieldName }} = make({{ $fieldType }}, len(object.{{ $fieldName }}))
+							copy(b.{{ $fieldName }}, object.{{ $fieldName }})
+						} else {
+							b.{{ $fieldName }} = nil
+						}
+					{{ else if .Type.Element.IsStruct }}
+						if object.{{ $fieldName }} != nil && len(object.{{ $fieldName }}.items) > 0 {
+							b.{{ $fieldName }} = make([]*{{ builderName .Type.Element }}, len(object.{{ $fieldName }}.items))
+							for i, item := range object.{{ $fieldName }}.items {
+								b.{{ $fieldName }}[i] = {{ builderCtor .Type.Element }}().Copy(item)
+							}
+						} else {
+							b.{{ $fieldName }} = nil
+						}
+					{{ end }}
+				{{ else }}
+					b.{{ $fieldName }} = object.{{ $fieldName }}
+				{{ end }}
+			{{ end }}
+			return b
+		}
+
 		// Build creates a '{{ .Type.Name }}' object using the configuration stored in the builder.
 		func (b *{{ $builderName }}) Build() (object *{{ $objectName }}, err error) {
 			object = new({{ $objectName }})

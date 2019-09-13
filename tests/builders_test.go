@@ -111,4 +111,36 @@ var _ = Describe("Builder", func() {
 		Expect(slice[1]).ToNot(BeNil())
 		Expect(slice[1].ID()).To(Equal("b-group"))
 	})
+
+	Describe("Copy", func() {
+		It("Copies simple attribute", func() {
+			original, err := v1.NewCluster().
+				ID("123").
+				Name("my").
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			replica, err := v1.NewCluster().
+				Copy(original).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(replica.ID()).To(Equal("123"))
+			Expect(replica.Name()).To(Equal("my"))
+		})
+
+		It("Discards existing values", func() {
+			original, err := v1.NewCluster().
+				ID("123").
+				Name("my").
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			replica, err := v1.NewCluster().
+				ID("456").
+				Name("your").
+				Copy(original).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(replica.ID()).To(Equal("123"))
+			Expect(replica.Name()).To(Equal("my"))
+		})
+	})
 })
