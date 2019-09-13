@@ -689,12 +689,14 @@ func (g *ClientsGenerator) generateVersionErrors(version *concepts.Version) erro
 
 func (g *ClientsGenerator) generateVersionErrorsSource(version *concepts.Version) error {
 	g.buffer.Emit(`
-		const (
-			{{ range .Version.Errors }}
-				{{ lineComment .Doc }}
-				{{ errorName . }} = {{ .Code }}
-			{{ end }}
-		)
+		{{ if .Version.Errors }}
+			const (
+				{{ range .Version.Errors }}
+					{{ lineComment .Doc }}
+					{{ errorName . }} = {{ .Code }}
+				{{ end }}
+			)
+		{{ end }}
 		`,
 		"Version", version,
 	)
