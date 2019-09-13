@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.7 Sep 13 2019
+
+- Keep concepts sorted by name.
+- Don't generate empty `const` block for errors.
+- Add `Copy` method to builders.
+
 == 0.0.6 Sep 12 2019
 
 - Explicitly enable Go modules so that the build works correctly when the
