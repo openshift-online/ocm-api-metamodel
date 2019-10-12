@@ -241,7 +241,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 		}
 
 		// ParseInteger reads a string and parses it to integer,
-		// if an error ocurred it returns a non-nil error.
+		// if an error occurred it returns a non-nil error.
 		func ParseInteger(query url.Values, parameterName string) (*int, error) {
 			values := query[parameterName]
 			count := len(values)
@@ -268,7 +268,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 		}
 
 		// ParseFloat reads a string and parses it to float,
-		// if an error ocurred it returns a non-nil error.
+		// if an error occurred it returns a non-nil error.
 		func ParseFloat(query url.Values, parameterName string) (*float64, error) {
 			values := query[parameterName]
 			count := len(values)
@@ -311,7 +311,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 		}
 
 		// ParseBoolean reads a string and parses it to boolean,
-		// if an error ocurred it returns a non-nil error.
+		// if an error occurred it returns a non-nil error.
 		func ParseBoolean(query url.Values, parameterName string) (*bool, error) {
 			values := query[parameterName]
 			count := len(values)
@@ -337,7 +337,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 		}
 
 		// ParseDate reads a string and parses it to a time.Time,
-		// if an error ocurred it returns a non-nil error.
+		// if an error occurred it returns a non-nil error.
 		func ParseDate(query url.Values, parameterName string) (*time.Time, error) {
 			values := query[parameterName]
 			count := len(values)
@@ -387,6 +387,7 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 		Function("fieldTag", g.fieldTag).
 		Function("marshalFunc", g.marshalFunc).
 		Function("objectFieldName", g.objectFieldName).
+		Function("objectFieldType", g.objectFieldType).
 		Function("objectName", g.objectName).
 		Function("unmarshalFunc", g.unmarshalFunc).
 		Function("valueType", g.valueType).
@@ -457,6 +458,7 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 			{{ end }}
 			{{ range .Type.Attributes }}
 				{{ $dataFieldName := dataFieldName . }}
+				{{ $dataFieldType := dataFieldType . }}
 				{{ $objectFieldName := objectFieldName . }}
 				{{ if .Type.IsList }}
 					{{ if .Type.Element.IsScalar }}
@@ -469,6 +471,18 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 						{{ end }}
 						if err != nil {
 							return
+						}
+					{{ end }}
+				{{ else if .Type.IsMap }}
+					{{ if .Type.Element.IsScalar }}
+						data.{{ $dataFieldName }} = o.{{ $objectFieldName }}
+					{{ else if .Type.Element.IsStruct }}
+						data.{{ $dataFieldName }} = make({{ $dataFieldType }})
+						for key, value := range o.{{ $objectFieldName }} {
+							data.{{ $dataFieldName }}[key], err = value.wrap()
+							if err != nil {
+								return
+							}
 						}
 					{{ end }}
 				{{ else if .Type.IsStruct }}
@@ -529,6 +543,7 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 			{{ range .Type.Attributes }}
 				{{ $dataFieldName := dataFieldName . }}
 				{{ $objectFieldName := objectFieldName . }}
+				{{ $objectFieldType := objectFieldType . }}
 				{{ if .Type.IsList }}
 					{{ if .Type.Element.IsScalar }}
 						object.{{ $objectFieldName }} = d.{{ $dataFieldName }}
@@ -540,6 +555,18 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 						{{ end }}
 						if err != nil {
 							return
+						}
+					{{ end }}
+				{{ else if .Type.IsMap }}
+					{{ if .Type.Element.IsScalar }}
+						object.{{ $objectFieldName }} = d.{{ $dataFieldName }}
+					{{ else if .Type.Element.IsStruct }}
+						object.{{ $objectFieldName }} = make({{ $objectFieldType }})
+						for key, value := range d.{{ $dataFieldName }} {
+							object.{{ $objectFieldName }}[key], err = value.unwrap()
+							if err != nil {
+								return
+							}
 						}
 					{{ end }}
 				{{ else if .Type.IsStruct }}
@@ -798,6 +825,10 @@ func (g *ReadersGenerator) fieldTag(attribute *concepts.Attribute) string {
 
 func (g *ReadersGenerator) objectFieldName(attribute *concepts.Attribute) string {
 	return g.names.Private(attribute.Name())
+}
+
+func (g *ReadersGenerator) objectFieldType(attribute *concepts.Attribute) *golang.TypeReference {
+	return g.types.NullableReference(attribute.Type())
 }
 
 func (g *ReadersGenerator) valueType(typ *concepts.Type) *golang.TypeReference {

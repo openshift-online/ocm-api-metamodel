@@ -332,6 +332,26 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 							b.{{ $fieldName }} = nil
 						}
 					{{ end }}
+				{{ else if .Type.IsMap }}
+					{{ if .Type.Element.IsScalar }}
+						if len(object.{{ $fieldName }}) > 0 {
+							b.{{ $fieldName }} = make({{ $fieldType }})
+							for key, value := range object.{{ $fieldName }} {
+								b.{{ $fieldName }}[key] = value
+							}
+						} else {
+							b.{{ $fieldName }} = nil
+						}
+					{{ else if .Type.Element.IsStruct }}
+						if len(object.{{ $fieldName }}) > 0 {
+							b.{{ $fieldName }} = make(map[string]*{{ builderName .Type.Element }})
+							for key, value := range object.{{ $fieldName }} {
+								b.{{ $fieldName }}[key] = {{ builderCtor .Type.Element }}().Copy(value)
+							}
+						} else {
+							b.{{ $fieldName }} = nil
+						}
+					{{ end }}
 				{{ else }}
 					b.{{ $fieldName }} = object.{{ $fieldName }}
 				{{ end }}
@@ -365,6 +385,21 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 							object.{{ $fieldName }}.items = make([]*{{ objectName .Type.Element }}, len(b.{{ $fieldName }}))
 							for i, item := range b.{{ $fieldName }} {
 								object.{{ $fieldName }}.items[i], err = item.Build()
+								if err != nil {
+									return
+								}
+							}
+						{{ end }}
+					{{ else if .Type.IsMap}}
+						{{ if .Type.Element.IsScalar }}
+							object.{{ $fieldName }} = make({{ $fieldType }})
+							for key, value := range b.{{ $fieldName }} {
+								object.{{ $fieldName }}[key] = value
+							}
+						{{ else if .Type.Element.IsStruct }}
+							object.{{ $fieldName }}  = make(map[string]*{{ objectName .Type.Element }})
+							for key, value := range b.{{ $fieldName }} {
+								object.{{ $fieldName }}[key], err = value.Build()
 								if err != nil {
 									return
 								}
@@ -560,7 +595,14 @@ func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *golang.Ty
 		if element.IsScalar() {
 			return g.types.ValueReference(typ)
 		}
-		return g.types.BuilderReference(element)
+		ref := g.types.BuilderReference(element)
+		ref = g.types.Reference(
+			ref.Import(),
+			ref.Selector(),
+			ref.Name(),
+			fmt.Sprintf("map[string]%s", ref.Text()),
+		)
+		return ref
 	default:
 		return g.types.BuilderReference(typ)
 	}

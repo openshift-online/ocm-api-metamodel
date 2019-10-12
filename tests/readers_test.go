@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
@@ -314,5 +315,100 @@ var _ = Describe("Reader", func() {
 		Expect(slice[1].Kind()).To(Equal(cmv1.GroupKind))
 		Expect(slice[1].HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups/789"))
 		Expect(slice[1].ID()).To(Equal("789"))
+	})
+
+	It("Can read empty map of strings", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"properties": {}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		properties := object.Properties()
+		Expect(properties).ToNot(BeNil())
+		Expect(properties).To(BeEmpty())
+	})
+
+	It("Can read map of strings with one value", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"properties": {
+				"mykey": "myvalue"
+			}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		properties := object.Properties()
+		Expect(properties).ToNot(BeNil())
+		Expect(properties).To(HaveLen(1))
+		Expect(properties).To(HaveKeyWithValue("mykey", "myvalue"))
+	})
+
+	It("Can read map of strings with two values", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"properties": {
+				"mykey": "myvalue",
+				"yourkey": "yourvalue"
+			}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		properties := object.Properties()
+		Expect(properties).ToNot(BeNil())
+		Expect(properties).To(HaveLen(2))
+		Expect(properties).To(HaveKeyWithValue("mykey", "myvalue"))
+		Expect(properties).To(HaveKeyWithValue("yourkey", "yourvalue"))
+	})
+
+	It("Can read empty map of objects", func() {
+		object, err := amv1.UnmarshalAccessToken(`{}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+	})
+
+	It("Can read map of objects with one value", func() {
+		object, err := amv1.UnmarshalAccessToken(`{
+			"auths": {
+				"my.com": {
+					"username": "myuser",
+					"email": "mymail"
+				}
+			}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		auths := object.Auths()
+		Expect(auths).ToNot(BeNil())
+		Expect(auths).To(HaveLen(1))
+		auth := auths["my.com"]
+		Expect(auth).ToNot(BeNil())
+		Expect(auth.Username()).To(Equal("myuser"))
+		Expect(auth.Email()).To(Equal("mymail"))
+	})
+
+	It("Can read map of objects with two values", func() {
+		object, err := amv1.UnmarshalAccessToken(`{
+			"auths": {
+				"my.com": {
+					"username": "myuser",
+					"email": "mymail"
+				},
+				"your.com": {
+					"username": "youruser",
+					"email": "yourmail"
+				}
+			}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		auths := object.Auths()
+		Expect(auths).ToNot(BeNil())
+		Expect(auths).To(HaveLen(2))
+		first := auths["my.com"]
+		Expect(first).ToNot(BeNil())
+		Expect(first.Username()).To(Equal("myuser"))
+		Expect(first.Email()).To(Equal("mymail"))
+		second := auths["your.com"]
+		Expect(second).ToNot(BeNil())
+		Expect(second.Username()).To(Equal("youruser"))
+		Expect(second.Email()).To(Equal("yourmail"))
 	})
 })

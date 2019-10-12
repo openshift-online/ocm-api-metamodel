@@ -325,12 +325,14 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 				{{ end }}
 				{{ range .Type.Attributes }}
 					{{ $fieldName := fieldName . }}
-					{{ if or .Type.IsList .Type.IsMap }}
+					{{ if or .Type.IsList }}
 						{{ if .Type.Element.IsScalar }}
-							o.{{ $fieldName }} == nil &&
+							len(o.{{ $fieldName }}) == 0 &&
 						{{ else }}
 							o.{{ $fieldName }}.Empty() &&
 						{{ end }}
+					{{ else if or .Type.IsMap }}
+						len(o.{{ $fieldName }}) == 0 &&
 					{{ else }}
 						o.{{ $fieldName }} == nil &&
 					{{ end }}

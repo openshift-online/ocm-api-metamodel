@@ -199,7 +199,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	}
 }
 
-// NullablerReference calculates a type reference for a value of the given type that can be assigned
+// NullableReference calculates a type reference for a value of the given type that can be assigned
 // the nil value.
 func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 	switch {
@@ -235,10 +235,8 @@ func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 			ref.text = fmt.Sprintf("map[string]%s", ref.text)
 			return ref
 		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(element.Name(), nomenclator.Map))
-			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+			ref := c.ValueReference(element)
+			ref.text = fmt.Sprintf("map[string]*%s", ref.text)
 			return ref
 		default:
 			c.reporter.Errorf(
@@ -288,12 +286,8 @@ func (c *TypesCalculator) DataReference(typ *concepts.Type) *TypeReference {
 		case element.IsScalar():
 			return c.NullableReference(typ)
 		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Private(names.Cat(
-				element.Name(), nomenclator.Map, nomenclator.Data),
-			)
-			ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
+			ref := c.DataReference(element)
+			ref.text = fmt.Sprintf("map[string]%s", ref.text)
 			return ref
 		default:
 			c.reporter.Errorf(
