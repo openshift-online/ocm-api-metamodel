@@ -19,10 +19,6 @@ antlr_version:=4.7.2
 antlr_url:=https://www.antlr.org/download/antlr-$(antlr_version)-complete.jar
 antlr_sum:=6852386d7975eff29171dae002cc223251510d35f291ae277948f381a7b380b4
 
-# Details of the model to use:
-model_version:=v0.0.1
-model_url:=https://github.com/openshift-online/ocm-api-model.git
-
 # Explicitly enable Go modules so that compilation will work correctly even when
 # the project directory is inside the directory indicated by the 'GOPATH'
 # environment variable:
@@ -62,19 +58,14 @@ unit_tests:
 	ginkgo -r pkg
 
 .PHONY: model_tests
-model_tests: cmds model
+model_tests: cmds
+	rm -rf tests/api
 	./ocm-metamodel-tool generate \
-		--model=model/model \
+		--model=tests/model \
 		--base=github.com/openshift-online/ocm-api-metamodel/tests/api \
 		--output=tests/api \
 		--docs=tests/docs
 	ginkgo -r tests
-
-.PHONY: model
-model:
-	[ -d "$@" ] || git clone "$(model_url)" "$@"
-	cd "$@" && git fetch origin
-	cd "$@" && git checkout -B build "$(model_version)"
 
 .PHONY: clean
 clean:

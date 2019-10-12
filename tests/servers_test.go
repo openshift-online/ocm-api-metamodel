@@ -36,18 +36,6 @@ func (s *MyTestRootServer) Clusters() v1.ClustersServer {
 	return &MyTestClustersServer{}
 }
 
-func (s *MyTestRootServer) Dashboards() v1.DashboardsServer {
-	return nil
-}
-
-func (s *MyTestRootServer) Flavours() v1.FlavoursServer {
-	return nil
-}
-
-func (s *MyTestRootServer) Versions() v1.VersionsServer {
-	return nil
-}
-
 type MyTestClustersServer struct{}
 
 func (s *MyTestClustersServer) List(ctx context.Context, request *v1.ClustersListServerRequest,
@@ -97,18 +85,6 @@ func (s *MyTestClusterServer) Update(ctx context.Context, request *v1.ClusterUpd
 
 func (s *MyTestClusterServer) Delete(ctx context.Context, request *v1.ClusterDeleteServerRequest, response *v1.ClusterDeleteServerResponse) error {
 	response.SetStatusCode(200)
-	return nil
-}
-
-func (s *MyTestClusterServer) Status() v1.ClusterStatusServer {
-	return nil
-}
-
-func (s *MyTestClusterServer) Credentials() v1.CredentialsServer {
-	return nil
-}
-
-func (s *MyTestClusterServer) Logs() v1.LogsServer {
 	return nil
 }
 
