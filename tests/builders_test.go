@@ -22,12 +22,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Builder", func() {
 	It("Can set empty string list attribute", func() {
-		object, err := v1.NewGithubIdentityProvider().
+		object, err := cmv1.NewGithubIdentityProvider().
 			Teams().
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -38,7 +38,7 @@ var _ = Describe("Builder", func() {
 	})
 
 	It("Can set string list attribute with one value", func() {
-		object, err := v1.NewGithubIdentityProvider().
+		object, err := cmv1.NewGithubIdentityProvider().
 			Teams("a-team").
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -50,7 +50,7 @@ var _ = Describe("Builder", func() {
 	})
 
 	It("Can set string list attribute with two values", func() {
-		object, err := v1.NewGithubIdentityProvider().
+		object, err := cmv1.NewGithubIdentityProvider().
 			Teams("a-team", "b-team").
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -63,7 +63,7 @@ var _ = Describe("Builder", func() {
 	})
 
 	It("Can set empty struct list attribute", func() {
-		object, err := v1.NewCluster().
+		object, err := cmv1.NewCluster().
 			Groups().
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -74,9 +74,9 @@ var _ = Describe("Builder", func() {
 	})
 
 	It("Can set struct list attribute with one value", func() {
-		object, err := v1.NewCluster().
+		object, err := cmv1.NewCluster().
 			Groups(
-				v1.NewGroup().ID("a-group"),
+				cmv1.NewGroup().ID("a-group"),
 			).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -92,10 +92,10 @@ var _ = Describe("Builder", func() {
 	})
 
 	It("Can set struct list attribute with two values", func() {
-		object, err := v1.NewCluster().
+		object, err := cmv1.NewCluster().
 			Groups(
-				v1.NewGroup().ID("a-group"),
-				v1.NewGroup().ID("b-group"),
+				cmv1.NewGroup().ID("a-group"),
+				cmv1.NewGroup().ID("b-group"),
 			).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -114,12 +114,12 @@ var _ = Describe("Builder", func() {
 
 	Describe("Copy", func() {
 		It("Copies simple attribute", func() {
-			original, err := v1.NewCluster().
+			original, err := cmv1.NewCluster().
 				ID("123").
 				Name("my").
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			replica, err := v1.NewCluster().
+			replica, err := cmv1.NewCluster().
 				Copy(original).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -128,12 +128,12 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Discards existing values", func() {
-			original, err := v1.NewCluster().
+			original, err := cmv1.NewCluster().
 				ID("123").
 				Name("my").
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			replica, err := v1.NewCluster().
+			replica, err := cmv1.NewCluster().
 				ID("456").
 				Name("your").
 				Copy(original).
