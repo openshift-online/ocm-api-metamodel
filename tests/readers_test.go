@@ -22,15 +22,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Reader", func() {
 	It("Can read empty object", func() {
-		object, err := v1.UnmarshalCluster(`{} `)
+		object, err := cmv1.UnmarshalCluster(`{}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		Expect(object.Kind()).To(Equal(v1.ClusterKind))
+		Expect(object.Kind()).To(Equal(cmv1.ClusterKind))
 		Expect(object.Link()).To(BeFalse())
 		Expect(object.ID()).To(BeEmpty())
 		Expect(object.HREF()).To(BeEmpty())
@@ -38,17 +38,17 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read empty link", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"kind": "ClusterLink"
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		Expect(object.Kind()).To(Equal(v1.ClusterLinkKind))
+		Expect(object.Kind()).To(Equal(cmv1.ClusterLinkKind))
 		Expect(object.Link()).To(BeTrue())
 	})
 
 	It("Can read basic object", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"kind": "Cluster",
 			"id": "123",
 			"href": "/api/clusters_mgmt/v1/clusters/123",
@@ -56,7 +56,7 @@ var _ = Describe("Reader", func() {
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		Expect(object.Kind()).To(Equal(v1.ClusterKind))
+		Expect(object.Kind()).To(Equal(cmv1.ClusterKind))
 		Expect(object.Link()).To(BeFalse())
 		Expect(object.ID()).To(Equal("123"))
 		Expect(object.HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123"))
@@ -64,7 +64,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read true", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"managed": true
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -72,7 +72,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read false", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"managed": false
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,7 +80,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read integer zero", func() {
-		object, err := v1.UnmarshalClusterNodes(`{
+		object, err := cmv1.UnmarshalClusterNodes(`{
 			"compute": 0
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -88,7 +88,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read integer one", func() {
-		object, err := v1.UnmarshalClusterNodes(`{
+		object, err := cmv1.UnmarshalClusterNodes(`{
 			"compute": 1
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -96,7 +96,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read integer minus one", func() {
-		object, err := v1.UnmarshalClusterNodes(`{
+		object, err := cmv1.UnmarshalClusterNodes(`{
 			"compute": -1
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -104,7 +104,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read false", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"managed": false
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -112,7 +112,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read object with one unknown attribute", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"myname": "myvalue"
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -120,7 +120,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read object with two unknown attributes", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"myname": "myvalue",
 			"yourname": "yourvalue"
 		}`)
@@ -129,14 +129,14 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read an empty list of objects", func() {
-		object, err := v1.UnmarshalClusterList(`[]`)
+		object, err := cmv1.UnmarshalClusterList(`[]`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
 		Expect(object.Len()).To(BeZero())
 	})
 
 	It("Can read list with one element", func() {
-		list, err := v1.UnmarshalClusterList(`[
+		list, err := cmv1.UnmarshalClusterList(`[
 			{
 				"name": "mycluster"
 			}
@@ -152,7 +152,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read list with two elements", func() {
-		list, err := v1.UnmarshalClusterList(`[
+		list, err := cmv1.UnmarshalClusterList(`[
 			{
 				"name": "mycluster"
 			},
@@ -173,7 +173,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read empty string list attribute", func() {
-		object, err := v1.UnmarshalGithubIdentityProvider(`{
+		object, err := cmv1.UnmarshalGithubIdentityProvider(`{
 			"teams": []
 		}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -184,7 +184,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read string list attribute with one element", func() {
-		object, err := v1.UnmarshalGithubIdentityProvider(`{
+		object, err := cmv1.UnmarshalGithubIdentityProvider(`{
 			"teams": [
 				"a-team"
 			]
@@ -198,7 +198,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read string list attribute with two elements", func() {
-		object, err := v1.UnmarshalGithubIdentityProvider(`{
+		object, err := cmv1.UnmarshalGithubIdentityProvider(`{
 			"teams": [
 				"a-team",
 				"b-team"
@@ -214,7 +214,7 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read attribute that is link to a list of instances of a class", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"groups": {
 				"kind": "GroupListLink",
 				"href": "/api/clusters_mgmt/v1/clusters/123/groups"
@@ -224,14 +224,14 @@ var _ = Describe("Reader", func() {
 		Expect(object).ToNot(BeNil())
 		list := object.Groups()
 		Expect(list).ToNot(BeNil())
-		Expect(list.Kind()).To(Equal(v1.GroupListLinkKind))
+		Expect(list.Kind()).To(Equal(cmv1.GroupListLinkKind))
 		Expect(list.Link()).To(BeTrue())
 		Expect(list.HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups"))
 		Expect(list.Len()).To(BeZero())
 	})
 
 	It("Can read attribute that is a list of zero instances of a class", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"groups": {
 				"kind": "GroupList",
 				"href": "/api/clusters_mgmt/v1/clusters/123/groups",
@@ -242,14 +242,14 @@ var _ = Describe("Reader", func() {
 		Expect(object).ToNot(BeNil())
 		list := object.Groups()
 		Expect(list).ToNot(BeNil())
-		Expect(list.Kind()).To(Equal(v1.GroupListKind))
+		Expect(list.Kind()).To(Equal(cmv1.GroupListKind))
 		Expect(list.Link()).To(BeFalse())
 		Expect(list.HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups"))
 		Expect(list.Len()).To(BeZero())
 	})
 
 	It("Can read attribute that is a list of one instance of a class", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"groups": {
 				"kind": "GroupList",
 				"href": "/api/clusters_mgmt/v1/clusters/123/groups",
@@ -266,20 +266,20 @@ var _ = Describe("Reader", func() {
 		Expect(object).ToNot(BeNil())
 		list := object.Groups()
 		Expect(list).ToNot(BeNil())
-		Expect(list.Kind()).To(Equal(v1.GroupListKind))
+		Expect(list.Kind()).To(Equal(cmv1.GroupListKind))
 		Expect(list.Link()).To(BeFalse())
 		Expect(list.HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups"))
 		Expect(list.Len()).To(Equal(1))
 		slice := list.Slice()
 		Expect(slice).ToNot(BeNil())
 		Expect(slice).To(HaveLen(1))
-		Expect(slice[0].Kind()).To(Equal(v1.GroupKind))
+		Expect(slice[0].Kind()).To(Equal(cmv1.GroupKind))
 		Expect(slice[0].HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups/456"))
 		Expect(slice[0].ID()).To(Equal("456"))
 	})
 
 	It("Can read attribute that is a list of two instances of a class", func() {
-		object, err := v1.UnmarshalCluster(`{
+		object, err := cmv1.UnmarshalCluster(`{
 			"groups": {
 				"kind": "GroupList",
 				"href": "/api/clusters_mgmt/v1/clusters/123/groups",
@@ -301,17 +301,17 @@ var _ = Describe("Reader", func() {
 		Expect(object).ToNot(BeNil())
 		list := object.Groups()
 		Expect(list).ToNot(BeNil())
-		Expect(list.Kind()).To(Equal(v1.GroupListKind))
+		Expect(list.Kind()).To(Equal(cmv1.GroupListKind))
 		Expect(list.Link()).To(BeFalse())
 		Expect(list.HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups"))
 		Expect(list.Len()).To(Equal(2))
 		slice := list.Slice()
 		Expect(slice).ToNot(BeNil())
 		Expect(slice).To(HaveLen(2))
-		Expect(slice[0].Kind()).To(Equal(v1.GroupKind))
+		Expect(slice[0].Kind()).To(Equal(cmv1.GroupKind))
 		Expect(slice[0].HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups/456"))
 		Expect(slice[0].ID()).To(Equal("456"))
-		Expect(slice[1].Kind()).To(Equal(v1.GroupKind))
+		Expect(slice[1].Kind()).To(Equal(cmv1.GroupKind))
 		Expect(slice[1].HREF()).To(Equal("/api/clusters_mgmt/v1/clusters/123/groups/789"))
 		Expect(slice[1].ID()).To(Equal("789"))
 	})

@@ -22,32 +22,32 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Type", func() {
 	Describe("Kind", func() {
 		It("Returns nil nil", func() {
-			var object *v1.Cluster
-			Expect(object.Kind()).To(Equal(v1.ClusterNilKind))
+			var object *cmv1.Cluster
+			Expect(object.Kind()).To(Equal(cmv1.ClusterNilKind))
 		})
 	})
 
 	Describe("Link", func() {
 		It("Returns false on nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			Expect(object.Link()).To(BeFalse())
 		})
 	})
 
 	Describe("ID", func() {
 		It("Can get value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			Expect(object.ID()).To(BeEmpty())
 		})
 
 		It("Can check value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			value, ok := object.GetID()
 			Expect(ok).To(BeFalse())
 			Expect(value).To(BeEmpty())
@@ -56,12 +56,12 @@ var _ = Describe("Type", func() {
 
 	Describe("HREF", func() {
 		It("Can get value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			Expect(object.HREF()).To(BeEmpty())
 		})
 
 		It("Can check value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			value, ok := object.GetHREF()
 			Expect(ok).To(BeFalse())
 			Expect(value).To(BeEmpty())
@@ -70,12 +70,12 @@ var _ = Describe("Type", func() {
 
 	Describe("String attribute", func() {
 		It("Can get value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			Expect(object.Name()).To(BeEmpty())
 		})
 
 		It("Can check value of nil", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			value, ok := object.GetName()
 			Expect(ok).To(BeFalse())
 			Expect(value).To(BeEmpty())
@@ -84,20 +84,20 @@ var _ = Describe("Type", func() {
 
 	Describe("Get", func() {
 		It("Returns nil for nil list ", func() {
-			var list *v1.ClusterList
+			var list *cmv1.ClusterList
 			Expect(list.Get(0)).To(BeNil())
 		})
 
 		It("Returns nil for empty list ", func() {
-			list, err := v1.NewClusterList().Build()
+			list, err := cmv1.NewClusterList().Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Get(0)).To(BeNil())
 		})
 
 		It("Returns nil for negative index", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("123"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -105,9 +105,9 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns nil for positive index out of range", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("123"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -115,10 +115,10 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns first item for zero", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("0"),
-					v1.NewCluster().ID("1"),
+					cmv1.NewCluster().ID("0"),
+					cmv1.NewCluster().ID("1"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -128,10 +128,10 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns second item for one", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("0"),
-					v1.NewCluster().ID("1"),
+					cmv1.NewCluster().ID("0"),
+					cmv1.NewCluster().ID("1"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -143,20 +143,20 @@ var _ = Describe("Type", func() {
 
 	Describe("Len", func() {
 		It("Returns zero for nil list ", func() {
-			var list *v1.ClusterList
+			var list *cmv1.ClusterList
 			Expect(list.Len()).To(BeZero())
 		})
 
 		It("Returns zero for empty list ", func() {
-			list, err := v1.NewClusterList().Build()
+			list, err := cmv1.NewClusterList().Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Len()).To(BeZero())
 		})
 
 		It("Returns one for list with one element", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("123"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -164,10 +164,10 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns two for list with two elements", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
-					v1.NewCluster().ID("456"),
+					cmv1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("456"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -177,18 +177,18 @@ var _ = Describe("Type", func() {
 
 	Describe("Empty", func() {
 		It("Returns `true` for nil object ", func() {
-			var object *v1.Cluster
+			var object *cmv1.Cluster
 			Expect(object.Empty()).To(BeTrue())
 		})
 
 		It("Returns `true` for an empty object", func() {
-			object, err := v1.NewCluster().Build()
+			object, err := cmv1.NewCluster().Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(object.Empty()).To(BeTrue())
 		})
 
 		It("Returns `false` for an object with identifier", func() {
-			object, err := v1.NewCluster().
+			object, err := cmv1.NewCluster().
 				ID("123").
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -196,7 +196,7 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns `false` for an object with an string attribute", func() {
-			object, err := v1.NewCluster().
+			object, err := cmv1.NewCluster().
 				Name("mycluster").
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -204,20 +204,20 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns `true` for nil list ", func() {
-			var list *v1.ClusterList
+			var list *cmv1.ClusterList
 			Expect(list.Empty()).To(BeTrue())
 		})
 
 		It("Returns `true` for empty list ", func() {
-			list, err := v1.NewClusterList().Build()
+			list, err := cmv1.NewClusterList().Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Empty()).To(BeTrue())
 		})
 
 		It("Returns `false` for list with one element", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("123"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -225,10 +225,10 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns `false` for list with two elements", func() {
-			list, err := v1.NewClusterList().
+			list, err := cmv1.NewClusterList().
 				Items(
-					v1.NewCluster().ID("123"),
-					v1.NewCluster().ID("456"),
+					cmv1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("456"),
 				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
