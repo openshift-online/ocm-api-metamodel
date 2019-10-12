@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
@@ -230,6 +231,64 @@ var _ = Describe("Type", func() {
 					cmv1.NewCluster().ID("123"),
 					cmv1.NewCluster().ID("456"),
 				).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `true` for empty map of strings", func() {
+			list, err := cmv1.NewCluster().
+				Properties(map[string]string{}).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeTrue())
+		})
+
+		It("Returns `false` for map of strings with one value", func() {
+			list, err := cmv1.NewCluster().
+				Properties(map[string]string{
+					"mykey": "myvalue",
+				}).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of strings with two values", func() {
+			list, err := cmv1.NewCluster().
+				Properties(map[string]string{
+					"mykey":   "myvalue",
+					"yourkey": "yourvalue",
+				}).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `true` for empty map of objects", func() {
+			list, err := amv1.NewAccessToken().
+				Auths(map[string]*amv1.AuthBuilder{}).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeTrue())
+		})
+
+		It("Returns `false` for map of objects with one value", func() {
+			list, err := amv1.NewAccessToken().
+				Auths(map[string]*amv1.AuthBuilder{
+					"my.com": amv1.NewAuth().Username("myuser"),
+				}).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of objects with one value", func() {
+			list, err := amv1.NewAccessToken().
+				Auths(map[string]*amv1.AuthBuilder{
+					"my.com":   amv1.NewAuth().Username("myuser"),
+					"your.com": amv1.NewAuth().Username("youruser"),
+				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Empty()).To(BeFalse())
