@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"net/http"
 	"path"
 	"path/filepath"
 
@@ -190,7 +189,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("getterType", g.getterType).
 		Function("locatorHandlerName", g.locatorHandlerName).
 		Function("locatorName", g.locatorName).
-		Function("mapMethodNameToHTTPMethod", g.mapMethodNameToHTTPMethod).
+		Function("httpMethod", g.httpMethod).
 		Function("methodName", g.methodName).
 		Function("queryParameterName", g.queryParameterName).
 		Function("readerName", g.readerName).
@@ -298,9 +297,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ end }}
 
 			{{ range .Resource.Methods }}
-				{{ $httpMethod := mapMethodNameToHTTPMethod .Name }}
-				
-				adapter.router.Methods("{{ $httpMethod  }}").Path("").HandlerFunc(adapter.{{ .Name }}Handler)
+				adapter.router.Methods({{ httpMethod . }}).Path("").HandlerFunc(adapter.{{ .Name }}Handler)
 			{{ end }}
 			return adapter
 		}
@@ -811,22 +808,23 @@ func (g *ServersGenerator) avoidBuiltin(name string, builtins map[string]interfa
 	return name
 }
 
-func (g *ServersGenerator) mapMethodNameToHTTPMethod(name *names.Name) string {
+func (g *ServersGenerator) httpMethod(method *concepts.Method) string {
+	name := method.Name()
 	switch {
 	case name.Equals(nomenclator.Post):
-		return http.MethodPost
+		return "http.MethodPost"
 	case name.Equals(nomenclator.Add):
-		return http.MethodPost
+		return "http.MethodPost"
 	case name.Equals(nomenclator.List):
-		return http.MethodGet
+		return "http.MethodGet"
 	case name.Equals(nomenclator.Get):
-		return http.MethodGet
+		return "http.MethodGet"
 	case name.Equals(nomenclator.Update):
-		return http.MethodPatch
+		return "http.MethodPatch"
 	case name.Equals(nomenclator.Delete):
-		return http.MethodDelete
+		return "http.MethodDelete"
 	default:
-		return http.MethodGet
+		return "http.MethodGet"
 	}
 }
 
