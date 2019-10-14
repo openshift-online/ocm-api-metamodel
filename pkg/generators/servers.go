@@ -182,6 +182,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
+		Function("defaultHttpStatus", g.defaultHttpStatus).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
@@ -190,6 +191,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("httpMethod", g.httpMethod).
 		Function("locatorHandlerName", g.locatorHandlerName).
 		Function("locatorName", g.locatorName).
+		Function("methodHandlerName", g.methodHandlerName).
 		Function("methodName", g.methodName).
 		Function("queryParameterName", g.queryParameterName).
 		Function("readRequestName", g.readRequestName).
@@ -299,7 +301,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ end }}
 
 			{{ range .Resource.Methods }}
-				adapter.router.Methods({{ httpMethod . }}).Path("").HandlerFunc(adapter.{{ .Name }}Handler)
+				adapter.router.Methods({{ httpMethod . }}).Path("").HandlerFunc(adapter.{{ methodHandlerName . }})
 			{{ end }}
 			return adapter
 		}
@@ -322,7 +324,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 					target := a.server.{{ $locatorName }}()
 					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{{ $locatorURLSegment }}").Subrouter())
 					targetAdapter.ServeHTTP(w,r)
-					return 
+					return
 				{{ end }}
 			}
 		{{ end }}
@@ -337,7 +339,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ $requestQueryParameters := requestQueryParameters . }}
 			{{ $readRequestName := readRequestName . }}
 			{{ $writeResponseName := writeResponseName . }}
-	
+
 			func (a *{{ $adapterName }}) {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				var err error
 				result := new({{ $requestName }})
@@ -362,7 +364,6 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 				return result, err
 			}
 
-
 			func (a *{{ $adapterName }}) {{ $writeResponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(r.status)
@@ -372,39 +373,49 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 						return err
 					}
 				{{ end }}
-				return nil	
+				return nil
 			}
 
-			func (a *{{ $adapterName }} ) {{ .Name }}Handler (w http.ResponseWriter, r *http.Request) {
-				req, err := a.{{ $readRequestName }}(r)
-					if err != nil {
-						reason := fmt.Sprintf("An error occured while trying to read request from client: %v", err)
-						errorBody, _ := errors.NewError().
-							Reason(reason).
-							ID("500").
-							Build()
-						errors.SendError(w, r, errorBody)
-						return										
-					}
-					resp := new({{ $responseName }})
-					err = a.server.{{ $methodName }}(r.Context(), req, resp)
-					if err != nil {
-						reason := fmt.Sprintf("An error occured while trying to run method {{ $methodName }}: %v", err)
-						errorBody, _ := errors.NewError().
-							Reason(reason).
-							ID("500").
-							Build()
-						errors.SendError(w, r, errorBody)
-					}
-					err = a.{{ $writeResponseName }}(w, resp)
-					if err != nil {
-						reason := fmt.Sprintf("An error occured while trying to write response for client: %v", err)
-						errorBody, _ := errors.NewError().
-							Reason(reason).
-							ID("500").
-							Build()
-						errors.SendError(w, r, errorBody)
-					}
+			func (a *{{ $adapterName }} ) {{ methodHandlerName . }}(w http.ResponseWriter, r *http.Request) {
+				request, err := a.{{ $readRequestName }}(r)
+				if err != nil {
+					reason := fmt.Sprintf(
+						"An error occurred while trying to read request from client: %v",
+						err,
+					)
+					body, _ := errors.NewError().
+						Reason(reason).
+						ID("500").
+						Build()
+					errors.SendError(w, r, body)
+					return
+				}
+				response := new({{ $responseName }})
+				response.status = {{ defaultHttpStatus . }}
+				err = a.server.{{ $methodName }}(r.Context(), request, response)
+				if err != nil {
+					reason := fmt.Sprintf(
+						"An error occurred while trying to run method {{ $methodName }}: %v",
+						err,
+					)
+					body, _ := errors.NewError().
+						Reason(reason).
+						ID("500").
+						Build()
+					errors.SendError(w, r, body)
+				}
+				err = a.{{ $writeResponseName }}(w, response)
+				if err != nil {
+					reason := fmt.Sprintf(
+						"An error occurred while trying to write response for client: %v",
+						err,
+					)
+					body, _ := errors.NewError().
+						Reason(reason).
+						ID("500").
+						Build()
+					errors.SendError(w, r, body)
+				}
 			}
 		{{ end }}
 
@@ -547,7 +558,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 				{{ fieldName . }} {{ fieldType . }}
 			{{ end }}
 		}
-		
+
 		{{ range $responseParameters }}
 			{{ $fieldName := fieldName . }}
 			{{ $setterName := setterName . }}
@@ -565,7 +576,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 				return r
 			}
 		{{ end }}
-		
+
 		// Status sets the status code.
 		func (r *{{ $responseName }}) Status(value int) *{{ $responseName }} {
 			r.status = value
@@ -659,6 +670,11 @@ func (g *ServersGenerator) urlSegment(name *names.Name) string {
 
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
 	return g.names.Public(method.Name())
+}
+
+func (g *ServersGenerator) methodHandlerName(method *concepts.Method) string {
+	name := names.Cat(nomenclator.Handler, method.Name())
+	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) readRequestName(method *concepts.Method) string {
@@ -840,6 +856,11 @@ func (g *ServersGenerator) httpMethod(method *concepts.Method) string {
 	default:
 		return "http.MethodGet"
 	}
+}
+
+func (g *ServersGenerator) defaultHttpStatus(method *concepts.Method) string {
+	// Set 200 as the default for all methods for now.
+	return "http.StatusOK"
 }
 
 func (g *ServersGenerator) readerName(typ *concepts.Type) string {
