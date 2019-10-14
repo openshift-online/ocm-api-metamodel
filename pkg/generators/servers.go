@@ -566,9 +566,9 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 			}
 		{{ end }}
 		
-		// SetStatusCode sets the status code for a give response and returns the response object.
-		func (r *{{ $responseName }}) SetStatusCode(status int) *{{ $responseName }} {
-			r.status = status
+		// Status sets the status code.
+		func (r *{{ $responseName }}) Status(value int) *{{ $responseName }} {
+			r.status = value
 			return r
 		}
 
