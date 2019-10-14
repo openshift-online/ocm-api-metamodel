@@ -130,6 +130,34 @@ func run(cmd *cobra.Command, argv []string) {
 	var gens []generators.Generator
 	var gen generators.Generator
 
+	// Create the errors generator:
+	gen, err = generators.NewErrorsGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Base(args.base).
+		Names(names).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create errors generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
+	// Create the helpers generator:
+	gen, err = generators.NewHelpersGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Base(args.base).
+		Names(names).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create helpers generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
 	// Create the types generator:
 	gen, err = generators.NewTypesGenerator().
 		Reporter(reporter).
