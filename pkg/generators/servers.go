@@ -182,6 +182,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
+		Function("defaultHttpStatus", g.defaultHttpStatus).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
@@ -390,6 +391,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 					return
 				}
 				response := new({{ $responseName }})
+				response.status = {{ defaultHttpStatus . }}
 				err = a.server.{{ $methodName }}(r.Context(), request, response)
 				if err != nil {
 					reason := fmt.Sprintf(
@@ -854,6 +856,11 @@ func (g *ServersGenerator) httpMethod(method *concepts.Method) string {
 	default:
 		return "http.MethodGet"
 	}
+}
+
+func (g *ServersGenerator) defaultHttpStatus(method *concepts.Method) string {
+	// Set 200 as the default for all methods for now.
+	return "http.StatusOK"
 }
 
 func (g *ServersGenerator) readerName(typ *concepts.Type) string {

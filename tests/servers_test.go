@@ -46,9 +46,6 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersL
 	if err != nil {
 		return err
 	}
-	// Set a status code 200. Return empty response.
-	response.Status(http.StatusOK)
-	// Set body of response
 	response.Items(items)
 	response.Page(request.Page())
 	response.Size(request.Size())
@@ -58,8 +55,6 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersL
 
 func (s *MyTestClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddServerRequest,
 	response *cmv1.ClustersAddServerResponse) error {
-	// Set a status code 200. Return empty response.
-	response.Status(http.StatusOK)
 	return nil
 }
 
@@ -71,7 +66,6 @@ type MyTestClusterServer struct{}
 
 func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetServerRequest,
 	response *cmv1.ClusterGetServerResponse) error {
-	response.Status(http.StatusOK)
 	cluster, err := cmv1.NewCluster().Name("test-get-cluster-by-id").Build()
 	if err != nil {
 		return err
@@ -82,13 +76,11 @@ func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetS
 
 func (s *MyTestClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdateServerRequest,
 	response *cmv1.ClusterUpdateServerResponse) error {
-	response.Status(http.StatusOK)
 	return nil
 }
 
 func (s *MyTestClusterServer) Delete(ctx context.Context, request *cmv1.ClusterDeleteServerRequest,
 	response *cmv1.ClusterDeleteServerResponse) error {
-	response.Status(http.StatusOK)
 	return nil
 }
 
@@ -111,9 +103,6 @@ func (s *MyTestIdentityProvidersServer) List(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	// Set a status code 200. Return empty response.
-	response.Status(http.StatusOK)
-	// Set body of response
 	response.Items(items)
 	response.Page(1)
 	response.Size(1)
