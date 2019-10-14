@@ -187,11 +187,12 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
+		Function("httpMethod", g.httpMethod).
 		Function("locatorHandlerName", g.locatorHandlerName).
 		Function("locatorName", g.locatorName).
-		Function("httpMethod", g.httpMethod).
 		Function("methodName", g.methodName).
 		Function("queryParameterName", g.queryParameterName).
+		Function("readRequestName", g.readRequestName).
 		Function("readerName", g.readerName).
 		Function("requestBodyParameters", g.requestBodyParameters).
 		Function("requestData", g.requestData).
@@ -206,6 +207,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
 		Function("urlSegment", g.urlSegment).
+		Function("writeReponseName", g.writeReponseName).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
@@ -333,8 +335,10 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ $requestBodyLen := len $requestBodyParameters }}
 			{{ $responseParameters := responseParameters . }}
 			{{ $requestQueryParameters := requestQueryParameters . }}
+			{{ $readRequestName := readRequestName . }}
+			{{ $writeReponseName := writeReponseName . }}
 	
-			func (a *{{ $adapterName }}) read{{ $requestName }}(r *http.Request) (*{{ $requestName }}, error) {
+			func (a *{{ $adapterName }}) {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				var err error
 				result := new({{ $requestName }})
 				{{ if $requestQueryParameters }}
@@ -359,7 +363,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			}
 
 
-			func (a *{{ $adapterName }}) write{{ $responseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+			func (a *{{ $adapterName }}) {{ $writeReponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(r.status)
 				{{ if $responseParameters }}
@@ -372,7 +376,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			}
 
 			func (a *{{ $adapterName }} ) {{ .Name }}Handler (w http.ResponseWriter, r *http.Request) {
-				req, err := a.read{{ $requestName }}(r)
+				req, err := a.{{ $readRequestName }}(r)
 					if err != nil {
 						reason := fmt.Sprintf("An error occured while trying to read request from client: %v", err)
 						errorBody, _ := errors.NewError().
@@ -392,7 +396,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 							Build()
 						errors.SendError(w, r, errorBody)
 					}
-					err = a.write{{ $responseName }}(w, resp)
+					err = a.{{ $writeReponseName }}(w, resp)
 					if err != nil {
 						reason := fmt.Sprintf("An error occured while trying to write response for client: %v", err)
 						errorBody, _ := errors.NewError().
@@ -655,6 +659,16 @@ func (g *ServersGenerator) urlSegment(name *names.Name) string {
 
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
 	return g.names.Public(method.Name())
+}
+
+func (g *ServersGenerator) readRequestName(method *concepts.Method) string {
+	name := names.Cat(nomenclator.Read, method.Name(), nomenclator.Request)
+	return g.names.Private(name)
+}
+
+func (g *ServersGenerator) writeReponseName(method *concepts.Method) string {
+	name := names.Cat(nomenclator.Write, method.Name(), nomenclator.Response)
+	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) requestName(method *concepts.Method) string {
