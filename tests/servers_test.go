@@ -134,7 +134,7 @@ func (s *MyTestIdentityProvidersServer) IdentityProvider(id string) cmv1.Identit
 var _ = Describe("Server", func() {
 	It("Can receive a request and return response", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
 		recorder := httptest.NewRecorder()
@@ -145,7 +145,7 @@ var _ = Describe("Server", func() {
 
 	It("Returns a 404 for a path with a trailing slash", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
 		recorder := httptest.NewRecorder()
@@ -156,7 +156,7 @@ var _ = Describe("Server", func() {
 
 	It("Returns a 404 for an unkown resource", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/foo", nil)
 		recorder := httptest.NewRecorder()
@@ -167,7 +167,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a list of clusters", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
 		recorder := httptest.NewRecorder()
@@ -191,7 +191,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a list of clusters by page", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters?page=2", nil)
 		recorder := httptest.NewRecorder()
@@ -210,7 +210,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a list of clusters by size", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2", nil)
 		recorder := httptest.NewRecorder()
@@ -234,7 +234,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a list of clusters by size and page", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2&page=1", nil)
 		recorder := httptest.NewRecorder()
@@ -258,7 +258,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a cluster by id", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters/123", nil)
 		recorder := httptest.NewRecorder()
@@ -275,7 +275,7 @@ var _ = Describe("Server", func() {
 
 	It("Can get a cluster sub resource by id", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(
 			http.MethodGet,
@@ -303,7 +303,7 @@ var _ = Describe("Server", func() {
 
 	It("Returns a 404 for an unkown sub resource", func() {
 		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootServerAdapter(myTestRootServer, mux.NewRouter())
+		rootAdapter := cmv1.NewRootAdapter(myTestRootServer, mux.NewRouter())
 
 		request := httptest.NewRequest(http.MethodGet, "/clusters/123/foo", nil)
 		recorder := httptest.NewRecorder()
