@@ -215,7 +215,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 
 	// Generate the source:
 	g.generateResourceServerSource(resource)
-	g.generateServerAdapterSource(resource)
+	g.generateAdapterSource(resource)
 
 	// Write the generated code:
 	return g.buffer.Write()
@@ -265,7 +265,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 	}
 }
 
-func (g *ServersGenerator) generateServerAdapterSource(resource *concepts.Resource) {
+func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("github.com/gorilla/mux", "")
@@ -645,7 +645,7 @@ func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
 }
 
 func (g *ServersGenerator) adapterName(resource *concepts.Resource) string {
-	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server, nomenclator.Adapter))
+	return g.names.Public(names.Cat(resource.Name(), nomenclator.Adapter))
 }
 
 func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
