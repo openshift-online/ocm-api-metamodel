@@ -47,7 +47,7 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersL
 		return err
 	}
 	// Set a status code 200. Return empty response.
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	// Set body of response
 	response.Items(items)
 	response.Page(request.Page())
@@ -59,7 +59,7 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersL
 func (s *MyTestClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddServerRequest,
 	response *cmv1.ClustersAddServerResponse) error {
 	// Set a status code 200. Return empty response.
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	return nil
 }
 
@@ -71,7 +71,7 @@ type MyTestClusterServer struct{}
 
 func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetServerRequest,
 	response *cmv1.ClusterGetServerResponse) error {
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	cluster, err := cmv1.NewCluster().Name("test-get-cluster-by-id").Build()
 	if err != nil {
 		return err
@@ -82,13 +82,13 @@ func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetS
 
 func (s *MyTestClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdateServerRequest,
 	response *cmv1.ClusterUpdateServerResponse) error {
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	return nil
 }
 
 func (s *MyTestClusterServer) Delete(ctx context.Context, request *cmv1.ClusterDeleteServerRequest,
 	response *cmv1.ClusterDeleteServerResponse) error {
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	return nil
 }
 
@@ -112,7 +112,7 @@ func (s *MyTestIdentityProvidersServer) List(ctx context.Context,
 		return err
 	}
 	// Set a status code 200. Return empty response.
-	response.SetStatusCode(200)
+	response.Status(http.StatusOK)
 	// Set body of response
 	response.Items(items)
 	response.Page(1)
@@ -140,7 +140,7 @@ var _ = Describe("Server", func() {
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Returns a 404 for a path with a trailing slash", func() {
@@ -151,7 +151,7 @@ var _ = Describe("Server", func() {
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
-		Expect(recorder.Result().StatusCode).To(Equal(404))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
 	})
 
 	It("Returns a 404 for an unkown resource", func() {
@@ -162,7 +162,7 @@ var _ = Describe("Server", func() {
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
-		Expect(recorder.Result().StatusCode).To(Equal(404))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
 	})
 
 	It("Can get a list of clusters", func() {
@@ -186,7 +186,7 @@ var _ = Describe("Server", func() {
 		}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Can get a list of clusters by page", func() {
@@ -205,7 +205,7 @@ var _ = Describe("Server", func() {
 			}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Can get a list of clusters by size", func() {
@@ -229,7 +229,7 @@ var _ = Describe("Server", func() {
 		}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Can get a list of clusters by size and page", func() {
@@ -253,7 +253,7 @@ var _ = Describe("Server", func() {
 		}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Can get a cluster by id", func() {
@@ -270,7 +270,7 @@ var _ = Describe("Server", func() {
 		}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Can get a cluster sub resource by id", func() {
@@ -298,7 +298,7 @@ var _ = Describe("Server", func() {
 		}`
 
 		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(200))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
 	})
 
 	It("Returns a 404 for an unkown sub resource", func() {
@@ -309,6 +309,6 @@ var _ = Describe("Server", func() {
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
-		Expect(recorder.Result().StatusCode).To(Equal(404))
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
 	})
 })
