@@ -207,7 +207,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
 		Function("urlSegment", g.urlSegment).
-		Function("writeReponseName", g.writeReponseName).
+		Function("writeResponseName", g.writeResponseName).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
@@ -336,7 +336,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ $responseParameters := responseParameters . }}
 			{{ $requestQueryParameters := requestQueryParameters . }}
 			{{ $readRequestName := readRequestName . }}
-			{{ $writeReponseName := writeReponseName . }}
+			{{ $writeResponseName := writeResponseName . }}
 	
 			func (a *{{ $adapterName }}) {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				var err error
@@ -363,7 +363,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			}
 
 
-			func (a *{{ $adapterName }}) {{ $writeReponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+			func (a *{{ $adapterName }}) {{ $writeResponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(r.status)
 				{{ if $responseParameters }}
@@ -396,7 +396,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 							Build()
 						errors.SendError(w, r, errorBody)
 					}
-					err = a.{{ $writeReponseName }}(w, resp)
+					err = a.{{ $writeResponseName }}(w, resp)
 					if err != nil {
 						reason := fmt.Sprintf("An error occured while trying to write response for client: %v", err)
 						errorBody, _ := errors.NewError().
@@ -666,7 +666,7 @@ func (g *ServersGenerator) readRequestName(method *concepts.Method) string {
 	return g.names.Private(name)
 }
 
-func (g *ServersGenerator) writeReponseName(method *concepts.Method) string {
+func (g *ServersGenerator) writeResponseName(method *concepts.Method) string {
 	name := names.Cat(nomenclator.Write, method.Name(), nomenclator.Response)
 	return g.names.Private(name)
 }
