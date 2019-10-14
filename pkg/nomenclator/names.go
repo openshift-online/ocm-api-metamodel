@@ -106,4 +106,5 @@ var (
 
 	// W:
 	Wrap = names.ParseUsingCase("Wrap")
+	Write = names.ParseUsingCase("Write")
 )
