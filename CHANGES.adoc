@@ -3,6 +3,16 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.9 Oct 15 2019
+
+- Generate shorter adapter names.
+- Use constants from the `http` package.
+- Shorter _read_ and _write_ names.
+- Rename `SetStatusCode` to `Status`.
+- Improve naming of variables.
+- Set default status.
+- Move errors and helpers generators to separate files.
+
 == 0.0.8 Oct 12 2019
 
 - Use a private model for tests.
