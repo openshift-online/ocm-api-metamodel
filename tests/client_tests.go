@@ -114,7 +114,7 @@ var _ = Describe("Client", func() {
 // tests server.
 func NewTransport(server *Server) http.RoundTripper {
 	return &Transport{
-		server: server,
+		server:  server,
 		wrapped: &http.Transport{},
 	}
 }
@@ -122,7 +122,7 @@ func NewTransport(server *Server) http.RoundTripper {
 // Transport is the transport that will be used by the tests to talk to the tests server. It takes
 // care of basic things like adding the server address to the path calculated by the client.
 type Transport struct {
-	server *Server
+	server  *Server
 	wrapped *http.Transport
 }
 
@@ -133,4 +133,3 @@ func (t *Transport) RoundTrip(request *http.Request) (response *http.Response, e
 	response, err = t.wrapped.RoundTrip(request)
 	return
 }
-
