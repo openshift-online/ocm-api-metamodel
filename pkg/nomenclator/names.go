@@ -22,8 +22,9 @@ import (
 
 var (
 	// A:
-	Add     = names.ParseUsingCase("Add")
+	Adapt   = names.ParseUsingCase("Adapt")
 	Adapter = names.ParseUsingCase("Adapter")
+	Add     = names.ParseUsingCase("Add")
 
 	// B:
 	Boolean = names.ParseUsingCase("Boolean")
@@ -34,9 +35,10 @@ var (
 	Clients = names.ParseUsingCase("Clients")
 
 	// D:
-	Data   = names.ParseUsingCase("Data")
-	Date   = names.ParseUsingCase("Date")
-	Delete = names.ParseUsingCase("Delete")
+	Data     = names.ParseUsingCase("Data")
+	Date     = names.ParseUsingCase("Date")
+	Delete   = names.ParseUsingCase("Delete")
+	Dispatch = names.ParseUsingCase("Dispatch")
 
 	// E:
 	Error  = names.ParseUsingCase("Error")
