@@ -85,6 +85,28 @@ func (r *Resource) Locators() LocatorSlice {
 	return r.locators
 }
 
+// VariableLocator returns the variable locator of the resource. If there is no such resource it
+// returns nil.
+func (r *Resource) VariableLocator() *Locator {
+	for _, locator := range r.locators {
+		if locator.Variable() {
+			return locator
+		}
+	}
+	return nil
+}
+
+// ConstantLocators returns the constant (non variable) locators of the resuurce.
+func (r *Resource) ConstantLocators() LocatorSlice {
+	locators := LocatorSlice{}
+	for _, locator := range r.locators {
+		if !locator.Variable() {
+			locators = append(locators, locator)
+		}
+	}
+	return locators
+}
+
 // AddLocator adds a locator to the resource.
 func (r *Resource) AddLocator(locator *Locator) {
 	if locator != nil {

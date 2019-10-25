@@ -142,6 +142,7 @@ func (g *HelpersGenerator) Run() error {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
+	g.buffer.Import("strings", "")
 	g.buffer.Import("time", "")
 	g.buffer.Emit(`
 		// AddValue creates the given set of query parameters if needed, an then adds
@@ -193,6 +194,17 @@ func (g *HelpersGenerator) Run() error {
 			result := make([]string, len(values))
 			copy(result, values)
 			return result
+		}
+
+		// Segments calculates the path segments for the given path.
+		func Segments(path string) []string {
+			for strings.HasPrefix(path, "/") {
+				path = path[1:]
+			}
+			for strings.HasSuffix(path, "/") {
+				path = path[0:len(path)-1]
+			}
+			return strings.Split(path, "/")
 		}
 
 		// Name of the header used to contain the metrics path:

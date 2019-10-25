@@ -178,20 +178,20 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Base(g.base).
 		Package(pkgName).
 		File(fileName).
+		Function("adaptRequestName", g.adaptRequestName).
 		Function("adapterName", g.adapterName).
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
 		Function("defaultHttpStatus", g.defaultHttpStatus).
+		Function("dispatchRequestName", g.dispatchRequestName).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
 		Function("httpMethod", g.httpMethod).
-		Function("locatorHandlerName", g.locatorHandlerName).
 		Function("locatorName", g.locatorName).
-		Function("methodHandlerName", g.methodHandlerName).
 		Function("methodName", g.methodName).
 		Function("queryParameterName", g.queryParameterName).
 		Function("readRequestName", g.readRequestName).
@@ -271,66 +271,68 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import("github.com/gorilla/mux", "")
 	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
 	g.buffer.Emit(`
 		{{ $adapterName := adapterName .Resource }}
 		{{ $serverName := serverName .Resource }}
+		{{ $dispatchRequestName := dispatchRequestName .Resource }}
 
-		// {{ $adapterName }} represents the structs that adapts Requests and Response to internal
-		// structs.
+		// {{ $adapterName }} is an HTTP handler that knows how to translate HTTP requests
+		// into calls to the methods of an object that implements the {{ $serverName }}
+		// interface.
 		type {{ $adapterName }} struct {
 			server {{ $serverName }}
-			router *mux.Router
 		}
 
-		func New{{ $adapterName }}(server  {{ $serverName }}, router *mux.Router) *{{ $adapterName }} {
-			adapter := new({{ $adapterName }})
-			adapter.server = server
-			adapter.router = router
-
-			{{ range .Resource.Locators }}
-				{{ $locatorHandlerName :=  locatorHandlerName . }}
-				{{ $locatorURLSegment := urlSegment .Name }}
-
-				{{ if .Variable }}
-					adapter.router.PathPrefix("/{id}").HandlerFunc(adapter.{{ $locatorHandlerName }})
-				{{ else }}
-					adapter.router.PathPrefix("/{{ $locatorURLSegment }}").HandlerFunc(adapter.{{ $locatorHandlerName }})
-				{{ end }}
-			{{ end }}
-
-			{{ range .Resource.Methods }}
-				adapter.router.Methods({{ httpMethod . }}).Path("").HandlerFunc(adapter.{{ methodHandlerName . }})
-			{{ end }}
-			return adapter
-		}
-
-		{{ range .Resource.Locators }}
-			{{ $targerAdapterName := adapterName .Target }}
-			{{ $targerServerName := serverName .Target }}
-			{{ $locatorName := locatorName . }}
-			{{ $locatorHandlerName :=  locatorHandlerName . }}
-			{{ $locatorURLSegment := urlSegment .Name }}
-
-			func (a *{{ $adapterName }}) {{ $locatorHandlerName }}(w http.ResponseWriter, r *http.Request) {
-				{{ if .Variable }}
-					id := mux.Vars(r)["id"]
-					target := a.server.{{ $locatorName }}(id)
-					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{id}").Subrouter())
-					targetAdapter.ServeHTTP(w,r)
-					return
-				{{ else }}
-					target := a.server.{{ $locatorName }}()
-					targetAdapter := New{{ $targerAdapterName }}(target, a.router.PathPrefix("/{{ $locatorURLSegment }}").Subrouter())
-					targetAdapter.ServeHTTP(w,r)
-					return
-				{{ end }}
+		// New{{ $adapterName }} creates a new adapter that will translate HTTP requests
+		// into calls to the given server.
+		func New{{ $adapterName }}(server {{ $serverName }}) *{{ $adapterName }} {
+			return &{{ $adapterName }}{
+				server: server,
 			}
-		{{ end }}
+		}
+
+		// ServeHTTP is the implementation of the http.Handler interface.
+		func (a *{{ $adapterName }}) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+			{{ $dispatchRequestName }}(w, r, a.server, helpers.Segments(r.URL.Path))
+		}
+
+		// {{ $dispatchRequestName }} navigates the servers tree rooted at the given server
+		// till it finds one that matches the given set of path segments, and then invokes
+		// the corresponding server.
+		func {{ $dispatchRequestName }}(w http.ResponseWriter, r *http.Request, server {{ $serverName }}, segments []string) {
+			if len(segments) == 0 {
+				switch r.Method {
+				{{ range .Resource.Methods }}
+					case {{ httpMethod . }}:
+						{{ adaptRequestName . }}(w, r, server)
+				{{ end }}
+				default:
+					errors.SendMethodNotSupported(w, r)
+				}
+			} else {
+				switch segments[0] {
+				{{ range .Resource.ConstantLocators }}
+					case "{{ urlSegment .Name }}":
+						target := server.{{ locatorName . }}()
+						{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
+				{{ end }}
+				default:
+					{{ if .Resource.VariableLocator }}
+						{{ with .Resource.VariableLocator }}
+							target := server.{{ locatorName . }}(segments[0])
+							{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
+						{{ end }}
+					{{ else }}
+						errors.SendNotFound(w, r)
+					{{ end }}
+				}
+			}
+		}
 
 		{{ range .Resource.Methods }}
 			{{ $methodName := methodName . }}
+			{{ $adaptRequestName := adaptRequestName . }}
 			{{ $requestName := requestName . }}
 			{{ $responseName := responseName . }}
 			{{ $requestBodyParameters := requestBodyParameters . }}
@@ -340,7 +342,9 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 			{{ $readRequestName := readRequestName . }}
 			{{ $writeResponseName := writeResponseName . }}
 
-			func (a *{{ $adapterName }}) {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
+			// {{ $readRequestName }} reads the given HTTP requests and translates it
+			// into an object of type {{ $requestName }}.
+			func {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
 				var err error
 				result := new({{ $requestName }})
 				{{ if $requestQueryParameters }}
@@ -364,7 +368,9 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 				return result, err
 			}
 
-			func (a *{{ $adapterName }}) {{ $writeResponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
+			// {{ $writeResponseName }} translates the given request object into an
+			// HTTP response.
+			func {{ $writeResponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(r.status)
 				{{ if $responseParameters }}
@@ -376,56 +382,43 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 				return nil
 			}
 
-			func (a *{{ $adapterName }} ) {{ methodHandlerName . }}(w http.ResponseWriter, r *http.Request) {
-				request, err := a.{{ $readRequestName }}(r)
+			// {{ $adaptRequestName }} translates the given HTTP request into a call to
+			// the corresponding method of the given server. Then it translates the
+			// results returned by that method into an HTTP response.
+			func {{ $adaptRequestName }}(w http.ResponseWriter, r *http.Request, server {{ $serverName }}) {
+				request, err := {{ $readRequestName }}(r)
 				if err != nil {
-					reason := fmt.Sprintf(
-						"An error occurred while trying to read request from client: %v",
-						err,
+					glog.Errorf(
+						"Can't read request for method '%s' and path '%s': %v",
+						r.Method, r.URL.Path, err,
 					)
-					body, _ := errors.NewError().
-						Reason(reason).
-						ID("500").
-						Build()
-					errors.SendError(w, r, body)
+					errors.SendInternalServerError(w, r)
 					return
 				}
 				response := new({{ $responseName }})
 				response.status = {{ defaultHttpStatus . }}
-				err = a.server.{{ $methodName }}(r.Context(), request, response)
+				err = server.{{ $methodName }}(r.Context(), request, response)
 				if err != nil {
-					reason := fmt.Sprintf(
-						"An error occurred while trying to run method {{ $methodName }}: %v",
-						err,
+					glog.Errorf(
+						"Can't process request for method '%s' and path '%s': %v",
+						r.Method, r.URL.Path, err,
 					)
-					body, _ := errors.NewError().
-						Reason(reason).
-						ID("500").
-						Build()
-					errors.SendError(w, r, body)
+					errors.SendInternalServerError(w, r)
+					return
 				}
-				err = a.{{ $writeResponseName }}(w, response)
+				err = {{ $writeResponseName }}(w, response)
 				if err != nil {
-					reason := fmt.Sprintf(
-						"An error occurred while trying to write response for client: %v",
-						err,
+					glog.Errorf(
+						"Can't write response for method '%s' and path '%s': %v",
+						r.Method, r.URL.Path, err,
 					)
-					body, _ := errors.NewError().
-						Reason(reason).
-						ID("500").
-						Build()
-					errors.SendError(w, r, body)
+					return
 				}
 			}
 		{{ end }}
-
-		func (a *{{ $adapterName }} ) ServeHTTP (w http.ResponseWriter, r *http.Request) {
-			a.router.ServeHTTP(w,r)
-		}
 		`,
 		"Resource", resource,
 	)
-
 }
 
 func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
@@ -672,18 +665,42 @@ func (g *ServersGenerator) methodName(method *concepts.Method) string {
 	return g.names.Public(method.Name())
 }
 
-func (g *ServersGenerator) methodHandlerName(method *concepts.Method) string {
-	name := names.Cat(nomenclator.Handler, method.Name())
+func (g *ServersGenerator) dispatchRequestName(resource *concepts.Resource) string {
+	name := names.Cat(
+		nomenclator.Dispatch,
+		resource.Name(),
+		nomenclator.Request,
+	)
+	return g.names.Private(name)
+}
+
+func (g *ServersGenerator) adaptRequestName(method *concepts.Method) string {
+	name := names.Cat(
+		nomenclator.Adapt,
+		method.Owner().Name(),
+		method.Name(),
+		nomenclator.Request,
+	)
 	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) readRequestName(method *concepts.Method) string {
-	name := names.Cat(nomenclator.Read, method.Name(), nomenclator.Request)
+	name := names.Cat(
+		nomenclator.Read,
+		method.Owner().Name(),
+		method.Name(),
+		nomenclator.Request,
+	)
 	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) writeResponseName(method *concepts.Method) string {
-	name := names.Cat(nomenclator.Write, method.Name(), nomenclator.Response)
+	name := names.Cat(
+		nomenclator.Write,
+		method.Owner().Name(),
+		method.Name(),
+		nomenclator.Response,
+	)
 	return g.names.Private(name)
 }
 
@@ -734,11 +751,6 @@ func (g *ServersGenerator) responseName(method *concepts.Method) string {
 
 func (g *ServersGenerator) responseData(method *concepts.Method) string {
 	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Response, nomenclator.Data)
-	return g.names.Private(name)
-}
-
-func (g *ServersGenerator) locatorHandlerName(locator *concepts.Locator) string {
-	name := names.Cat(locator.Name(), nomenclator.Handler)
 	return g.names.Private(name)
 }
 
