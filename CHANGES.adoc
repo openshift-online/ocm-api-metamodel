@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.10 Oct 25 2019
+
+- Make HTTP server adapters stateless.
+
 == 0.0.9 Oct 15 2019
 
 - Generate shorter adapter names.
