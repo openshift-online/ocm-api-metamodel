@@ -14,16 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Root of the tree of resources of the clusters management service.
-resource Root {
-	// Reference to the resource that manages the collection of clusters.
-	locator Clusters {
-		target Clusters
-	}
-
-	// This locator is intended to test what happens when the implementation of a locator
-	// returns nil.
-	locator Nil {
-		target Nil
-	}
+resource Nil {
 }

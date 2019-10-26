@@ -309,22 +309,32 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 				{{ end }}
 				default:
 					errors.SendMethodNotAllowed(w, r)
+					return
 				}
 			} else {
 				switch segments[0] {
 				{{ range .Resource.ConstantLocators }}
 					case "{{ urlSegment .Name }}":
 						target := server.{{ locatorName . }}()
+						if target == nil {
+							errors.SendNotFound(w, r)
+							return
+						}
 						{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
 				{{ end }}
 				default:
 					{{ if .Resource.VariableLocator }}
 						{{ with .Resource.VariableLocator }}
 							target := server.{{ locatorName . }}(segments[0])
+							if target == nil {
+								errors.SendNotFound(w, r)
+								return
+							}
 							{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
 						{{ end }}
 					{{ else }}
 						errors.SendNotFound(w, r)
+						return
 					{{ end }}
 				}
 			}

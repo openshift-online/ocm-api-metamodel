@@ -35,6 +35,12 @@ func (s *MyTestRootServer) Clusters() cmv1.ClustersServer {
 	return &MyTestClustersServer{}
 }
 
+func (s *MyTestRootServer) Nil() cmv1.NilServer {
+	// This should always return nil, as it is used in the tests to check what happens when
+	// a locator returns nil.
+	return nil
+}
+
 type MyTestClustersServer struct{}
 
 func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersListServerRequest,
@@ -297,6 +303,15 @@ var _ = Describe("Server", func() {
 		recorder := httptest.NewRecorder()
 		rootAdapter.ServeHTTP(recorder, request)
 
+		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns a 404 if the server returns nil for a locator", func() {
+		server := new(MyTestRootServer)
+		adapter := cmv1.NewRootAdapter(server)
+		request := httptest.NewRequest(http.MethodGet, "/nil", nil)
+		recorder := httptest.NewRecorder()
+		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
 	})
 })
