@@ -139,15 +139,36 @@ func (b *ServersGeneratorBuilder) Build() (generator *ServersGenerator, err erro
 func (g *ServersGenerator) Run() error {
 	var err error
 
-	// Generate the Go server for each model resource:
+	// Calculate the file name:
+	fileName := g.names.File(nomenclator.Server)
+
+	// Create the buffer for the model server:
+	g.buffer, err = golang.NewBufferBuilder().
+		Reporter(g.reporter).
+		Output(g.output).
+		Base(g.base).
+		File(fileName).
+		Function("serviceName", g.serviceName).
+		Function("serviceSelector", g.serviceSelector).
+		Function("urlSegment", g.urlSegment).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	// Generate the source for the model server:
+	g.generateMainServerSource()
+	g.generateMainDispatcherSource()
+	err = g.buffer.Write()
+	if err != nil {
+		return err
+	}
+
+	// Generate the server for each service:
 	for _, service := range g.model.Services() {
-		for _, version := range service.Versions() {
-			for _, resource := range version.Resources() {
-				err = g.generateResourceServerFile(resource)
-				if err != nil {
-					return err
-				}
-			}
+		err = g.generateServiceServer(service)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -164,7 +185,191 @@ func (g *ServersGenerator) Run() error {
 	return nil
 }
 
-func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resource) error {
+func (g *ServersGenerator) generateMainServerSource() {
+	for _, service := range g.model.Services() {
+		g.buffer.Import(g.serviceImport(service), "")
+	}
+	g.buffer.Emit(`
+		// Server is the interface of the top level server.
+		type Server interface {
+			{{ range .Model.Services }}
+				{{ $serviceName := serviceName . }}
+				{{ $serviceSelector := serviceSelector . }}
+
+				// {{ $serviceName }} returns the server for service '{{ .Name }}'.
+				{{ $serviceName }}() {{ $serviceSelector }}.Server
+			{{ end }}
+		}
+		`,
+		"Model", g.model,
+	)
+}
+
+func (g *ServersGenerator) generateMainDispatcherSource() {
+	g.buffer.Import("net/http", "")
+	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Emit(`
+		// Dispatch navigates the servers tree till it finds one that matches the given set
+		// of path segments, and then invokes it.
+		func Dispatch(w http.ResponseWriter, r *http.Request, server Server, segments []string) {
+			if len(segments) == 0 {
+				// TODO: This should send the metadata.
+				errors.SendMethodNotAllowed(w, r)
+				return
+			} else {
+				switch segments[0] {
+				{{ range .Model.Services }}
+					{{ $serviceName := serviceName . }}
+					{{ $serviceSelector := serviceSelector . }}
+
+					case "{{ urlSegment .Name }}":
+						service := server.{{ $serviceName }}()
+						if service == nil {
+							errors.SendNotFound(w, r)
+							return
+						}
+						{{ $serviceSelector }}.Dispatch(w, r, service, segments[1:])
+				{{ end }}
+				default:
+					errors.SendNotFound(w, r)
+					return
+				}
+			}
+		}
+
+		// Adapter is an HTTP handler that knows how to translate HTTP requests into calls
+		// to the methods of an object that implements the Server interface.
+		type Adapter struct {
+			server Server
+		}
+
+		// NewAdapter creates a new adapter that will translate HTTP requests into calls to
+		// the given server.
+		func NewAdapter(server Server) *Adapter {
+			return &Adapter{
+				server: server,
+			}
+		}
+
+		// ServeHTTP is the implementation of the http.Handler interface.
+		func (a *Adapter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+			Dispatch(w, r, a.server, helpers.Segments(r.URL.Path))
+		}
+		`,
+		"Model", g.model,
+	)
+}
+
+func (g *ServersGenerator) generateServiceServer(service *concepts.Service) error {
+	var err error
+
+	// Calculate the package and file name:
+	pkgName := g.names.Package(service.Name())
+	fileName := g.names.File(nomenclator.Server)
+
+	// Create the buffer for the service:
+	g.buffer, err = golang.NewBufferBuilder().
+		Reporter(g.reporter).
+		Output(g.output).
+		Base(g.base).
+		Package(pkgName).
+		File(fileName).
+		Function("serverName", g.serverName).
+		Function("versionName", g.versionName).
+		Function("versionSelector", g.versionSelector).
+		Function("urlSegment", g.urlSegment).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	// Generate the source for the service:
+	g.generateServiceServerSource(service)
+	g.generateServiceDispatcherSource(service)
+	err = g.buffer.Write()
+	if err != nil {
+		return err
+	}
+
+	// Generate the clients for the versions:
+	for _, version := range service.Versions() {
+		err = g.generateVersionServer(version)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service) {
+	for _, version := range service.Versions() {
+		g.buffer.Import(g.versionImport(version), "")
+	}
+	g.buffer.Emit(`
+		// Server is the interface for the '{{ .Service.Name }}' service.
+		type Server interface {
+			{{ range .Service.Versions }}
+				{{ $versionName := versionName . }}
+				{{ $versionSelector := versionSelector . }}
+				{{ $rootName := serverName .Root }}
+
+				// {{ $versionName }} returns the server for version '{{ .Name }}'.
+				{{ $versionName }}() {{ $versionSelector }}.{{ $rootName }}
+			{{ end }}
+		}
+		`,
+		"Service", service,
+	)
+}
+
+func (g *ServersGenerator) generateServiceDispatcherSource(service *concepts.Service) {
+	g.buffer.Import("net/http", "")
+	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Emit(`
+		// Dispatch navigates the servers tree till it finds one that matches the given set
+		// of path segments, and then invokes it.
+		func Dispatch(w http.ResponseWriter, r *http.Request, server Server, segments []string) {
+			if len(segments) == 0 {
+				// TODO: This should send the service metadata.
+				errors.SendMethodNotAllowed(w, r)
+				return
+			} else {
+				switch segments[0] {
+				{{ range .Service.Versions }}
+					{{ $versionName := versionName . }}
+					{{ $versionSelector := versionSelector . }}
+
+					case "{{ urlSegment .Name }}":
+						version := server.{{ $versionName }}()
+						if version == nil {
+							errors.SendNotFound(w, r)
+							return
+						}
+						{{ $versionSelector }}.Dispatch(w, r, version, segments[1:])
+				{{ end }}
+				default:
+					errors.SendNotFound(w, r)
+					return
+				}
+			}
+		}
+		`,
+		"Service", service,
+	)
+}
+
+func (g *ServersGenerator) generateVersionServer(version *concepts.Version) error {
+	for _, resource := range version.Resources() {
+		err := g.generateResourceServer(resource)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -179,12 +384,11 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 		Package(pkgName).
 		File(fileName).
 		Function("adaptRequestName", g.adaptRequestName).
-		Function("adapterName", g.adapterName).
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
 		Function("defaultHttpStatus", g.defaultHttpStatus).
-		Function("dispatchRequestName", g.dispatchRequestName).
+		Function("dispatchName", g.dispatchName).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
@@ -218,7 +422,7 @@ func (g *ServersGenerator) generateResourceServerFile(resource *concepts.Resourc
 
 	// Generate the source:
 	g.generateResourceServerSource(resource)
-	g.generateAdapterSource(resource)
+	g.generateResourceDispatcherSource(resource)
 
 	// Write the generated code:
 	return g.buffer.Write()
@@ -268,39 +472,18 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 	}
 }
 
-func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
+func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
 	g.buffer.Emit(`
-		{{ $adapterName := adapterName .Resource }}
 		{{ $serverName := serverName .Resource }}
-		{{ $dispatchRequestName := dispatchRequestName .Resource }}
+		{{ $dispatchName := dispatchName .Resource }}
 
-		// {{ $adapterName }} is an HTTP handler that knows how to translate HTTP requests
-		// into calls to the methods of an object that implements the {{ $serverName }}
-		// interface.
-		type {{ $adapterName }} struct {
-			server {{ $serverName }}
-		}
-
-		// New{{ $adapterName }} creates a new adapter that will translate HTTP requests
-		// into calls to the given server.
-		func New{{ $adapterName }}(server {{ $serverName }}) *{{ $adapterName }} {
-			return &{{ $adapterName }}{
-				server: server,
-			}
-		}
-
-		// ServeHTTP is the implementation of the http.Handler interface.
-		func (a *{{ $adapterName }}) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-			{{ $dispatchRequestName }}(w, r, a.server, helpers.Segments(r.URL.Path))
-		}
-
-		// {{ $dispatchRequestName }} navigates the servers tree rooted at the given server
+		// {{ $dispatchName }} navigates the servers tree rooted at the given server
 		// till it finds one that matches the given set of path segments, and then invokes
 		// the corresponding server.
-		func {{ $dispatchRequestName }}(w http.ResponseWriter, r *http.Request, server {{ $serverName }}, segments []string) {
+		func {{ $dispatchName }}(w http.ResponseWriter, r *http.Request, server {{ $serverName }}, segments []string) {
 			if len(segments) == 0 {
 				switch r.Method {
 				{{ range .Resource.Methods }}
@@ -320,7 +503,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 							errors.SendNotFound(w, r)
 							return
 						}
-						{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
+						{{ dispatchName .Target }}(w, r, target, segments[1:])
 				{{ end }}
 				default:
 					{{ if .Resource.VariableLocator }}
@@ -330,7 +513,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 								errors.SendNotFound(w, r)
 								return
 							}
-							{{ dispatchRequestName .Target }}(w, r, target, segments[1:])
+							{{ dispatchName .Target }}(w, r, target, segments[1:])
 						{{ end }}
 					{{ else }}
 						errors.SendNotFound(w, r)
@@ -655,12 +838,39 @@ func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
 	return g.names.File(names.Cat(resource.Name(), nomenclator.Server))
 }
 
-func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
-	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server))
+func (g *ServersGenerator) serviceImport(service *concepts.Service) string {
+	serviceSegment := g.names.Package(service.Name())
+	return path.Join(g.base, serviceSegment)
 }
 
-func (g *ServersGenerator) adapterName(resource *concepts.Resource) string {
-	return g.names.Public(names.Cat(resource.Name(), nomenclator.Adapter))
+func (g *ServersGenerator) serviceName(service *concepts.Service) string {
+	return g.names.Public(service.Name())
+}
+
+func (g *ServersGenerator) serviceSelector(service *concepts.Service) string {
+	return g.names.Package(service.Name())
+}
+
+func (g *ServersGenerator) versionImport(version *concepts.Version) string {
+	serviceSegment := g.names.Package(version.Owner().Name())
+	versionSegment := g.names.Package(version.Name())
+	return path.Join(g.base, serviceSegment, versionSegment)
+}
+
+func (g *ServersGenerator) versionName(version *concepts.Version) string {
+	return g.names.Public(version.Name())
+}
+
+func (g *ServersGenerator) versionSelector(version *concepts.Version) string {
+	return g.names.Package(version.Name())
+}
+
+func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
+	root := resource.Owner().Root()
+	if resource == root {
+		return g.names.Public(nomenclator.Server)
+	}
+	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server))
 }
 
 func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
@@ -675,13 +885,12 @@ func (g *ServersGenerator) methodName(method *concepts.Method) string {
 	return g.names.Public(method.Name())
 }
 
-func (g *ServersGenerator) dispatchRequestName(resource *concepts.Resource) string {
-	name := names.Cat(
-		nomenclator.Dispatch,
-		resource.Name(),
-		nomenclator.Request,
-	)
-	return g.names.Private(name)
+func (g *ServersGenerator) dispatchName(resource *concepts.Resource) string {
+	root := resource.Owner().Root()
+	if resource == root {
+		return g.names.Public(nomenclator.Dispatch)
+	}
+	return g.names.Private(names.Cat(nomenclator.Dispatch, resource.Name()))
 }
 
 func (g *ServersGenerator) adaptRequestName(method *concepts.Method) string {

@@ -51,7 +51,7 @@ func ParseUsingCase(text string) *Name {
 	size := len(runes)
 	if size > 1 {
 		buffer := new(bytes.Buffer)
-		for i := 0; i < size - 1; i++ {
+		for i := 0; i < size-1; i++ {
 			current := runes[i]
 			next := runes[i+1]
 			buffer.WriteRune(current)
@@ -73,7 +73,7 @@ func ParseUsingCase(text string) *Name {
 	if size > 1 {
 		// Process the chunks:
 		i := 0
-		for i < size - 1 {
+		for i < size-1 {
 			current := chunks[i]
 			next := chunks[i+1]
 
@@ -99,8 +99,8 @@ func ParseUsingCase(text string) *Name {
 			// last character of the first chunk is the first character of the second
 			// word, like in `CPUList` which corresponds to `CPU` and `List`:
 			if isUpper(current) && isLower(next) {
-				first := NewInitialism(current[0:len(current)-1])
-				second := NewWord(strings.ToLower(current[len(current)-1:])+next)
+				first := NewInitialism(current[0 : len(current)-1])
+				second := NewWord(strings.ToLower(current[len(current)-1:]) + next)
 				words = append(words, first)
 				words = append(words, second)
 				i = i + 2

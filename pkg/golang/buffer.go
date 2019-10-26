@@ -296,7 +296,8 @@ func (b *Buffer) Write() error {
 	fmt.Fprintf(outputFd, "\n")
 
 	// Write the package statement:
-	fmt.Fprintf(outputFd, "package %s // %s\n", path.Base(b.pkg), b.pkg)
+	pkgName := b.cleanPkg(path.Base(b.pkg))
+	fmt.Fprintf(outputFd, "package %s // %s\n", pkgName, b.pkg)
 	fmt.Fprintf(outputFd, "\n")
 
 	// Write the import statement:
@@ -401,6 +402,20 @@ func (b *Buffer) lineComment(value string) string {
 		lines[i] = fmt.Sprintf("// %s", line)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// cleanPkg transforms the given text so that it is a valid Go package name. This means removing the
+// `-go` suffix if present, and removing any dashes. For example, the string `ocm-sdk-go` will be
+// translated into `sdk`.
+func (b *Buffer) cleanPkg(name string) string {
+	if strings.HasSuffix(name, "-go") {
+		name = name[0 : len(name)-3]
+	}
+	index := strings.LastIndex(name, "-")
+	if index > 0 {
+		name = name[index+1:]
+	}
+	return name
 }
 
 // Header that will be included in all generated files:

@@ -26,24 +26,274 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-online/ocm-api-metamodel/tests/api"
+	am "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt"
+	az "github.com/openshift-online/ocm-api-metamodel/tests/api/authorizations"
+	cm "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
-type MyTestRootServer struct{}
+var _ = Describe("Server", func() {
+	var adapter *api.Adapter
+	var recorder *httptest.ResponseRecorder
 
-func (s *MyTestRootServer) Clusters() cmv1.ClustersServer {
-	return &MyTestClustersServer{}
+	BeforeEach(func() {
+		adapter = api.NewAdapter(&MyServer{})
+		recorder = httptest.NewRecorder()
+	})
+
+	It("Can receive a request and return response", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+	})
+
+	It("Returns the list of clusters with a trailing slash", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters/", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+	})
+
+	It("Returns a 404 for an unknown resource", func() {
+		request := httptest.NewRequest(http.MethodGet, "/foo", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Can get a list of clusters", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"page": 0,
+			"size": 0,
+			"total": 1,
+			"items": [
+				{
+					"kind": "Cluster",
+					"name": "test-list-clusters"
+				}
+			]
+		}`))
+	})
+
+	It("Can get a list of clusters by page", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters?page=2",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"page": 2,
+			"size": 0,
+			"total": 1,
+			"items": [
+				{
+					"kind": "Cluster",
+					"name": "test-list-clusters"
+				}
+			]
+		}`))
+	})
+
+	It("Can get a list of clusters by size", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters?size=2",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"page": 0,
+			"size": 2,
+			"total": 1,
+			"items": [
+				{
+					"kind": "Cluster",
+					"name": "test-list-clusters"
+				}
+			]
+		}`))
+	})
+
+	It("Can get a list of clusters by size and page", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters?size=2&page=1",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"page": 1,
+			"size": 2,
+			"total": 1,
+			"items": [
+				{
+					"kind": "Cluster",
+					"name": "test-list-clusters"
+				}
+			]
+		}`))
+	})
+
+	It("Can get a cluster by identifier", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters/123",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"kind": "Cluster",
+			"name": "test-get-cluster-by-id"
+		}`))
+	})
+
+	It("Can get a cluster sub resource by id", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters/123/identity_providers",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"page": 1,
+			"size": 1,
+			"total": 1,
+			"items": [
+				{
+					"kind": "IdentityProvider",
+					"name": "test-list-identity-providers"
+				}
+			]
+		}`))
+	})
+
+	It("Returns 404 for an unknown service", func() {
+		request := httptest.NewRequest(http.MethodGet, "/foo_mgmt", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns 404 for an unknown version", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v100", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns 404 for an unknown resource", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/flusters", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns 404 for an unknown sub-resource", func() {
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/clusters_mgmt/v1/clusters/123/foo",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns 404 if the server returns nil for a locator", func() {
+		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/nil", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+	})
+
+	It("Returns 405 for unsupported service method", func() {
+		request := httptest.NewRequest(http.MethodPost, "/clusters_mgmt", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
+	})
+
+	It("Returns 405 for unsupported version method", func() {
+		request := httptest.NewRequest(http.MethodPost, "/clusters_mgmt/v1", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
+	})
+
+	It("Returns 405 for unsupported resource method", func() {
+		request := httptest.NewRequest(http.MethodPut, "/clusters_mgmt/v1/clusters", nil)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
+	})
+
+	It("Returns 405 for unsupported sub-resource method", func() {
+		request := httptest.NewRequest(
+			http.MethodPut,
+			"/clusters_mgmt/v1/clusters/123",
+			nil,
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
+	})
+})
+
+// MyServer is the implementation of the top level server.
+type MyServer struct {
+	// Empty on purpose.
 }
 
-func (s *MyTestRootServer) Nil() cmv1.NilServer {
+// Make sure that we implement the interface:
+var _ api.Server = &MyServer{}
+
+func (s *MyServer) AccountsMgmt() am.Server {
+	return nil
+}
+
+func (s *MyServer) Authorizations() az.Server {
+	return nil
+}
+
+func (s *MyServer) ClustersMgmt() cm.Server {
+	return &MyCMServer{}
+}
+
+// MyCMServer is the implementation of the clusters management server.
+type MyCMServer struct {
+	// Empty on purpose.
+}
+
+// Make sure that we implement the interface:
+var _ cm.Server = &MyCMServer{}
+
+func (s *MyCMServer) V1() cmv1.Server {
+	return &MyCMV1Server{}
+}
+
+// MyCMV1Server is the implementation of version 1 of the clusters management server.
+type MyCMV1Server struct {
+	// Empty on purpose.
+}
+
+// Make sure that we implement the interface:
+var _ cmv1.Server = &MyCMV1Server{}
+
+func (s *MyCMV1Server) Clusters() cmv1.ClustersServer {
+	return &MyClustersServer{}
+}
+
+func (s *MyCMV1Server) Nil() cmv1.NilServer {
 	// This should always return nil, as it is used in the tests to check what happens when
 	// a locator returns nil.
 	return nil
 }
 
-type MyTestClustersServer struct{}
+// MyClustersServer is the implementation of the server that manages the collection of clusters.
+type MyClustersServer struct {
+	// Empty on purpose.
+}
 
-func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersListServerRequest,
+func (s *MyClustersServer) List(ctx context.Context, request *cmv1.ClustersListServerRequest,
 	response *cmv1.ClustersListServerResponse) error {
 	items, err := cmv1.NewClusterList().
 		Items(cmv1.NewCluster().Name("test-list-clusters")).
@@ -58,18 +308,24 @@ func (s *MyTestClustersServer) List(ctx context.Context, request *cmv1.ClustersL
 	return nil
 }
 
-func (s *MyTestClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddServerRequest,
+func (s *MyClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddServerRequest,
 	response *cmv1.ClustersAddServerResponse) error {
 	return nil
 }
 
-func (s *MyTestClustersServer) Cluster(id string) cmv1.ClusterServer {
-	return &MyTestClusterServer{}
+func (s *MyClustersServer) Cluster(id string) cmv1.ClusterServer {
+	return &MyClusterServer{}
 }
 
-type MyTestClusterServer struct{}
+// MyCluster servier is the implementation of the server that manages a specific cluster.
+type MyClusterServer struct {
+	// Empty on purpose.
+}
 
-func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetServerRequest,
+// Make sure we implement the interface:
+var _ cmv1.ClusterServer = &MyClusterServer{}
+
+func (s *MyClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetServerRequest,
 	response *cmv1.ClusterGetServerResponse) error {
 	cluster, err := cmv1.NewCluster().Name("test-get-cluster-by-id").Build()
 	if err != nil {
@@ -79,27 +335,34 @@ func (s *MyTestClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetS
 	return nil
 }
 
-func (s *MyTestClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdateServerRequest,
+func (s *MyClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdateServerRequest,
 	response *cmv1.ClusterUpdateServerResponse) error {
 	return nil
 }
 
-func (s *MyTestClusterServer) Delete(ctx context.Context, request *cmv1.ClusterDeleteServerRequest,
+func (s *MyClusterServer) Delete(ctx context.Context, request *cmv1.ClusterDeleteServerRequest,
 	response *cmv1.ClusterDeleteServerResponse) error {
 	return nil
 }
 
-func (s *MyTestClusterServer) Groups() cmv1.GroupsServer {
+func (s *MyClusterServer) Groups() cmv1.GroupsServer {
 	return nil
 }
 
-func (s *MyTestClusterServer) IdentityProviders() cmv1.IdentityProvidersServer {
-	return &MyTestIdentityProvidersServer{}
+func (s *MyClusterServer) IdentityProviders() cmv1.IdentityProvidersServer {
+	return &MyIdentityProvidersServer{}
 }
 
-type MyTestIdentityProvidersServer struct{}
+// MyIdentityProvidersServer is the implementation of the server that manages the collection of
+// identity providers of a cluster.
+type MyIdentityProvidersServer struct {
+	// Empty on purpose.
+}
 
-func (s *MyTestIdentityProvidersServer) List(ctx context.Context,
+// Make sure we implement the interface:
+var _ cmv1.IdentityProvidersServer = &MyIdentityProvidersServer{}
+
+func (s *MyIdentityProvidersServer) List(ctx context.Context,
 	request *cmv1.IdentityProvidersListServerRequest,
 	response *cmv1.IdentityProvidersListServerResponse) error {
 	items, err := cmv1.NewIdentityProviderList().
@@ -115,203 +378,12 @@ func (s *MyTestIdentityProvidersServer) List(ctx context.Context,
 	return nil
 }
 
-func (s *MyTestIdentityProvidersServer) Add(ctx context.Context,
+func (s *MyIdentityProvidersServer) Add(ctx context.Context,
 	request *cmv1.IdentityProvidersAddServerRequest,
 	response *cmv1.IdentityProvidersAddServerResponse) error {
 	return nil
 }
 
-func (s *MyTestIdentityProvidersServer) IdentityProvider(id string) cmv1.IdentityProviderServer {
+func (s *MyIdentityProvidersServer) IdentityProvider(id string) cmv1.IdentityProviderServer {
 	return nil
 }
-
-var _ = Describe("Server", func() {
-	It("Can receive a request and return response", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Returns the list of clusters with a trailing slash", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters/", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Returns a 404 for an unkown resource", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/foo", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
-	})
-
-	It("Can get a list of clusters", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"page": 0,
-			"size": 0,
-			"total": 1,
-			"items": [
-				{
-					"kind": "Cluster",
-					"name": "test-list-clusters"
-				}
-			]
-		}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Can get a list of clusters by page", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters?page=2", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"page":2,
-			"size":0,
-			"total":1,
-			"items":[{"kind":"Cluster","name":"test-list-clusters"}]
-			}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Can get a list of clusters by size", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"page": 0,
-			"size": 2,
-			"total": 1,
-			"items": [
-				{
-					"kind": "Cluster",
-					"name": "test-list-clusters"
-				}
-			]
-		}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Can get a list of clusters by size and page", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters?size=2&page=1", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"page": 1,
-			"size": 2,
-			"total": 1,
-			"items": [
-				{
-					"kind": "Cluster",
-					"name": "test-list-clusters"
-				}
-			]
-		}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Can get a cluster by identifier", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters/123", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"kind": "Cluster",
-			"name": "test-get-cluster-by-id"
-		}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Can get a cluster sub resource by id", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(
-			http.MethodGet,
-			"/clusters/123/identity_providers",
-			nil,
-		)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		expected := `{
-			"page": 1,
-			"size": 1,
-			"total": 1,
-			"items": [
-				{
-					"kind": "IdentityProvider",
-					"name": "test-list-identity-providers"
-				}
-			]
-		}`
-
-		Expect(recorder.Body).To(MatchJSON(expected))
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusOK))
-	})
-
-	It("Returns a 404 for an unkown sub resource", func() {
-		myTestRootServer := new(MyTestRootServer)
-		rootAdapter := cmv1.NewRootAdapter(myTestRootServer)
-
-		request := httptest.NewRequest(http.MethodGet, "/clusters/123/foo", nil)
-		recorder := httptest.NewRecorder()
-		rootAdapter.ServeHTTP(recorder, request)
-
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
-	})
-
-	It("Returns a 404 if the server returns nil for a locator", func() {
-		server := new(MyTestRootServer)
-		adapter := cmv1.NewRootAdapter(server)
-		request := httptest.NewRequest(http.MethodGet, "/nil", nil)
-		recorder := httptest.NewRecorder()
-		adapter.ServeHTTP(recorder, request)
-		Expect(recorder.Result().StatusCode).To(Equal(http.StatusNotFound))
-	})
-})

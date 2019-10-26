@@ -824,8 +824,11 @@ func (g *ClientsGenerator) methodName(method *concepts.Method) string {
 }
 
 func (g *ClientsGenerator) clientName(resource *concepts.Resource) string {
-	name := names.Cat(resource.Name(), nomenclator.Client)
-	return g.names.Public(name)
+	root := resource.Owner().Root()
+	if resource == root {
+		return g.names.Public(nomenclator.Client)
+	}
+	return g.names.Public(names.Cat(resource.Name(), nomenclator.Client))
 }
 
 func (g *ClientsGenerator) requestName(method *concepts.Method) string {

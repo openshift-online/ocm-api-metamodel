@@ -29,7 +29,7 @@ type Word struct {
 // NewWord creates a new word from the given text.
 func NewWord(text string) *Word {
 	return &Word{
-		text: text,
+		text:       text,
 		initialism: false,
 	}
 }
@@ -37,7 +37,7 @@ func NewWord(text string) *Word {
 // NewInitialism creates a new rod from the given text and marks it as an initialism.
 func NewInitialism(text string) *Word {
 	return &Word{
-		text: text,
+		text:       text,
 		initialism: true,
 	}
 }
