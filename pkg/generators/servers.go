@@ -308,7 +308,7 @@ func (g *ServersGenerator) generateAdapterSource(resource *concepts.Resource) {
 						{{ adaptRequestName . }}(w, r, server)
 				{{ end }}
 				default:
-					errors.SendMethodNotSupported(w, r)
+					errors.SendMethodNotAllowed(w, r)
 				}
 			} else {
 				switch segments[0] {
