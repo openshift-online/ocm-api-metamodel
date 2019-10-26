@@ -46,39 +46,91 @@ func ParseUsingCase(text string) *Name {
 		runes = append(runes, r)
 	}
 
-	// Iterate the runes looking for case transitions and storing the words:
-	buffer := new(bytes.Buffer)
-	var words []*Word
+	// Split the text at the points where there are case transitions:
+	var chunks []string
 	size := len(runes)
-	for i := 0; i < size; i++ {
-		var previous rune
-		if i > 0 {
-			previous = runes[i-1]
-		}
-		current := runes[i]
-		var next rune
-		if i < size-1 {
-			next = runes[i+1]
-		}
-		currentUpper := unicode.IsUpper(current)
-		previousLower := unicode.IsLower(previous)
-		nextLower := unicode.IsLower(next)
-		if currentUpper && (previousLower || nextLower) {
-			if buffer.Len() > 0 {
+	if size > 1 {
+		buffer := new(bytes.Buffer)
+		for i := 0; i < size - 1; i++ {
+			current := runes[i]
+			next := runes[i+1]
+			buffer.WriteRune(current)
+			if unicode.IsLower(current) != unicode.IsLower(next) {
 				chunk := buffer.String()
-				word := NewWord(chunk)
-				words = append(words, word)
+				chunks = append(chunks, chunk)
 				buffer.Reset()
 			}
 		}
-		buffer.WriteRune(current)
-	}
-	if buffer.Len() > 0 {
+		buffer.WriteRune(runes[size-1])
 		chunk := buffer.String()
-		word := NewWord(chunk)
-		words = append(words, word)
+		chunks = append(chunks, chunk)
+	} else {
+		chunks = []string{text}
+	}
+
+	var words []*Word
+	size = len(chunks)
+	if size > 1 {
+		// Process the chunks:
+		i := 0
+		for i < size - 1 {
+			current := chunks[i]
+			next := chunks[i+1]
+
+			// A single upper case character followed by a lower case chunk is one
+			// single word, like 'Name`:
+			if len(current) == 1 && isUpper(current) && isLower(next) {
+				word := NewWord(strings.ToLower(current) + next)
+				words = append(words, word)
+				i = i + 2
+				continue
+			}
+
+			// A chunk with two or more upper case characters followed by a single `s`
+			// is the plural form of an initialism, like `CPUs` or `IDs`:
+			if len(current) >= 2 && isUpper(current) && next == "s" {
+				word := NewInitialism(current + "s")
+				words = append(words, word)
+				i = i + 2
+				continue
+			}
+
+			// An upper case chunk followed by a lower case chunk is two words and the
+			// last character of the first chunk is the first character of the second
+			// word, like in `CPUList` which corresponds to `CPU` and `List`:
+			if isUpper(current) && isLower(next) {
+				first := NewInitialism(current[0:len(current)-1])
+				second := NewWord(strings.ToLower(current[len(current)-1:])+next)
+				words = append(words, first)
+				words = append(words, second)
+				i = i + 2
+				continue
+			}
+
+			// Anything else is a word by itself:
+			word := parseWord(text)
+			words = append(words, word)
+			i++
+		}
+
+		// If there is still a chunk to process then it is a word by itself:
+		if i < size {
+			word := parseWord(chunks[i])
+			words = append(words, word)
+		}
+	} else {
+		word := parseWord(text)
+		words = []*Word{word}
 	}
 
 	// Create the name from the stored words:
 	return NewName(words...)
+}
+
+// parseWord converts the given text into a Word object assuming that it is a single word.
+func parseWord(text string) *Word {
+	if len(text) >= 2 && isUpper(text) {
+		return NewInitialism(text)
+	}
+	return NewWord(strings.ToLower(text))
 }

@@ -22,21 +22,24 @@ import (
 
 // Words represents a single word.
 type Word struct {
-	text    string
-	acronym bool
+	text       string
+	initialism bool
 }
 
-// NewWord creates a new word from the given text. If the text is all upper case then the word will
-// be considered an acronym.
+// NewWord creates a new word from the given text.
 func NewWord(text string) *Word {
-	word := new(Word)
-	word.acronym = len(text) >= 2 && strings.ToUpper(text) == text
-	if word.acronym {
-		word.text = text
-	} else {
-		word.text = strings.ToLower(text)
+	return &Word{
+		text: text,
+		initialism: false,
 	}
-	return word
+}
+
+// NewInitialism creates a new rod from the given text and marks it as an initialism.
+func NewInitialism(text string) *Word {
+	return &Word{
+		text: text,
+		initialism: true,
+	}
 }
 
 // String returns a string representation of this word.
@@ -44,10 +47,16 @@ func (w *Word) String() string {
 	return w.text
 }
 
+// Initialism returns true if this word is an initialism.
+func (w *Word) Initialism() bool {
+	return w.initialism
+}
+
 // Capitalize converts this word to a capitalized string: first character using upper case and the
-// rest using lower case for normal words, and all upper case for acronyms.
+// rest using lower. If the word is a initialism then it returns the same text that was used to
+// create it.
 func (w *Word) Capitalize() string {
-	if w.acronym {
+	if w.initialism {
 		return w.text
 	}
 	return strings.Title(w.text)
@@ -61,7 +70,7 @@ func (w *Word) Equals(word *Word) bool {
 	if w == nil || word == nil {
 		return false
 	}
-	return w.text == word.text && w.acronym == word.acronym
+	return w.text == word.text && w.initialism == word.initialism
 }
 
 // Words is an slice of names, intended to simplify sorting.
