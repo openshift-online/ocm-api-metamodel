@@ -24,6 +24,7 @@ import (
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	azv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/authorizations/v1"
 )
 
 var _ = Describe("Type", func() {
@@ -292,6 +293,16 @@ var _ = Describe("Type", func() {
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Empty()).To(BeFalse())
+		})
+	})
+
+	Describe("Attribute names", func() {
+		It("Generates correct names for plurals of initialisms", func() {
+			obj, err := azv1.NewResourceReview().
+				ClusterIDs("123", "456").
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.ClusterIDs()).To(Equal([]string{"123", "456"}))
 		})
 	})
 })
