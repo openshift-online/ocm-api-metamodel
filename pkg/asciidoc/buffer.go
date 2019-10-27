@@ -220,7 +220,7 @@ func (b *Buffer) Write() error {
 	}
 
 	// Open the file:
-	outputFd, err := os.OpenFile(b.file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0744)
+	outputFd, err := os.OpenFile(b.file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("can't open output file '%s': %v", b.file, err)
 	}
