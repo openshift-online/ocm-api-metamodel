@@ -23,8 +23,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
-	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 	azv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/authorizations/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Type", func() {
