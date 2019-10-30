@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,7 +33,6 @@ type ClientsGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -47,7 +45,6 @@ type ClientsGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -76,12 +73,6 @@ func (b *ClientsGeneratorBuilder) Model(value *concepts.Model) *ClientsGenerator
 // Output sets the output directory.
 func (b *ClientsGeneratorBuilder) Output(value string) *ClientsGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the output base package.
-func (b *ClientsGeneratorBuilder) Base(value string) *ClientsGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -126,10 +117,6 @@ func (b *ClientsGeneratorBuilder) Build() (generator *ClientsGenerator, err erro
 		err = fmt.Errorf("path is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -152,7 +139,6 @@ func (b *ClientsGeneratorBuilder) Build() (generator *ClientsGenerator, err erro
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
@@ -192,20 +178,20 @@ func (g *ClientsGenerator) generateServiceClient(service *concepts.Service) erro
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.names.Package(service.Name())
+	pkgName := g.packages.ServicePackage(service)
 	fileName := g.names.File(nomenclator.Client)
 
 	// Create the buffer for the service:
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("clientName", g.clientName).
 		Function("versionSegment", g.binding.VersionSegment).
 		Function("versionName", g.versionName).
-		Function("versionSelector", g.versionSelector).
+		Function("versionSelector", g.packages.VersionSelector).
 		Build()
 	if err != nil {
 		return err
@@ -236,7 +222,7 @@ func (g *ClientsGenerator) generateServiceClientSource(service *concepts.Service
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("path", "")
 	for _, version := range service.Versions() {
-		g.buffer.Import(g.versionImport(version), "")
+		g.buffer.Import(g.packages.VersionImport(version), "")
 	}
 	g.buffer.Emit(`
 		// Client is the client for service '{{ .Service.Name }}'.
@@ -299,7 +285,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("clientName", g.clientName).
@@ -430,8 +416,8 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
-	g.buffer.Import(path.Join(g.base, g.packages.ErrorsPackage()), "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Emit(`
 		{{ $requestData := requestData .Method }}
 		{{ $requestName := requestName .Method }}
@@ -602,7 +588,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.packages.ErrorsPackage()), "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseData := responseData .Method }}
@@ -737,21 +723,6 @@ func (g *ClientsGenerator) clientsFile() string {
 
 func (g *ClientsGenerator) versionName(version *concepts.Version) string {
 	return g.names.Public(version.Name())
-}
-
-func (g *ClientsGenerator) versionSelector(version *concepts.Version) string {
-	return g.names.Package(version.Name())
-}
-
-func (g *ClientsGenerator) serviceImport(service *concepts.Service) string {
-	serviceSegment := g.names.Package(service.Name())
-	return path.Join(g.base, serviceSegment)
-}
-
-func (g *ClientsGenerator) versionImport(version *concepts.Version) string {
-	serviceSegment := g.names.Package(version.Owner().Name())
-	versionSegment := g.names.Package(version.Name())
-	return path.Join(g.base, serviceSegment, versionSegment)
 }
 
 func (g *ClientsGenerator) fileName(resource *concepts.Resource) string {

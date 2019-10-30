@@ -32,7 +32,6 @@ type BuildersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -45,7 +44,6 @@ type BuildersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -73,12 +71,6 @@ func (b *BuildersGeneratorBuilder) Model(value *concepts.Model) *BuildersGenerat
 // Output sets the directory where the source will be generated.
 func (b *BuildersGeneratorBuilder) Output(value string) *BuildersGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the import import path of the base output package.
-func (b *BuildersGeneratorBuilder) Base(value string) *BuildersGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -117,10 +109,6 @@ func (b *BuildersGeneratorBuilder) Build() (generator *BuildersGenerator, err er
 		err = fmt.Errorf("output is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -139,7 +127,6 @@ func (b *BuildersGeneratorBuilder) Build() (generator *BuildersGenerator, err er
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
@@ -193,7 +180,7 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("builderCtor", g.builderCtor).
@@ -442,7 +429,7 @@ func (g *BuildersGenerator) generateListBuilderFile(typ *concepts.Type) error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("builderCtor", g.builderCtor).

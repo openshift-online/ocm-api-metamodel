@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,7 +33,6 @@ type ReadersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -48,7 +46,6 @@ type ReadersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -77,12 +74,6 @@ func (b *ReadersGeneratorBuilder) Model(value *concepts.Model) *ReadersGenerator
 // Output sets import path of the output package.
 func (b *ReadersGeneratorBuilder) Output(value string) *ReadersGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the import import path of the base output package.
-func (b *ReadersGeneratorBuilder) Base(value string) *ReadersGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -127,10 +118,6 @@ func (b *ReadersGeneratorBuilder) Build() (generator *ReadersGenerator, err erro
 		err = fmt.Errorf("output is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("package is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -149,7 +136,6 @@ func (b *ReadersGeneratorBuilder) Build() (generator *ReadersGenerator, err erro
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
@@ -209,7 +195,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Build()
@@ -401,7 +387,7 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("attributeName", g.binding.AttributeName).
@@ -428,7 +414,7 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 
 func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type }}
 		{{ $dataStruct := dataStruct .Type }}
@@ -619,7 +605,7 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("dataList", g.dataList).
@@ -643,7 +629,7 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 
 func (g *ReadersGenerator) generateListReaderSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type.Element }}
 		{{ $objectList := objectList .Type }}

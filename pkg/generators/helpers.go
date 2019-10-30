@@ -31,7 +31,6 @@ type HelpersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 }
@@ -42,7 +41,6 @@ type HelpersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	buffer   *golang.Buffer
@@ -69,12 +67,6 @@ func (b *HelpersGeneratorBuilder) Model(value *concepts.Model) *HelpersGenerator
 // Output sets the output directory.
 func (b *HelpersGeneratorBuilder) Output(value string) *HelpersGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the output base package.
-func (b *HelpersGeneratorBuilder) Base(value string) *HelpersGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -107,10 +99,6 @@ func (b *HelpersGeneratorBuilder) Build() (generator *HelpersGenerator, err erro
 		err = fmt.Errorf("path is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -125,7 +113,6 @@ func (b *HelpersGeneratorBuilder) Build() (generator *HelpersGenerator, err erro
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 	}
@@ -145,7 +132,7 @@ func (g *HelpersGenerator) Run() error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Build()

@@ -32,7 +32,6 @@ type TypesGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -45,7 +44,6 @@ type TypesGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -73,12 +71,6 @@ func (b *TypesGeneratorBuilder) Model(value *concepts.Model) *TypesGeneratorBuil
 // Output sets import path of the output package.
 func (b *TypesGeneratorBuilder) Output(value string) *TypesGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the import import path of the output package.
-func (b *TypesGeneratorBuilder) Base(value string) *TypesGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -116,10 +108,6 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 		err = fmt.Errorf("output is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base package is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -138,7 +126,6 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
@@ -190,7 +177,7 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("enumName", g.enumName).

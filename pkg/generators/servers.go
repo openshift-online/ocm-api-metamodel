@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,7 +33,6 @@ type ServersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -48,7 +46,6 @@ type ServersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
@@ -77,12 +74,6 @@ func (b *ServersGeneratorBuilder) Model(value *concepts.Model) *ServersGenerator
 // Output sets import path of the output package.
 func (b *ServersGeneratorBuilder) Output(value string) *ServersGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the import import path of the output package.
-func (b *ServersGeneratorBuilder) Base(value string) *ServersGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -127,10 +118,6 @@ func (b *ServersGeneratorBuilder) Build() (generator *ServersGenerator, err erro
 		err = fmt.Errorf("output is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base package is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -153,7 +140,7 @@ func (b *ServersGeneratorBuilder) Build() (generator *ServersGenerator, err erro
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
+		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
 		binding:  b.binding,
@@ -173,10 +160,10 @@ func (g *ServersGenerator) Run() error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		File(fileName).
 		Function("serviceName", g.serviceName).
-		Function("serviceSelector", g.serviceSelector).
+		Function("serviceSelector", g.packages.ServiceSelector).
 		Function("serviceSegment", g.binding.ServiceSegment).
 		Build()
 	if err != nil {
@@ -214,7 +201,7 @@ func (g *ServersGenerator) Run() error {
 
 func (g *ServersGenerator) generateMainServerSource() {
 	for _, service := range g.model.Services() {
-		g.buffer.Import(g.serviceImport(service), "")
+		g.buffer.Import(g.packages.ServiceImport(service), "")
 	}
 	g.buffer.Emit(`
 		// Server is the interface of the top level server.
@@ -234,7 +221,7 @@ func (g *ServersGenerator) generateMainServerSource() {
 
 func (g *ServersGenerator) generateMainDispatcherSource() {
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
 		// of path segments, and then invokes it.
@@ -291,19 +278,19 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.names.Package(service.Name())
+	pkgName := g.packages.ServicePackage(service)
 	fileName := g.names.File(nomenclator.Server)
 
 	// Create the buffer for the service:
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("serverName", g.serverName).
 		Function("versionName", g.versionName).
-		Function("versionSelector", g.versionSelector).
+		Function("versionSelector", g.packages.VersionSelector).
 		Function("versionSegment", g.binding.VersionSegment).
 		Build()
 	if err != nil {
@@ -331,7 +318,7 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 
 func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service) {
 	for _, version := range service.Versions() {
-		g.buffer.Import(g.versionImport(version), "")
+		g.buffer.Import(g.packages.VersionImport(version), "")
 	}
 	g.buffer.Emit(`
 		// Server is the interface for the '{{ .Service.Name }}' service.
@@ -352,7 +339,7 @@ func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service
 
 func (g *ServersGenerator) generateServiceDispatcherSource(service *concepts.Service) {
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
 		// of path segments, and then invokes it.
@@ -407,7 +394,7 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("adaptRequestName", g.adaptRequestName).
@@ -501,7 +488,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $serverName := serverName .Resource }}
 		{{ $dispatchName := dispatchName .Resource }}
@@ -755,7 +742,7 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 
 func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
-	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseData := responseData .Method }}
@@ -850,31 +837,12 @@ func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
 	return g.names.File(names.Cat(resource.Name(), nomenclator.Server))
 }
 
-func (g *ServersGenerator) serviceImport(service *concepts.Service) string {
-	serviceSegment := g.names.Package(service.Name())
-	return path.Join(g.base, serviceSegment)
-}
-
 func (g *ServersGenerator) serviceName(service *concepts.Service) string {
 	return g.names.Public(service.Name())
 }
 
-func (g *ServersGenerator) serviceSelector(service *concepts.Service) string {
-	return g.names.Package(service.Name())
-}
-
-func (g *ServersGenerator) versionImport(version *concepts.Version) string {
-	serviceSegment := g.names.Package(version.Owner().Name())
-	versionSegment := g.names.Package(version.Name())
-	return path.Join(g.base, serviceSegment, versionSegment)
-}
-
 func (g *ServersGenerator) versionName(version *concepts.Version) string {
 	return g.names.Public(version.Name())
-}
-
-func (g *ServersGenerator) versionSelector(version *concepts.Version) string {
-	return g.names.Package(version.Name())
 }
 
 func (g *ServersGenerator) serverName(resource *concepts.Resource) string {

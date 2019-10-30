@@ -30,7 +30,7 @@ import (
 // create instances directly, use the NewTypesCalculator function instead.
 type TypesCalculatorBuilder struct {
 	reporter *reporter.Reporter
-	base     string
+	packages *PackagesCalculator
 	names    *NamesCalculator
 }
 
@@ -38,14 +38,13 @@ type TypesCalculatorBuilder struct {
 // builder instead.
 type TypesCalculator struct {
 	reporter *reporter.Reporter
-	base     string
+	packages *PackagesCalculator
 	names    *NamesCalculator
 }
 
 // NewTypesCalculator creates a Go names calculator builder.
 func NewTypesCalculator() *TypesCalculatorBuilder {
-	builder := new(TypesCalculatorBuilder)
-	return builder
+	return &TypesCalculatorBuilder{}
 }
 
 // Reporter sets the object that will be used to report information about the calculation processes,
@@ -55,9 +54,9 @@ func (b *TypesCalculatorBuilder) Reporter(value *reporter.Reporter) *TypesCalcul
 	return b
 }
 
-// Base sets the import path of the base package were the code will be generated.
-func (b *TypesCalculatorBuilder) Base(value string) *TypesCalculatorBuilder {
-	b.base = value
+// Packages sets the object that will be used to calculate package names.
+func (b *TypesCalculatorBuilder) Packages(value *PackagesCalculator) *TypesCalculatorBuilder {
+	b.packages = value
 	return b
 }
 
@@ -75,8 +74,8 @@ func (b *TypesCalculatorBuilder) Build() (calculator *TypesCalculator, err error
 		err = fmt.Errorf("reporter is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("package is mandatory")
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
 		return
 	}
 	if b.names == nil {
@@ -85,10 +84,11 @@ func (b *TypesCalculatorBuilder) Build() (calculator *TypesCalculator, err error
 	}
 
 	// Create the calculator:
-	calculator = new(TypesCalculator)
-	calculator.reporter = b.reporter
-	calculator.base = b.base
-	calculator.names = b.names
+	calculator = &TypesCalculator{
+		reporter: b.reporter,
+		packages: b.packages,
+		names:    b.names,
+	}
 
 	return
 }
@@ -426,7 +426,6 @@ func (c *TypesCalculator) ZeroValue(typ *concepts.Type) string {
 // the package and the package selector.
 func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 	version := typ.Owner()
-	service := version.Owner()
 	switch {
 	case typ == version.Boolean():
 		return
@@ -441,9 +440,7 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 		selector = "time"
 		return
 	case typ.IsEnum() || typ.IsStruct() || typ.IsList():
-		servicePkg := c.names.Package(service.Name())
-		versionPkg := c.names.Package(version.Name())
-		imprt = path.Join(c.base, servicePkg, versionPkg)
+		imprt = c.packages.VersionImport(version)
 		selector = path.Base(imprt)
 		return
 	default:

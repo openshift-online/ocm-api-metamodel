@@ -120,7 +120,6 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	goNamesCalculator, err := golang.NewNamesCalculator().
 		Reporter(reporter).
-		Base(args.base).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create Go names calculator: %v", err)
@@ -128,7 +127,7 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	goTypesCalculator, err := golang.NewTypesCalculator().
 		Reporter(reporter).
-		Base(args.base).
+		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Build()
 	if err != nil {
@@ -159,7 +158,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Build()
@@ -174,7 +172,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Build()
@@ -189,7 +186,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
@@ -205,7 +201,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
@@ -221,7 +216,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
@@ -238,7 +232,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
@@ -255,7 +248,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
@@ -286,7 +278,6 @@ func run(cmd *cobra.Command, argv []string) {
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
-		Base(args.base).
 		Packages(goPackagesCalculator).
 		Names(openapiCalculator).
 		Binding(bindingCalculator).

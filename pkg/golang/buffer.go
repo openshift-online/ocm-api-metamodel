@@ -36,9 +36,9 @@ import (
 type BufferBuilder struct {
 	reporter  *reporter.Reporter
 	output    string
-	base      string
 	pkg       string
 	file      string
+	packages  *PackagesCalculator
 	functions map[string]interface{}
 }
 
@@ -47,6 +47,7 @@ type Buffer struct {
 	reporter  *reporter.Reporter
 	pkg       string
 	file      string
+	packages  *PackagesCalculator
 	functions map[string]interface{}
 	imports   map[string]string
 	code      *bytes.Buffer
@@ -69,9 +70,9 @@ func (b *BufferBuilder) Output(value string) *BufferBuilder {
 	return b
 }
 
-// Base sets the import path of the base package where the code will be generated.
-func (b *BufferBuilder) Base(value string) *BufferBuilder {
-	b.base = value
+// Packages sets the object that will be used to calculate package names.
+func (b *BufferBuilder) Packages(value *PackagesCalculator) *BufferBuilder {
+	b.packages = value
 	return b
 }
 
@@ -109,8 +110,8 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 		err = fmt.Errorf("output is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base is mandatory")
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
 		return
 	}
 	if b.file == "" {
@@ -121,7 +122,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	// Allocate and populate the buffer:
 	buffer = new(Buffer)
 	buffer.reporter = b.reporter
-	buffer.pkg = path.Join(b.base, b.pkg)
+	buffer.pkg = path.Join(b.packages.BasePackage(), b.pkg)
 	buffer.file = filepath.Join(b.output, b.pkg, b.file+".go")
 	buffer.functions = make(map[string]interface{})
 	buffer.functions["lineComment"] = buffer.lineComment

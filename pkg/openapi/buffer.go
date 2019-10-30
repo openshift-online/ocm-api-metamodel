@@ -34,7 +34,7 @@ import (
 type BufferBuilder struct {
 	reporter *reporter.Reporter
 	output   string
-	base     string
+	packages *golang.PackagesCalculator
 	pkg      string
 }
 
@@ -42,7 +42,7 @@ type BufferBuilder struct {
 type Buffer struct {
 	reporter *reporter.Reporter
 	output   string
-	base     string
+	packages *golang.PackagesCalculator
 	pkg      string
 	stream   *jsoniter.Stream
 	stack    []*int
@@ -65,9 +65,9 @@ func (b *BufferBuilder) Output(value string) *BufferBuilder {
 	return b
 }
 
-// Base sets the output base package.
-func (b *BufferBuilder) Base(value string) *BufferBuilder {
-	b.base = value
+// Packages sets the object that will be use to calculate package names.
+func (b *BufferBuilder) Packages(value *golang.PackagesCalculator) *BufferBuilder {
+	b.packages = value
 	return b
 }
 
@@ -89,8 +89,8 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 		err = fmt.Errorf("output directory is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base package is mandatory")
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
 		return
 	}
 	if b.pkg == "" {
@@ -111,7 +111,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	buffer = &Buffer{
 		reporter: b.reporter,
 		output:   b.output,
-		base:     b.base,
+		packages: b.packages,
 		pkg:      b.pkg,
 		stream:   stream,
 		stack:    stack,
@@ -247,7 +247,7 @@ func (b *Buffer) Write() error {
 	goBuffer, err := golang.NewBufferBuilder().
 		Reporter(b.reporter).
 		Output(b.output).
-		Base(b.base).
+		Packages(b.packages).
 		Package(b.pkg).
 		File(filepath.Base(file)).
 		Build()

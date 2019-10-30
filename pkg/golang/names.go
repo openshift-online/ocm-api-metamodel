@@ -28,32 +28,23 @@ import (
 // create instances directly, use the NewNamesCalculator function instead.
 type NamesCalculatorBuilder struct {
 	reporter *reporter.Reporter
-	base     string
 }
 
 // NamesCalculator is an object used to calculate Go names. Don't create instances directly, use the
 // builder instead.
 type NamesCalculator struct {
 	reporter *reporter.Reporter
-	base     string
 }
 
 // NewNamesCalculator creates a Go names calculator builder.
 func NewNamesCalculator() *NamesCalculatorBuilder {
-	builder := new(NamesCalculatorBuilder)
-	return builder
+	return &NamesCalculatorBuilder{}
 }
 
 // Reporter sets the object that will be used to report information about the calculation processes,
 // including errors.
 func (b *NamesCalculatorBuilder) Reporter(value *reporter.Reporter) *NamesCalculatorBuilder {
 	b.reporter = value
-	return b
-}
-
-// Base sets the import path of the base package were the code will be generated.
-func (b *NamesCalculatorBuilder) Base(value string) *NamesCalculatorBuilder {
-	b.base = value
 	return b
 }
 
@@ -65,15 +56,11 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 		err = fmt.Errorf("reporter is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base package is mandatory")
-		return
-	}
 
 	// Create the calculator:
-	calculator = new(NamesCalculator)
-	calculator.reporter = b.reporter
-	calculator.base = b.base
+	calculator = &NamesCalculator{
+		reporter: b.reporter,
+	}
 
 	return
 }
@@ -108,23 +95,5 @@ func (c *NamesCalculator) Private(name *names.Name) string {
 
 // File converts the given name into an string, following the rules for Go source files.
 func (c *NamesCalculator) File(name *names.Name) string {
-	words := name.Words()
-	chunks := make([]string, len(words))
-	for i, word := range words {
-		chunks[i] = strings.ToLower(word.String())
-	}
-	file := strings.Join(chunks, "_")
-	return file
-}
-
-// Package converts the given name into an string, following the rules for Go package names.
-func (c *NamesCalculator) Package(name *names.Name) string {
-	words := name.Words()
-	chunks := make([]string, len(words))
-	for i, word := range words {
-		chunks[i] = strings.ToLower(word.String())
-	}
-	dir := strings.Join(chunks, "")
-	dir = AvoidReservedWord(dir)
-	return dir
+	return name.LowerJoined("_")
 }
