@@ -76,6 +76,36 @@ func (n *Name) Equals(name *Name) bool {
 	return true
 }
 
+// LowerJoined converts all the words of the name to lower case and joins them using the given
+// separator.
+func (n *Name) LowerJoined(separator string) string {
+	chunks := make([]string, len(n.words))
+	for i, word := range n.words {
+		chunks[i] = strings.ToLower(word.String())
+	}
+	return strings.Join(chunks, separator)
+}
+
+// UpperJoined converts all the words of the name to upper case and joins them using the given
+// separator.
+func (n *Name) UpperJoined(separator string) string {
+	chunks := make([]string, len(n.words))
+	for i, word := range n.words {
+		chunks[i] = strings.ToUpper(word.String())
+	}
+	return strings.Join(chunks, separator)
+}
+
+// CapitalizedJoined capitalizes all the words of the name to lower case and joins them using the
+// given separator.
+func (n *Name) CapitalizedJoined(separator string) string {
+	chunks := make([]string, len(n.words))
+	for i, word := range n.words {
+		chunks[i] = word.Capitalize()
+	}
+	return strings.Join(chunks, separator)
+}
+
 // String generates a string representing this name, consisting on the list of words of the name
 // separated by an underscore.
 func (n *Name) String() string {
@@ -84,6 +114,16 @@ func (n *Name) String() string {
 		texts[i] = word.String()
 	}
 	return strings.Join(texts, "_")
+}
+
+// Snake converts this name to snake case.
+func (n *Name) Snake() string {
+	return n.LowerJoined("_")
+}
+
+// Camel conerts this name to camel case.
+func (n *Name) Camel() string {
+	return n.CapitalizedJoined("")
 }
 
 // Compare compares two names lexicographically.

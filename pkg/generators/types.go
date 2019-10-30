@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,6 +33,7 @@ type TypesGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
 }
@@ -46,6 +46,7 @@ type TypesGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
 	buffer   *golang.Buffer
@@ -53,7 +54,7 @@ type TypesGenerator struct {
 
 // NewTypesGenerator creates a new builder for types generators.
 func NewTypesGenerator() *TypesGeneratorBuilder {
-	return new(TypesGeneratorBuilder)
+	return &TypesGeneratorBuilder{}
 }
 
 // Reporter sets the object that will be used to report information about the generation process,
@@ -78,6 +79,12 @@ func (b *TypesGeneratorBuilder) Output(value string) *TypesGeneratorBuilder {
 // Base sets the import import path of the output package.
 func (b *TypesGeneratorBuilder) Base(value string) *TypesGeneratorBuilder {
 	b.base = value
+	return b
+}
+
+// Packages sets the object that will be used to calculate package names.
+func (b *TypesGeneratorBuilder) Packages(value *golang.PackagesCalculator) *TypesGeneratorBuilder {
+	b.packages = value
 	return b
 }
 
@@ -110,26 +117,32 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 		return
 	}
 	if b.base == "" {
-		err = fmt.Errorf("package is mandatory")
+		err = fmt.Errorf("base package is mandatory")
+		return
+	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
 		return
 	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 	if b.types == nil {
-		err = fmt.Errorf("types is mandatory")
+		err = fmt.Errorf("types calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(TypesGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
-	generator.types = b.types
+	generator = &TypesGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+		types:    b.types,
+	}
 
 	return
 }
@@ -170,7 +183,7 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(typ.Owner())
+	pkgName := g.packages.VersionPackage(typ.Owner())
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
@@ -509,12 +522,6 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		`,
 		"Type", typ,
 	)
-}
-
-func (g *TypesGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return filepath.Join(servicePkg, versionPkg)
 }
 
 func (g *TypesGenerator) fileName(typ *concepts.Type) string {

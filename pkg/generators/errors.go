@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,6 +33,7 @@ type ErrorsGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 }
 
@@ -44,6 +44,7 @@ type ErrorsGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	buffer   *golang.Buffer
 }
@@ -77,6 +78,13 @@ func (b *ErrorsGeneratorBuilder) Base(value string) *ErrorsGeneratorBuilder {
 	return b
 }
 
+// Packages sets the object that will be used to calculate package names.
+func (b *ErrorsGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *ErrorsGeneratorBuilder {
+	b.packages = value
+	return b
+}
+
 // Names sets the object that will be used to calculate names.
 func (b *ErrorsGeneratorBuilder) Names(value *golang.NamesCalculator) *ErrorsGeneratorBuilder {
 	b.names = value
@@ -103,18 +111,24 @@ func (b *ErrorsGeneratorBuilder) Build() (generator *ErrorsGenerator, err error)
 		err = fmt.Errorf("base is mandatory")
 		return
 	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
+		return
+	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(ErrorsGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
+	generator = &ErrorsGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+	}
 
 	return
 }
@@ -156,7 +170,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.errorsPkg()
+	pkgName := g.packages.ErrorsPackage()
 	fileName := g.errorsFile()
 
 	// Create the buffer for the generated code:
@@ -514,7 +528,7 @@ func (g *ErrorsGenerator) generateVersionErrors(version *concepts.Version) error
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(version)
+	pkgName := g.packages.VersionPackage(version)
 	fileName := g.errorsFile()
 
 	// Create the buffer for the generated code:
@@ -556,20 +570,10 @@ func (g *ErrorsGenerator) generateVersionErrorsSource(version *concepts.Version)
 	return nil
 }
 
-func (g *ErrorsGenerator) errorsPkg() string {
-	return g.names.Package(nomenclator.Errors)
-}
-
 func (g *ErrorsGenerator) errorsFile() string {
 	return g.names.File(nomenclator.Errors)
 }
 
 func (g *ErrorsGenerator) errorName(err *concepts.Error) string {
 	return g.names.Public(names.Cat(err.Name(), nomenclator.Error))
-}
-
-func (g *ErrorsGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return path.Join(servicePkg, versionPkg)
 }

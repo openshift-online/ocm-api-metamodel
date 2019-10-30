@@ -32,6 +32,7 @@ type HelpersGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 }
 
@@ -42,6 +43,7 @@ type HelpersGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	buffer   *golang.Buffer
 }
@@ -76,6 +78,13 @@ func (b *HelpersGeneratorBuilder) Base(value string) *HelpersGeneratorBuilder {
 	return b
 }
 
+// Packages sets the object that will be used to calculate package names.
+func (b *HelpersGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *HelpersGeneratorBuilder {
+	b.packages = value
+	return b
+}
+
 // Names sets the object that will be used to calculate names.
 func (b *HelpersGeneratorBuilder) Names(value *golang.NamesCalculator) *HelpersGeneratorBuilder {
 	b.names = value
@@ -102,18 +111,24 @@ func (b *HelpersGeneratorBuilder) Build() (generator *HelpersGenerator, err erro
 		err = fmt.Errorf("base is mandatory")
 		return
 	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
+		return
+	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(HelpersGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
+	generator = &HelpersGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+	}
 
 	return
 }
@@ -123,7 +138,7 @@ func (g *HelpersGenerator) Run() error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.helpersPkg()
+	pkgName := g.packages.HelpersPackage()
 	fileName := g.helpersFile()
 
 	// Create the buffer for the generated code:
@@ -213,10 +228,6 @@ func (g *HelpersGenerator) Run() error {
 
 	// Write the generated code:
 	return g.buffer.Write()
-}
-
-func (g *HelpersGenerator) helpersPkg() string {
-	return g.names.Package(nomenclator.Helpers)
 }
 
 func (g *HelpersGenerator) helpersFile() string {

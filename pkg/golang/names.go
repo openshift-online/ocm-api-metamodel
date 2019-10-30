@@ -128,14 +128,3 @@ func (c *NamesCalculator) Package(name *names.Name) string {
 	dir = AvoidReservedWord(dir)
 	return dir
 }
-
-// Tag converts the given name into an string, following the rules for JSON field names.
-func (c *NamesCalculator) Tag(name *names.Name) string {
-	words := name.Words()
-	chunks := make([]string, len(words))
-	for i, word := range words {
-		chunks[i] = strings.ToLower(word.String())
-	}
-	file := strings.Join(chunks, "_")
-	return file
-}

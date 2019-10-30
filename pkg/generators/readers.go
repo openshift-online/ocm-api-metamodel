@@ -19,10 +19,10 @@ package generators
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -35,8 +35,10 @@ type ReadersGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
+	binding  *http.BindingCalculator
 }
 
 // ReadersGenerator generates code for the JSON readers. Don't create instances directly, use the
@@ -47,14 +49,16 @@ type ReadersGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
 	buffer   *golang.Buffer
+	binding  *http.BindingCalculator
 }
 
 // NewReadersGenerator creates a new builder JSON readers generators.
 func NewReadersGenerator() *ReadersGeneratorBuilder {
-	return new(ReadersGeneratorBuilder)
+	return &ReadersGeneratorBuilder{}
 }
 
 // Reporter sets the object that will be used to report information about the generation process,
@@ -82,6 +86,13 @@ func (b *ReadersGeneratorBuilder) Base(value string) *ReadersGeneratorBuilder {
 	return b
 }
 
+// Package sets the object that will be used to calculate package names.
+func (b *ReadersGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *ReadersGeneratorBuilder {
+	b.packages = value
+	return b
+}
+
 // Names sets the object that will be used to calculate names.
 func (b *ReadersGeneratorBuilder) Names(value *golang.NamesCalculator) *ReadersGeneratorBuilder {
 	b.names = value
@@ -91,6 +102,12 @@ func (b *ReadersGeneratorBuilder) Names(value *golang.NamesCalculator) *ReadersG
 // Types sets the object that will be used to calculate types.
 func (b *ReadersGeneratorBuilder) Types(value *golang.TypesCalculator) *ReadersGeneratorBuilder {
 	b.types = value
+	return b
+}
+
+// Binding sets the object that will by used to do HTTP binding calculations.
+func (b *ReadersGeneratorBuilder) Binding(value *http.BindingCalculator) *ReadersGeneratorBuilder {
+	b.binding = value
 	return b
 }
 
@@ -114,23 +131,29 @@ func (b *ReadersGeneratorBuilder) Build() (generator *ReadersGenerator, err erro
 		err = fmt.Errorf("package is mandatory")
 		return
 	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
+		return
+	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 	if b.types == nil {
-		err = fmt.Errorf("types is mandatory")
+		err = fmt.Errorf("types calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(ReadersGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
-	generator.types = b.types
+	generator = &ReadersGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+		types:    b.types,
+	}
 
 	return
 }
@@ -179,7 +202,7 @@ func (g *ReadersGenerator) generateHelpers() error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.helpersPkg()
+	pkgName := g.packages.HelpersPackage()
 	fileName := g.readersFile()
 
 	// Create the buffer for the generated code:
@@ -371,7 +394,7 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(typ.Owner())
+	pkgName := g.packages.VersionPackage(typ.Owner())
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
@@ -381,10 +404,10 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 		Base(g.base).
 		Package(pkgName).
 		File(fileName).
+		Function("attributeName", g.binding.AttributeName).
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
-		Function("fieldTag", g.fieldTag).
 		Function("marshalFunc", g.marshalFunc).
 		Function("objectFieldName", g.objectFieldName).
 		Function("objectFieldType", g.objectFieldType).
@@ -405,7 +428,7 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 
 func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type }}
 		{{ $dataStruct := dataStruct .Type }}
@@ -421,7 +444,7 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 				HREF *string "json:\"href,omitempty\""
 			{{ end }}
 			{{ range .Type.Attributes }}
-				{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+				{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ attributeName . }},omitempty\""
 			{{ end }}
 		}
 
@@ -589,7 +612,7 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(typ.Owner())
+	pkgName := g.packages.VersionPackage(typ.Owner())
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
@@ -620,7 +643,7 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 
 func (g *ReadersGenerator) generateListReaderSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type.Element }}
 		{{ $objectList := objectList .Type }}
@@ -764,16 +787,6 @@ func (g *ReadersGenerator) readersFile() string {
 	return g.names.File(nomenclator.Readers)
 }
 
-func (g *ReadersGenerator) helpersPkg() string {
-	return g.names.Package(nomenclator.Helpers)
-}
-
-func (g *ReadersGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return filepath.Join(servicePkg, versionPkg)
-}
-
 func (g *ReadersGenerator) fileName(typ *concepts.Type) string {
 	return g.names.File(names.Cat(typ.Name(), nomenclator.Reader))
 }
@@ -817,10 +830,6 @@ func (g *ReadersGenerator) dataFieldType(attribute *concepts.Attribute) *golang.
 		return g.types.LinkDataReference(attribute.Type())
 	}
 	return g.types.DataReference(attribute.Type())
-}
-
-func (g *ReadersGenerator) fieldTag(attribute *concepts.Attribute) string {
-	return g.names.Tag(attribute.Name())
 }
 
 func (g *ReadersGenerator) objectFieldName(attribute *concepts.Attribute) string {

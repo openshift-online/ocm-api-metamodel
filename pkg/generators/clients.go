@@ -22,6 +22,7 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -34,8 +35,10 @@ type ClientsGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
+	binding  *http.BindingCalculator
 }
 
 // ClientsGenerator generates client code. Don't create instances directly, use the builder instead.
@@ -45,8 +48,10 @@ type ClientsGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
+	binding  *http.BindingCalculator
 	buffer   *golang.Buffer
 }
 
@@ -80,6 +85,13 @@ func (b *ClientsGeneratorBuilder) Base(value string) *ClientsGeneratorBuilder {
 	return b
 }
 
+// Packages sets the object that will be used to calculate package names.
+func (b *ClientsGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *ClientsGeneratorBuilder {
+	b.packages = value
+	return b
+}
+
 // Names sets the object that will be used to calculate names.
 func (b *ClientsGeneratorBuilder) Names(value *golang.NamesCalculator) *ClientsGeneratorBuilder {
 	b.names = value
@@ -89,6 +101,12 @@ func (b *ClientsGeneratorBuilder) Names(value *golang.NamesCalculator) *ClientsG
 // Types sets the object that will be used to calculate types.
 func (b *ClientsGeneratorBuilder) Types(value *golang.TypesCalculator) *ClientsGeneratorBuilder {
 	b.types = value
+	return b
+}
+
+// Binding sets the object that will by used to do HTTP binding calculations.
+func (b *ClientsGeneratorBuilder) Binding(value *http.BindingCalculator) *ClientsGeneratorBuilder {
+	b.binding = value
 	return b
 }
 
@@ -112,23 +130,34 @@ func (b *ClientsGeneratorBuilder) Build() (generator *ClientsGenerator, err erro
 		err = fmt.Errorf("base is mandatory")
 		return
 	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
+		return
+	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 	if b.types == nil {
-		err = fmt.Errorf("types is mandatory")
+		err = fmt.Errorf("types calculator is mandatory")
+		return
+	}
+	if b.binding == nil {
+		err = fmt.Errorf("binding calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(ClientsGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
-	generator.types = b.types
+	generator = &ClientsGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+		types:    b.types,
+		binding:  b.binding,
+	}
 
 	return
 }
@@ -174,7 +203,7 @@ func (g *ClientsGenerator) generateServiceClient(service *concepts.Service) erro
 		Package(pkgName).
 		File(fileName).
 		Function("clientName", g.clientName).
-		Function("urlSegment", g.urlSegment).
+		Function("versionSegment", g.binding.VersionSegment).
 		Function("versionName", g.versionName).
 		Function("versionSelector", g.versionSelector).
 		Build()
@@ -230,7 +259,7 @@ func (g *ClientsGenerator) generateServiceClientSource(service *concepts.Service
 		{{ range .Service.Versions }}
 			{{ $versionName := versionName . }}
 			{{ $versionSelector := versionSelector . }}
-			{{ $versionSegment := urlSegment .Name }}
+			{{ $versionSegment := versionSegment . }}
 			{{ $rootName := clientName .Root }}
 
 			// {{ $versionName }} returns a reference to a client for version '{{ .Name }}'.
@@ -263,7 +292,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(resource.Owner())
+	pkgName := g.packages.VersionPackage(resource.Owner())
 	fileName := g.fileName(resource)
 
 	// Create the buffer for the generated code:
@@ -279,25 +308,25 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Function("dataStruct", g.dataStruct).
 		Function("enumName", g.enumName).
 		Function("fieldName", g.fieldName).
-		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
-		Function("httpMethod", g.httpMethod).
+		Function("httpMethod", g.binding.Method).
 		Function("locatorName", g.locatorName).
+		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
-		Function("requestBodyParameters", g.requestBodyParameters).
+		Function("parameterName", g.binding.ParameterName).
+		Function("requestBodyParameters", g.binding.RequestBodyParameters).
 		Function("requestData", g.requestData).
 		Function("requestName", g.requestName).
-		Function("requestParameters", g.requestParameters).
-		Function("requestQueryParameters", g.requestQueryParameters).
-		Function("responseBodyParameters", g.responseBodyParameters).
+		Function("requestParameters", g.binding.RequestParameters).
+		Function("requestQueryParameters", g.binding.RequestQueryParameters).
+		Function("responseBodyParameters", g.binding.ResponseBodyParameters).
 		Function("responseData", g.responseData).
 		Function("responseName", g.responseName).
-		Function("responseParameters", g.responseParameters).
+		Function("responseParameters", g.binding.ResponseParameters).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
-		Function("urlSegment", g.urlSegment).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
@@ -355,7 +384,7 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 
 		{{ range .Resource.Locators }}
 			{{ $locatorName := locatorName . }}
-			{{ $locatorSegment := urlSegment .Name }}
+			{{ $locatorSegment := locatorSegment . }}
 			{{ $targetName := clientName .Target }}
 
 			{{ if .Variable }}
@@ -401,8 +430,8 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
-	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.ErrorsPackage()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		{{ $requestData := requestData .Method }}
 		{{ $requestName := requestName .Method }}
@@ -470,9 +499,9 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			query := helpers.CopyQuery(r.query)
 			{{ range $requestQueryParameters }}
 				{{ $fieldName := fieldName . }}
-				{{ $fieldTag := fieldTag . }}
+				{{ $parameterName := parameterName . }}
 				if r.{{ $fieldName }} != nil {
-					helpers.AddValue(&query, "{{ $fieldTag }}", *r.{{ $fieldName }})
+					helpers.AddValue(&query, "{{ $parameterName }}", *r.{{ $fieldName }})
 				}
 			{{ end }}
 			header := helpers.SetHeader(r.header, r.metric)
@@ -488,7 +517,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				RawQuery: query.Encode(),
 			}
 			request := &http.Request{
-				Method: {{ httpMethod .Method }},
+				Method: "{{ httpMethod .Method }}",
 				URL:    uri,
 				Header: header,
 				{{ if $requestBodyParameters }}
@@ -560,7 +589,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				// '{{ .Method.Name }}' method.
 				type {{ $requestData }} struct {
 					{{ range $requestBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
 					{{ end }}
 				}
 			{{ end }}
@@ -573,7 +602,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.ErrorsPackage()), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseData := responseData .Method }}
@@ -692,7 +721,7 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 				// the response of the '{{ .Method.Name }}' method.
 				type {{ $responseData }} struct {
 					{{ range $responseBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
 					{{ end }}
 				}
 			{{ end }}
@@ -700,14 +729,6 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 		`,
 		"Method", method,
 	)
-}
-
-func (g *ClientsGenerator) errorsPkg() string {
-	return g.names.Package(nomenclator.Errors)
-}
-
-func (g *ClientsGenerator) helpersPkg() string {
-	return g.names.Package(nomenclator.Helpers)
 }
 
 func (g *ClientsGenerator) clientsFile() string {
@@ -731,12 +752,6 @@ func (g *ClientsGenerator) versionImport(version *concepts.Version) string {
 	serviceSegment := g.names.Package(version.Owner().Name())
 	versionSegment := g.names.Package(version.Name())
 	return path.Join(g.base, serviceSegment, versionSegment)
-}
-
-func (g *ClientsGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return path.Join(servicePkg, versionPkg)
 }
 
 func (g *ClientsGenerator) fileName(resource *concepts.Resource) string {
@@ -767,14 +782,6 @@ func (g *ClientsGenerator) dataFieldName(parameter *concepts.Parameter) string {
 
 func (g *ClientsGenerator) dataFieldType(parameter *concepts.Parameter) *golang.TypeReference {
 	return g.types.DataReference(parameter.Type())
-}
-
-func (g *ClientsGenerator) fieldTag(parameter *concepts.Parameter) string {
-	return g.names.Tag(parameter.Name())
-}
-
-func (g *ClientsGenerator) urlSegment(name *names.Name) string {
-	return g.names.Tag(name)
 }
 
 func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
@@ -849,70 +856,6 @@ func (g *ClientsGenerator) responseName(method *concepts.Method) string {
 func (g *ClientsGenerator) responseData(method *concepts.Method) string {
 	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response, nomenclator.Data)
 	return g.names.Private(name)
-}
-
-func (g *ClientsGenerator) httpMethod(method *concepts.Method) string {
-	name := method.Name()
-	switch {
-	case nomenclator.Get.Equals(name) || nomenclator.List.Equals(name):
-		return "http.MethodGet"
-	case nomenclator.Update.Equals(name):
-		return "http.MethodPatch"
-	case nomenclator.Delete.Equals(name):
-		return "http.MethodDelete"
-	default:
-		return "http.MethodPost"
-	}
-}
-
-func (g *ClientsGenerator) requestParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ClientsGenerator) responseParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.Out() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ClientsGenerator) requestQueryParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && parameter.Type().IsScalar() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ClientsGenerator) requestBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ClientsGenerator) responseBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.Out() {
-			result = append(result, parameter)
-		}
-	}
-	return result
 }
 
 func (g *ClientsGenerator) avoidBuiltin(name string, builtins map[string]interface{}) string {

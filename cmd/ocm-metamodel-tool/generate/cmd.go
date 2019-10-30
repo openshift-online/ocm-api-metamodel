@@ -23,7 +23,9 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/generators"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/language"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/openapi"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
@@ -108,21 +110,43 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 
 	// Create the calculators:
-	names, err := golang.NewNamesCalculator().
+	goPackagesCalculator, err := golang.NewPackagesCalculator().
 		Reporter(reporter).
 		Base(args.base).
 		Build()
 	if err != nil {
-		reporter.Errorf("Can't create names calculator: %v", err)
+		reporter.Errorf("Can't create Go packages calculator: %v", err)
 		os.Exit(1)
 	}
-	types, err := golang.NewTypesCalculator().
+	goNamesCalculator, err := golang.NewNamesCalculator().
 		Reporter(reporter).
 		Base(args.base).
-		Names(names).
 		Build()
 	if err != nil {
-		reporter.Errorf("Can't create types calculator: %v", err)
+		reporter.Errorf("Can't create Go names calculator: %v", err)
+		os.Exit(1)
+	}
+	goTypesCalculator, err := golang.NewTypesCalculator().
+		Reporter(reporter).
+		Base(args.base).
+		Names(goNamesCalculator).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create Go types calculator: %v", err)
+		os.Exit(1)
+	}
+	bindingCalculator, err := http.NewBindingCalculator().
+		Reporter(reporter).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create HTTP binding calculator: %v", err)
+		os.Exit(1)
+	}
+	openapiCalculator, err := openapi.NewNamesCalculator().
+		Reporter(reporter).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create OpenAPI names calculator: %v", err)
 		os.Exit(1)
 	}
 
@@ -136,7 +160,8 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create errors generator: %v", err)
@@ -150,7 +175,8 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create helpers generator: %v", err)
@@ -164,11 +190,28 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
-		Types(types).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Types(goTypesCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create types generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
+	// Create the builders generator:
+	gen, err = generators.NewBuildersGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Base(args.base).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Types(goTypesCalculator).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create builders generator: %v", err)
 		os.Exit(1)
 	}
 	gens = append(gens, gen)
@@ -179,8 +222,10 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
-		Types(types).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Types(goTypesCalculator).
+		Binding(bindingCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create clients generator: %v", err)
@@ -194,26 +239,13 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
-		Types(types).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Types(goTypesCalculator).
+		Binding(bindingCalculator).
 		Build()
 	if err != nil {
-		reporter.Errorf("Can't create resource generator: %v", err)
-		os.Exit(1)
-	}
-	gens = append(gens, gen)
-
-	// Create the builders generator:
-	gen, err = generators.NewBuildersGenerator().
-		Reporter(reporter).
-		Model(model).
-		Output(args.output).
-		Base(args.base).
-		Names(names).
-		Types(types).
-		Build()
-	if err != nil {
-		reporter.Errorf("Can't create builders generator: %v", err)
+		reporter.Errorf("Can't create servers generator: %v", err)
 		os.Exit(1)
 	}
 	gens = append(gens, gen)
@@ -224,8 +256,10 @@ func run(cmd *cobra.Command, argv []string) {
 		Model(model).
 		Output(args.output).
 		Base(args.base).
-		Names(names).
-		Types(types).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Types(goTypesCalculator).
+		Binding(bindingCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create JSON readers generator: %v", err)
@@ -247,11 +281,27 @@ func run(cmd *cobra.Command, argv []string) {
 		gens = append(gens, gen)
 	}
 
-	// Run the code generators:
+	// Create the OpenAPI specifications generator:
+	gen, err = generators.NewOpenAPIGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Base(args.base).
+		Packages(goPackagesCalculator).
+		Names(openapiCalculator).
+		Binding(bindingCalculator).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create OpenAPI generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
+	// Run the generators:
 	for _, gen := range gens {
 		err = gen.Run()
 		if err != nil {
-			reporter.Errorf("Code generation failed: %v", err)
+			reporter.Errorf("Generation failed: %v", err)
 			os.Exit(1)
 		}
 	}
