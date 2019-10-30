@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -34,6 +33,7 @@ type BuildersGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
 }
@@ -46,6 +46,7 @@ type BuildersGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
 	buffer   *golang.Buffer
@@ -53,7 +54,7 @@ type BuildersGenerator struct {
 
 // NewBuildersGenerator creates a new builder for builders generators.
 func NewBuildersGenerator() *BuildersGeneratorBuilder {
-	return new(BuildersGeneratorBuilder)
+	return &BuildersGeneratorBuilder{}
 }
 
 // Reporter sets the object that will be used to report information about the generation process,
@@ -78,6 +79,13 @@ func (b *BuildersGeneratorBuilder) Output(value string) *BuildersGeneratorBuilde
 // Base sets the import import path of the base output package.
 func (b *BuildersGeneratorBuilder) Base(value string) *BuildersGeneratorBuilder {
 	b.base = value
+	return b
+}
+
+// Packages sets the object that will be used to calculate package names.
+func (b *BuildersGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *BuildersGeneratorBuilder {
+	b.packages = value
 	return b
 }
 
@@ -113,8 +121,12 @@ func (b *BuildersGeneratorBuilder) Build() (generator *BuildersGenerator, err er
 		err = fmt.Errorf("base is mandatory")
 		return
 	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
+		return
+	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 	if b.types == nil {
@@ -123,13 +135,15 @@ func (b *BuildersGeneratorBuilder) Build() (generator *BuildersGenerator, err er
 	}
 
 	// Create the generator:
-	generator = new(BuildersGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
-	generator.types = b.types
+	generator = &BuildersGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		packages: b.packages,
+		names:    b.names,
+		types:    b.types,
+	}
 
 	return
 }
@@ -172,7 +186,7 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 	var err error
 
 	// Calculate the package and file names:
-	pkgName := g.pkgName(typ.Owner())
+	pkgName := g.packages.VersionPackage(typ.Owner())
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
@@ -421,7 +435,7 @@ func (g *BuildersGenerator) generateListBuilderFile(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(typ.Owner())
+	pkgName := g.packages.VersionPackage(typ.Owner())
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
@@ -495,12 +509,6 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
 		`,
 		"Type", typ,
 	)
-}
-
-func (g *BuildersGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return filepath.Join(servicePkg, versionPkg)
 }
 
 func (g *BuildersGenerator) fileName(typ *concepts.Type) string {

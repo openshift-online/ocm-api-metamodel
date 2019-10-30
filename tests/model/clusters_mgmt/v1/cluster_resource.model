@@ -28,6 +28,7 @@ resource Cluster {
 
 	// Deletes the cluster.
 	method Delete {
+		in Deprovision Boolean
 	}
 
 	// Reference to the resource that manages the collection of groups.

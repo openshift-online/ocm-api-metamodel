@@ -5,5 +5,7 @@
 /antlr
 /model/
 /ocm-*-tool
+/openapi_generator
 /tests/api/
 /tests/docs/
+/tests/openapi/

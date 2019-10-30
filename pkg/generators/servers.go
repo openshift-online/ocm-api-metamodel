@@ -19,10 +19,10 @@ package generators
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -35,8 +35,10 @@ type ServersGeneratorBuilder struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
+	binding  *http.BindingCalculator
 }
 
 // ServersGenerator generate resources for the model resources.
@@ -47,8 +49,10 @@ type ServersGenerator struct {
 	model    *concepts.Model
 	output   string
 	base     string
+	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	types    *golang.TypesCalculator
+	binding  *http.BindingCalculator
 	buffer   *golang.Buffer
 }
 
@@ -82,6 +86,13 @@ func (b *ServersGeneratorBuilder) Base(value string) *ServersGeneratorBuilder {
 	return b
 }
 
+// Packages sets the object that will be used to calculate package names.
+func (b *ServersGeneratorBuilder) Packages(
+	value *golang.PackagesCalculator) *ServersGeneratorBuilder {
+	b.packages = value
+	return b
+}
+
 // Names sets the object that will be used to calculate names.
 func (b *ServersGeneratorBuilder) Names(value *golang.NamesCalculator) *ServersGeneratorBuilder {
 	b.names = value
@@ -91,6 +102,12 @@ func (b *ServersGeneratorBuilder) Names(value *golang.NamesCalculator) *ServersG
 // Types sets the object that will be used to calculate types.
 func (b *ServersGeneratorBuilder) Types(value *golang.TypesCalculator) *ServersGeneratorBuilder {
 	b.types = value
+	return b
+}
+
+// Binding sets the object that will by used to do HTTP binding calculations.
+func (b *ServersGeneratorBuilder) Binding(value *http.BindingCalculator) *ServersGeneratorBuilder {
+	b.binding = value
 	return b
 }
 
@@ -111,26 +128,36 @@ func (b *ServersGeneratorBuilder) Build() (generator *ServersGenerator, err erro
 		return
 	}
 	if b.base == "" {
-		err = fmt.Errorf("package is mandatory")
+		err = fmt.Errorf("base package is mandatory")
+		return
+	}
+	if b.packages == nil {
+		err = fmt.Errorf("packages calculator is mandatory")
 		return
 	}
 	if b.names == nil {
-		err = fmt.Errorf("names is mandatory")
+		err = fmt.Errorf("names calculator is mandatory")
 		return
 	}
 	if b.types == nil {
-		err = fmt.Errorf("types is mandatory")
+		err = fmt.Errorf("types calculator is mandatory")
+		return
+	}
+	if b.binding == nil {
+		err = fmt.Errorf("binding calculator is mandatory")
 		return
 	}
 
 	// Create the generator:
-	generator = new(ServersGenerator)
-	generator.reporter = b.reporter
-	generator.model = b.model
-	generator.output = b.output
-	generator.base = b.base
-	generator.names = b.names
-	generator.types = b.types
+	generator = &ServersGenerator{
+		reporter: b.reporter,
+		model:    b.model,
+		output:   b.output,
+		base:     b.base,
+		names:    b.names,
+		types:    b.types,
+		binding:  b.binding,
+	}
 
 	return
 }
@@ -150,7 +177,7 @@ func (g *ServersGenerator) Run() error {
 		File(fileName).
 		Function("serviceName", g.serviceName).
 		Function("serviceSelector", g.serviceSelector).
-		Function("urlSegment", g.urlSegment).
+		Function("serviceSegment", g.binding.ServiceSegment).
 		Build()
 	if err != nil {
 		return err
@@ -207,7 +234,7 @@ func (g *ServersGenerator) generateMainServerSource() {
 
 func (g *ServersGenerator) generateMainDispatcherSource() {
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
 		// of path segments, and then invokes it.
@@ -222,7 +249,7 @@ func (g *ServersGenerator) generateMainDispatcherSource() {
 					{{ $serviceName := serviceName . }}
 					{{ $serviceSelector := serviceSelector . }}
 
-					case "{{ urlSegment .Name }}":
+					case "{{ serviceSegment . }}":
 						service := server.{{ $serviceName }}()
 						if service == nil {
 							errors.SendNotFound(w, r)
@@ -277,7 +304,7 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 		Function("serverName", g.serverName).
 		Function("versionName", g.versionName).
 		Function("versionSelector", g.versionSelector).
-		Function("urlSegment", g.urlSegment).
+		Function("versionSegment", g.binding.VersionSegment).
 		Build()
 	if err != nil {
 		return err
@@ -325,7 +352,7 @@ func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service
 
 func (g *ServersGenerator) generateServiceDispatcherSource(service *concepts.Service) {
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
 		// of path segments, and then invokes it.
@@ -340,7 +367,7 @@ func (g *ServersGenerator) generateServiceDispatcherSource(service *concepts.Ser
 					{{ $versionName := versionName . }}
 					{{ $versionSelector := versionSelector . }}
 
-					case "{{ urlSegment .Name }}":
+					case "{{ versionSegment . }}":
 						version := server.{{ $versionName }}()
 						if version == nil {
 							errors.SendNotFound(w, r)
@@ -373,7 +400,7 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 	var err error
 
 	// Calculate the package and file name:
-	pkgName := g.pkgName(resource.Owner())
+	pkgName := g.packages.VersionPackage(resource.Owner())
 	fileName := g.fileName(resource)
 
 	// Create the buffer for the generated code:
@@ -387,32 +414,31 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
-		Function("defaultHttpStatus", g.defaultHttpStatus).
+		Function("defaultStatus", g.binding.DefaultStatus).
 		Function("dispatchName", g.dispatchName).
 		Function("fieldName", g.fieldName).
-		Function("fieldTag", g.fieldTag).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
-		Function("httpMethod", g.httpMethod).
+		Function("httpMethod", g.binding.Method).
 		Function("locatorName", g.locatorName).
+		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
-		Function("queryParameterName", g.queryParameterName).
+		Function("parameterName", g.binding.ParameterName).
 		Function("readRequestName", g.readRequestName).
 		Function("readerName", g.readerName).
-		Function("requestBodyParameters", g.requestBodyParameters).
+		Function("requestBodyParameters", g.binding.RequestBodyParameters).
 		Function("requestData", g.requestData).
 		Function("requestName", g.requestName).
-		Function("requestParameters", g.requestParameters).
-		Function("requestQueryParameters", g.requestQueryParameters).
-		Function("responseBodyParameters", g.responseBodyParameters).
+		Function("requestParameters", g.binding.RequestParameters).
+		Function("requestQueryParameters", g.binding.RequestQueryParameters).
+		Function("responseBodyParameters", g.binding.ResponseBodyParameters).
 		Function("responseData", g.responseData).
 		Function("responseName", g.responseName).
-		Function("responseParameters", g.responseParameters).
+		Function("responseParameters", g.binding.ResponseParameters).
 		Function("serverName", g.serverName).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
-		Function("urlSegment", g.urlSegment).
 		Function("writeResponseName", g.writeResponseName).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
@@ -475,7 +501,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(path.Join(g.base, g.helpersPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		{{ $serverName := serverName .Resource }}
 		{{ $dispatchName := dispatchName .Resource }}
@@ -487,7 +513,7 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 			if len(segments) == 0 {
 				switch r.Method {
 				{{ range .Resource.Methods }}
-					case {{ httpMethod . }}:
+					case "{{ httpMethod . }}":
 						{{ adaptRequestName . }}(w, r, server)
 				{{ end }}
 				default:
@@ -497,7 +523,7 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 			} else {
 				switch segments[0] {
 				{{ range .Resource.ConstantLocators }}
-					case "{{ urlSegment .Name }}":
+					case "{{ locatorSegment . }}":
 						target := server.{{ locatorName . }}()
 						if target == nil {
 							errors.SendNotFound(w, r)
@@ -544,9 +570,9 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 					query := r.URL.Query()
 					{{ range  $requestQueryParameters }}
 						{{ $fieldName := fieldName . }}
-						{{ $queryParameterName := queryParameterName . }}
+						{{ $parameterName := parameterName . }}
 						{{ $readerName := readerName .Type }}
-						result.{{ $fieldName }}, err = helpers.{{ $readerName }}(query, "{{ $queryParameterName }}")
+						result.{{ $fieldName }}, err = helpers.{{ $readerName }}(query, "{{ $parameterName }}")
 						if err != nil {
 							return nil, err
 						}
@@ -589,7 +615,7 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 					return
 				}
 				response := new({{ $responseName }})
-				response.status = {{ defaultHttpStatus . }}
+				response.status = {{ defaultStatus . }}
 				err = server.{{ $methodName }}(r.Context(), request, response)
 				if err != nil {
 					glog.Errorf(
@@ -717,7 +743,7 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 				// the response of the '{{ .Method.Name }}' method.
 				type {{ $requestData }} struct {
 					{{ range $requestBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
 					{{ end }}
 				}
 			{{ end }}
@@ -729,7 +755,7 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 
 func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
-	g.buffer.Import(path.Join(g.base, g.errorsPkg()), "")
+	g.buffer.Import(path.Join(g.base, g.packages.HelpersPackage()), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseData := responseData .Method }}
@@ -806,7 +832,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 				// '{{ .Method.Name }}' method.
 				type {{ $responseData }} struct {
 					{{ range $responseParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ fieldTag . }},omitempty\""
+						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
 					{{ end }}
 				}
 			{{ end }}
@@ -816,22 +842,8 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	)
 }
 
-func (g *ServersGenerator) errorsPkg() string {
-	return g.names.Package(nomenclator.Errors)
-}
-
-func (g *ServersGenerator) helpersPkg() string {
-	return g.names.Package(nomenclator.Helpers)
-}
-
 func (g *ServersGenerator) serversFile() string {
 	return g.names.File(nomenclator.Servers)
-}
-
-func (g *ServersGenerator) pkgName(version *concepts.Version) string {
-	servicePkg := g.names.Package(version.Owner().Name())
-	versionPkg := g.names.Package(version.Name())
-	return filepath.Join(servicePkg, versionPkg)
 }
 
 func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
@@ -875,10 +887,6 @@ func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
 
 func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
 	return g.names.Public(locator.Name())
-}
-
-func (g *ServersGenerator) urlSegment(name *names.Name) string {
-	return g.names.Tag(name)
 }
 
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
@@ -933,36 +941,6 @@ func (g *ServersGenerator) requestData(method *concepts.Method) string {
 	return g.names.Private(name)
 }
 
-func (g *ServersGenerator) requestBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ServersGenerator) requestQueryParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && parameter.Type().IsScalar() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ServersGenerator) requestParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
 func (g *ServersGenerator) responseName(method *concepts.Method) string {
 	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Response)
 	return g.names.Public(name)
@@ -973,34 +951,10 @@ func (g *ServersGenerator) responseData(method *concepts.Method) string {
 	return g.names.Private(name)
 }
 
-func (g *ServersGenerator) responseParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.Out() {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
-func (g *ServersGenerator) responseBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := make([]*concepts.Parameter, 0)
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
-			result = append(result, parameter)
-		}
-	}
-	return result
-}
-
 func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
 	name := g.names.Private(parameter.Name())
 	name = g.avoidBuiltin(name, builtinFields)
 	return name
-}
-
-func (g *ServersGenerator) queryParameterName(parameter *concepts.Parameter) string {
-	return g.names.Tag(parameter.Name())
 }
 
 func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
@@ -1039,10 +993,6 @@ func (g *ServersGenerator) dataFieldType(parameter *concepts.Parameter) *golang.
 	return g.types.DataReference(parameter.Type())
 }
 
-func (g *ServersGenerator) fieldTag(parameter *concepts.Parameter) string {
-	return g.names.Tag(parameter.Name())
-}
-
 func (g *ServersGenerator) accessorType(typ *concepts.Type) *golang.TypeReference {
 	switch {
 	case typ.IsList():
@@ -1067,31 +1017,6 @@ func (g *ServersGenerator) avoidBuiltin(name string, builtins map[string]interfa
 		name = name + "_"
 	}
 	return name
-}
-
-func (g *ServersGenerator) httpMethod(method *concepts.Method) string {
-	name := method.Name()
-	switch {
-	case name.Equals(nomenclator.Post):
-		return "http.MethodPost"
-	case name.Equals(nomenclator.Add):
-		return "http.MethodPost"
-	case name.Equals(nomenclator.List):
-		return "http.MethodGet"
-	case name.Equals(nomenclator.Get):
-		return "http.MethodGet"
-	case name.Equals(nomenclator.Update):
-		return "http.MethodPatch"
-	case name.Equals(nomenclator.Delete):
-		return "http.MethodDelete"
-	default:
-		return "http.MethodGet"
-	}
-}
-
-func (g *ServersGenerator) defaultHttpStatus(method *concepts.Method) string {
-	// Set 200 as the default for all methods for now.
-	return "http.StatusOK"
 }
 
 func (g *ServersGenerator) readerName(typ *concepts.Type) string {

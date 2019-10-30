@@ -24,6 +24,11 @@ antlr_sum:=6852386d7975eff29171dae002cc223251510d35f291ae277948f381a7b380b4
 # environment variable:
 export GO111MODULE=on
 
+# Version of the OpenAPI verification tool:
+openapi_generator_version:=3.3.4
+openapi_generator_url:=http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/$(openapi_generator_version)/openapi-generator-cli-$(openapi_generator_version).jar
+openapi_generator_sum:=24cb04939110cffcdd7062d2f50c6f61159dc3e0ca3b8aecbae6ade53ad3dc8c
+
 .PHONY: cmds
 cmds: generate
 	for cmd in $$(ls cmd); do \
@@ -39,7 +44,7 @@ generate: antlr
 		*.g4
 
 antlr:
-	wget --output-document="$@" "$(antlr_url)"
+	wget --progress=dot:giga --output-document="$@" "$(antlr_url)"
 	echo "$(antlr_sum) $@" | sha256sum --check
 
 .PHONY: fmt
@@ -51,7 +56,10 @@ fmt:
 		$(NULL)
 
 .PHONY: tests
-tests: unit_tests model_tests
+tests:
+	$(MAKE) unit_tests
+	$(MAKE) model_tests
+	$(MAKE) openapi_tests
 
 .PHONY: unit_tests
 unit_tests:
@@ -67,6 +75,19 @@ model_tests: cmds
 		--docs=tests/docs
 	ginkgo -r tests
 
+.PHONY: openapi_tests
+openapi_tests: openapi_generator
+	for spec in $$(find tests/api -name openapi.json); do \
+		java \
+			-jar "$<" \
+			validate \
+			--input-spec=$${spec}; \
+	done
+
+openapi_generator:
+	wget --progress=dot:giga --output-document "$@" "$(openapi_generator_url)"
+	echo "$(openapi_generator_sum) $@" | sha256sum --check
+
 .PHONY: clean
 clean:
 	rm -rf \
@@ -74,5 +95,6 @@ clean:
 		.gobin \
 		antlr \
 		model \
+		openapi_generator \
 		tests/api \
 		$(NULL)

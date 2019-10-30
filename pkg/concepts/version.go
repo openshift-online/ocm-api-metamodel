@@ -223,6 +223,43 @@ func (v *Version) AddErrors(errors []*Error) {
 	}
 }
 
+// Paths returns the list of paths of this version. A path is a sequence of locators that go from
+// the root of the version to all reachable resources.
+func (v *Version) Paths() [][]*Locator {
+	// Start with a set of paths that contains the locators of the root resource and with an
+	// empty set of results:
+	var results [][]*Locator
+	var pending [][]*Locator
+	for _, locator := range v.Root().Locators() {
+		path := []*Locator{locator}
+		pending = append(pending, path)
+	}
+
+	// Iterate the list of pending paths. For each pending path we will copy it to the list of
+	// results, and then we will check if it can be extended. If it can be extended then the
+	// extensions will be added to the list of pending paths.
+	for len(pending) > 0 {
+		// Get the first pending path and remove it from the list of pending paths:
+		current := pending[0]
+		pending = pending[1:]
+
+		// Copy the path to the list of results:
+		result := make([]*Locator, len(current))
+		copy(result, current)
+		results = append(results, result)
+
+		// Check if the path can be extended, and if so extend it and add it to the list of
+		// pending paths:
+		last := current[len(current)-1]
+		for _, locator := range last.Target().Locators() {
+			path := append(current, locator)
+			pending = append(pending, path)
+		}
+	}
+
+	return results
+}
+
 func (v *Version) addScalarType(name *names.Name) {
 	// Add the scalar type:
 	scalarType := NewType()

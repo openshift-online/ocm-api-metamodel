@@ -125,6 +125,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	buffer.file = filepath.Join(b.output, b.pkg, b.file+".go")
 	buffer.functions = make(map[string]interface{})
 	buffer.functions["lineComment"] = buffer.lineComment
+	buffer.functions["byteArray"] = buffer.byteArray
 	for name, function := range b.functions {
 		buffer.functions[name] = function
 	}
@@ -317,7 +318,7 @@ func (b *Buffer) Write() error {
 	// Remove extra blank lines from the code:
 	err = b.removeExtraBlankLines()
 	if err != nil {
-		return fmt.Errorf("can't remove extra vlank lines: %v", err)
+		return fmt.Errorf("can't remove extra blank lines: %v", err)
 	}
 
 	// Write the code:
@@ -402,6 +403,25 @@ func (b *Buffer) lineComment(value string) string {
 		lines[i] = fmt.Sprintf("// %s", line)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// byteArray converts the given array of bytes into a list of byte constants suitable for
+// initializing an array of bytes.
+func (b *Buffer) byteArray(data []byte) string {
+	buffer := &bytes.Buffer{}
+	length := len(data)
+	i := 0
+	for i < length {
+		if i > 0 && i%16 == 0 {
+			fmt.Fprintf(buffer, "\n")
+		}
+		fmt.Fprintf(buffer, "%#2x,", data[i])
+		i++
+	}
+	if i > 0 && i%16 != 0 {
+		fmt.Fprintf(buffer, "\n")
+	}
+	return buffer.String()
 }
 
 // cleanPkg transforms the given text so that it is a valid Go package name. This means removing the
