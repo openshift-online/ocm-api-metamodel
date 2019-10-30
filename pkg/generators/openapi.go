@@ -34,7 +34,6 @@ type OpenAPIGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	names    *openapi.NamesCalculator
 	binding  *http.BindingCalculator
 	packages *golang.PackagesCalculator
@@ -46,7 +45,6 @@ type OpenAPIGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	names    *openapi.NamesCalculator
 	binding  *http.BindingCalculator
 	packages *golang.PackagesCalculator
@@ -74,12 +72,6 @@ func (b *OpenAPIGeneratorBuilder) Model(value *concepts.Model) *OpenAPIGenerator
 // Output sets the output directory.
 func (b *OpenAPIGeneratorBuilder) Output(value string) *OpenAPIGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the import import path of the output package.
-func (b *OpenAPIGeneratorBuilder) Base(value string) *OpenAPIGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -118,10 +110,6 @@ func (b *OpenAPIGeneratorBuilder) Build() (generator *OpenAPIGenerator, err erro
 		err = fmt.Errorf("output directory is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base package is mandatory")
-		return
-	}
 	if b.names == nil {
 		err = fmt.Errorf("names calculator is mandatory")
 		return
@@ -140,7 +128,6 @@ func (b *OpenAPIGeneratorBuilder) Build() (generator *OpenAPIGenerator, err erro
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		names:    b.names,
 		binding:  b.binding,
 		packages: b.packages,
@@ -186,7 +173,7 @@ func (g *OpenAPIGenerator) generateSpec(version *concepts.Version) error {
 	g.buffer, err = openapi.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		Build()
 	if err != nil {

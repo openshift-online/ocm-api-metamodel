@@ -32,7 +32,6 @@ type ErrorsGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 }
@@ -43,7 +42,6 @@ type ErrorsGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	base     string
 	packages *golang.PackagesCalculator
 	names    *golang.NamesCalculator
 	buffer   *golang.Buffer
@@ -69,12 +67,6 @@ func (b *ErrorsGeneratorBuilder) Model(value *concepts.Model) *ErrorsGeneratorBu
 // Output sets the output directory.
 func (b *ErrorsGeneratorBuilder) Output(value string) *ErrorsGeneratorBuilder {
 	b.output = value
-	return b
-}
-
-// Base sets the output base package.
-func (b *ErrorsGeneratorBuilder) Base(value string) *ErrorsGeneratorBuilder {
-	b.base = value
 	return b
 }
 
@@ -107,10 +99,6 @@ func (b *ErrorsGeneratorBuilder) Build() (generator *ErrorsGenerator, err error)
 		err = fmt.Errorf("path is mandatory")
 		return
 	}
-	if b.base == "" {
-		err = fmt.Errorf("base is mandatory")
-		return
-	}
 	if b.packages == nil {
 		err = fmt.Errorf("packages calculator is mandatory")
 		return
@@ -125,7 +113,6 @@ func (b *ErrorsGeneratorBuilder) Build() (generator *ErrorsGenerator, err error)
 		reporter: b.reporter,
 		model:    b.model,
 		output:   b.output,
-		base:     b.base,
 		packages: b.packages,
 		names:    b.names,
 	}
@@ -177,7 +164,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Build()
@@ -535,7 +522,7 @@ func (g *ErrorsGenerator) generateVersionErrors(version *concepts.Version) error
 	g.buffer, err = golang.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
-		Base(g.base).
+		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
 		Function("errorName", g.errorName).

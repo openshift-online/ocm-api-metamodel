@@ -84,6 +84,16 @@ func (g *PackagesCalculator) ServicePackage(service *concepts.Service) string {
 	return service.Name().LowerJoined("")
 }
 
+// ServiceImport returns the complete import path of the package for the given service.
+func (g *PackagesCalculator) ServiceImport(service *concepts.Service) string {
+	return path.Join(g.base, g.ServicePackage(service))
+}
+
+// ServiceSelector returns the selector of the package for the given service.
+func (g *PackagesCalculator) ServiceSelector(service *concepts.Service) string {
+	return path.Base(g.ServicePackage(service))
+}
+
 // VersionPackage returns the name of the package for the given version.
 func (g *PackagesCalculator) VersionPackage(version *concepts.Version) string {
 	return path.Join(
@@ -92,12 +102,37 @@ func (g *PackagesCalculator) VersionPackage(version *concepts.Version) string {
 	)
 }
 
+// VersionImport returns the complete import path of the package for the given version.
+func (g *PackagesCalculator) VersionImport(version *concepts.Version) string {
+	return path.Join(g.base, g.VersionPackage(version))
+}
+
+// ServiceSelector returns the selector of the package for the given service.
+func (g *PackagesCalculator) VersionSelector(version *concepts.Version) string {
+	return path.Base(g.VersionPackage(version))
+}
+
 // HelpersPackage returns the name of the helpers package.
 func (g *PackagesCalculator) HelpersPackage() string {
 	return nomenclator.Helpers.LowerJoined("")
 }
 
+// HelpersImport returns complete import path of the helpers package.
+func (g *PackagesCalculator) HelpersImport() string {
+	return path.Join(g.base, g.HelpersPackage())
+}
+
 // ErrorsPackage returns the name of the errors package.
 func (g *PackagesCalculator) ErrorsPackage() string {
 	return nomenclator.Errors.LowerJoined("")
+}
+
+// ErrorsImport returns complete import path of the errors package.
+func (g *PackagesCalculator) ErrorsImport() string {
+	return path.Join(g.base, g.ErrorsPackage())
+}
+
+// BasePackage returns the import path of the base package.
+func (g *PackagesCalculator) BasePackage() string {
+	return g.base
 }
