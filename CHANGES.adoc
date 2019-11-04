@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.12 Nov 4 2019
+
+- Add _OpenAPI_ specification generator.
+
 == 0.0.11 Oct 27 2019
 
 - Improve parsing of initialisms.
