@@ -255,8 +255,8 @@ func (b *Buffer) Write() error {
 		return err
 	}
 	goBuffer.Emit(`
-		// JSON document containing the OpenAPI specification:
-		var openAPI = []byte{
+		// OpenAPI contains the OpenAPI specification of the service in JSON.
+		var OpenAPI = []byte{
 			{{ byteArray .Data }}
 		}
 		`,
