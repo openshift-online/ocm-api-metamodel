@@ -174,6 +174,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 	// Generate the code:
 	g.buffer.Import("github.com/golang/glog", "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Error kind is the name of the type used to represent errors.
 		const ErrorKind = "Error"

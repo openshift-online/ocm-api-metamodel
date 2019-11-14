@@ -417,7 +417,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
-	g.buffer.Import(g.packages.ErrorsImport(), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $requestData := requestData .Method }}
 		{{ $requestName := requestName .Method }}

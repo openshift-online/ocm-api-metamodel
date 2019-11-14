@@ -221,6 +221,7 @@ func (g *ServersGenerator) generateMainServerSource() {
 
 func (g *ServersGenerator) generateMainDispatcherSource() {
 	g.buffer.Import("net/http", "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
@@ -339,7 +340,7 @@ func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service
 
 func (g *ServersGenerator) generateServiceDispatcherSource(service *concepts.Service) {
 	g.buffer.Import("net/http", "")
-	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Emit(`
 		// Dispatch navigates the servers tree till it finds one that matches the given set
 		// of path segments, and then invokes it.
@@ -488,6 +489,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $serverName := serverName .Resource }}
@@ -742,6 +744,7 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 
 func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	g.buffer.Import("io", "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
