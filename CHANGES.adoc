@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.13 Nov 14 2019
+
+- Fix imports of `helpers` and `errors` packages.
+
 == 0.0.12 Nov 4 2019
 
 - Add _OpenAPI_ specification generator.
