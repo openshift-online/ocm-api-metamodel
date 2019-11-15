@@ -141,6 +141,7 @@ func (g *HelpersGenerator) Run() error {
 	}
 
 	// Generate the code:
+	g.buffer.Import("context", "")
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
@@ -207,6 +208,89 @@ func (g *HelpersGenerator) Run() error {
 				path = path[0:len(path)-1]
 			}
 			return strings.Split(path, "/")
+		}
+
+		// PollContext repeatedly executes a task till it returns one of the given statuses and till the result
+		// satisfies all the given predicates.
+		func PollContext(
+			ctx context.Context,
+			interval time.Duration,
+			statuses []int,
+			predicates []func(interface{}) bool,
+			task func(context.Context) (int, interface{}, error),
+		) (result interface{}, err error) {
+			// Check the deadline:
+			deadline, ok := ctx.Deadline()
+			if !ok {
+				err = fmt.Errorf("context deadline is mandatory")
+				return
+			}
+
+			// Check the interval:
+			if interval <= 0 {
+				err = fmt.Errorf("interval must be greater than zero")
+				return
+			}
+
+			// Create a cancellable context so that we can explicitly cancel it when we know that the next
+			// iteration of the loop will be after the deadline:
+			ctx, cancel := context.WithCancel(ctx)
+
+			// If no expected status has been explicitly specified then add the default:
+			if len(statuses) == 0 {
+				statuses = []int{http.StatusOK}
+			}
+
+			for {
+				// Execute the task. If this produces an error and the status code is zero it means that
+				// there was an error like a timeout, or a low level communications problem. In that
+				// case we want to immediately stop waiting.
+				var status int
+				status, result, err = task(ctx)
+				if err != nil && status == 0 {
+					break
+				}
+
+				// Evaluate the status and the predicates:
+				statusOK := evalStatus(statuses, status)
+				predicatesOK := evalPredicates(predicates, result)
+				if statusOK && predicatesOK {
+					break
+				}
+
+				// If either the status or the predicates aren't acceptable then we need to check if we
+				// have enough time for another iteration before the deadline:
+				if time.Now().Add(interval).After(deadline) {
+					cancel()
+					break
+				}
+				time.Sleep(interval)
+			}
+
+			return
+		}
+
+		// evalStatus checks if the actual status is one of the expected ones.
+		func evalStatus(expected []int, actual int) bool {
+			for _, current := range expected {
+				if actual == current {
+					return true
+				}
+			}
+			return false
+		}
+
+		// evalPredicates checks if the object satisfies all the predicates.
+		func evalPredicates(predicates []func(interface{}) bool, object interface{}) bool {
+			if len(predicates) > 0 && object == nil {
+				return false
+			}
+			for _, predicate := range predicates {
+				if !predicate(object) {
+					return false
+				}
+			}
+			return true
 		}
 
 		// Name of the header used to contain the metrics path:

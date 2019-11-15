@@ -80,6 +80,16 @@ func (r *Resource) AddMethod(method *Method) {
 	}
 }
 
+// FindMethod returns the method with the given name, or nil of there is no such method.
+func (r *Resource) FindMethod(name *names.Name) *Method {
+	for _, method := range r.methods {
+		if method.Name().Equals(name) {
+			return method
+		}
+	}
+	return nil
+}
+
 // Locators returns the locators of the resource.
 func (r *Resource) Locators() LocatorSlice {
 	return r.locators

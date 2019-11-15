@@ -19,13 +19,39 @@ limitations under the License.
 package tests
 
 import (
+	"net/http"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/ghttp"
 )
 
 func TestMain(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Main")
+}
+
+// NewTransport creates an instance of the transport that will be used by the tests to talk to the
+// tests server.
+func NewTransport(server *Server) http.RoundTripper {
+	return &Transport{
+		server:  server,
+		wrapped: &http.Transport{},
+	}
+}
+
+// Transport is the transport that will be used by the tests to talk to the tests server. It takes
+// care of basic things like adding the server address to the path calculated by the client.
+type Transport struct {
+	server  *Server
+	wrapped *http.Transport
+}
+
+// RoundTrip implements the RoundTripper interface.
+func (t *Transport) RoundTrip(request *http.Request) (response *http.Response, err error) {
+	request.URL.Scheme = "http"
+	request.URL.Host = t.server.Addr()
+	response, err = t.wrapped.RoundTrip(request)
+	return
 }

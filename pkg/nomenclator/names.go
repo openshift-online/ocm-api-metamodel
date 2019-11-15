@@ -79,6 +79,7 @@ var (
 	Page  = names.ParseUsingCase("Page")
 	Parse = names.ParseUsingCase("Parse")
 	Post  = names.ParseUsingCase("Post")
+	Poll  = names.ParseUsingCase("Poll")
 
 	// R:
 	Read     = names.ParseUsingCase("Read")

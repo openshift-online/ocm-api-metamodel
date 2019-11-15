@@ -302,6 +302,8 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
 		Function("parameterName", g.binding.ParameterName).
+		Function("pollRequestName", g.pollRequestName).
+		Function("pollResponseName", g.pollResponseName).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
 		Function("requestData", g.requestData).
 		Function("requestName", g.requestName).
@@ -401,11 +403,183 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 		"Resource", resource,
 	)
 
+	// If the resource has a `Get` method then generate the `Poll` method:
+	method := resource.FindMethod(nomenclator.Get)
+	if method != nil {
+		g.generatePollMethodSource(resource, method)
+	}
+
 	// Generate the request and response types:
 	for _, method := range resource.Methods() {
 		g.generateRequestSource(method)
 		g.generateResponseSource(method)
 	}
+}
+
+func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource, method *concepts.Method) {
+	// Find the response body parameter:
+	body := g.binding.ResponseBodyParameters(method)[0]
+
+	// Generate the code:
+	g.buffer.Import("fmt", "")
+	g.buffer.Import("net/http", "")
+	g.buffer.Import("time", "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
+	g.buffer.Emit(`
+		{{ $clientName := clientName .Resource }}
+		{{ $requestName := pollRequestName .Resource }}
+		{{ $responseName := pollResponseName .Resource }}
+		{{ $methodRequestName := requestName .Method }}
+		{{ $methodResponseName := responseName .Method }}
+		{{ $methodRequestParameters := requestParameters .Method }}
+		{{ $methodResponseParameters := responseParameters .Method }}
+
+		// {{ $requestName }} is the request for the Poll method.
+		type {{ $requestName }} struct {
+			request    *{{ $methodRequestName }}
+			interval   time.Duration
+			statuses   []int
+			predicates []func (interface{}) bool
+		}
+
+		// Parameter adds a query parameter to all the requests that will be used to retrieve the object.
+		func (r *{{ $requestName }}) Parameter(name string, value interface{}) *{{ $requestName }} {
+			r.request.Parameter(name, value)
+			return r
+		}
+
+		// Header adds a request header to all the requests that will be used to retrieve the object.
+		func (r *{{ $requestName }}) Header(name string, value interface{}) *{{ $requestName }} {
+			r.request.Header(name, value)
+			return r
+		}
+
+		{{ range $methodRequestParameters }}
+			{{ $setterName := setterName . }}
+			{{ $setterType := setterType . }}
+
+			// {{ $setterName }} sets the value of the '{{ .Name }}' parameter for all the requests that
+			// will be used to retrieve the object.
+			//
+			{{ lineComment .Doc }}
+			func (r *{{ $requestName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $requestName }} {
+				get.{{ $setterName }}(value)
+				return r
+			}
+		{{ end }}
+
+		// Interval sets the polling interval. This parameter is mandatory and must be greater than zero.
+		func (r *{{ $requestName }}) Interval(value time.Duration) *{{ $requestName }} {
+			r.interval = value
+			return r
+		}
+
+		// Status set the expected status of the response. Multiple values can be set calling this method
+		// multiple times. The response will be considered successful if the status is any of those values.
+		func (r *{{ $requestName }}) Status(value int) *{{ $requestName }} {
+			r.statuses = append(r.statuses, value)
+			return r
+		}
+
+		// Predicate adds a predicate that the response should satisfy be considered successful. Multiple
+		// predicates can be set calling this method multiple times. The response will be considered successful
+		// if all the predicates are satisfied.
+		func (r *{{ $requestName }}) Predicate(value func (*{{ $methodResponseName }}) bool) *{{ $requestName }} {
+			r.predicates = append(r.predicates, func(response interface{}) bool {
+				return value(response.(*{{ $methodResponseName }}))
+			})
+			return r
+		}
+
+		// StartContext starts the polling loop. Responses will be considered successful if the status is one of
+		// the values specified with the Status method and if all the predicates specified with the Predicate
+		// method return nil.
+		//
+		// The context must have a timeout or deadline, otherwise this method will immediately return an error.
+		func (r *{{ $requestName }}) StartContext(ctx context.Context) (response *{{ $responseName }}, err error) {
+			result, err := helpers.PollContext(ctx, r.interval, r.statuses, r.predicates, r.task)
+			if result != nil {
+				response = &{{ $responseName }}{
+					response: result.(*{{ $methodResponseName }}),
+				}
+			}
+			return
+		}
+
+		// task adapts the types of the request/response types so that they can be used with the generic
+		// polling function from the helpers package.
+		func (r *{{ $requestName }}) task(ctx context.Context) (status int, result interface{}, err error) {
+			response, err := r.request.SendContext(ctx)
+			if response != nil {
+				status = response.Status()
+				result = response
+			}
+			return
+		}
+
+		// {{ $responseName }} is the response for the Poll method.
+		type {{ $responseName }} struct {
+			response *{{ $methodResponseName }}
+		}
+
+		// Status returns the response status code.
+		func (r *{{ $responseName }}) Status() int {
+			if r == nil {
+				return 0
+			}
+			return r.response.Status()
+		}
+
+		// Header returns header of the response.
+		func (r *{{ $responseName }}) Header() http.Header {
+			if r == nil {
+				return nil
+			}
+			return r.response.Header()
+		}
+
+		// Error returns the response error.
+		func (r *{{ $responseName }}) Error() *errors.Error {
+			if r == nil {
+				return nil
+			}
+			return r.response.Error()
+		}
+
+		{{ range $methodResponseParameters }}
+			{{ $parameterType := .Type.Name.String }}
+			{{ $fieldName := fieldName . }}
+			{{ $getterName := getterName . }}
+			{{ $getterType := getterType . }}
+
+			// {{ $getterName }} returns the value of the '{{ .Name }}' parameter.
+			//
+			{{ lineComment .Doc }}
+			func (r *{{ $responseName }}) {{ $getterName }}() {{ $getterType }} {
+				return r.response.{{ $getterName }}()
+			}
+
+			// Get{{ $getterName }} returns the value of the '{{ .Name }}' parameter and
+			// a flag indicating if the parameter has a value.
+			//
+			{{ lineComment .Doc }}
+			func (r *{{ $responseName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
+				return r.response.Get{{ $getterName }}()
+			}
+		{{ end }}
+
+		// Poll creates a request to repeatedly retrieve the object till the response has one of a given set
+		// of states and satisfies a set of predicates.
+		func (c *{{ $clientName }}) Poll() *{{ $requestName }} {
+			return &{{ $requestName }}{
+				request: c.{{ methodName .Method }}(),
+			}
+		}
+		`,
+		"Resource", resource,
+		"Method", method,
+		"Body", body,
+	)
 }
 
 func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
@@ -608,16 +782,25 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 
 		// Status returns the response status code.
 		func (r *{{ $responseName }}) Status() int {
+			if r == nil {
+				return 0
+			}
 			return r.status
 		}
 
 		// Header returns header of the response.
 		func (r *{{ $responseName }}) Header() http.Header {
+			if r == nil {
+				return nil
+			}
 			return r.header
 		}
 
 		// Error returns the response error.
 		func (r *{{ $responseName }}) Error() *errors.Error {
+			if r == nil {
+				return nil
+			}
 			return r.err
 		}
 
@@ -827,6 +1010,16 @@ func (g *ClientsGenerator) responseName(method *concepts.Method) string {
 func (g *ClientsGenerator) responseData(method *concepts.Method) string {
 	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response, nomenclator.Data)
 	return g.names.Private(name)
+}
+
+func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
+	name := names.Cat(resource.Name(), nomenclator.Poll, nomenclator.Request)
+	return g.names.Public(name)
+}
+
+func (g *ClientsGenerator) pollResponseName(resource *concepts.Resource) string {
+	name := names.Cat(resource.Name(), nomenclator.Poll, nomenclator.Response)
+	return g.names.Public(name)
 }
 
 func (g *ClientsGenerator) avoidBuiltin(name string, builtins map[string]interface{}) string {
