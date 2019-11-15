@@ -35,6 +35,9 @@ class Cluster {
 	// User defined properties for tagging and querying.
 	Properties [String]String
 
+	// Overall state of the cluster.
+	State ClusterState
+
 	// Flag indicating if the cluster is managed (by Red Hat) or
 	// self-managed by the user.
 	Managed Boolean
