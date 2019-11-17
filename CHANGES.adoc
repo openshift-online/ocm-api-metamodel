@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.14 Nov 17 2019
+
+- Add `Poll` method to clients that have a `Get` method.
+
 == 0.0.13 Nov 14 2019
 
 - Fix imports of `helpers` and `errors` packages.
