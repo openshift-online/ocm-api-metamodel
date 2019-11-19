@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/asciidoc"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
@@ -586,6 +587,7 @@ func (g *OpenAPIGenerator) generateErrorSchema() {
 
 func (g *OpenAPIGenerator) generateDescription(doc string) {
 	if doc != "" {
+		doc = asciidoc.Markdown(doc)
 		g.buffer.Field("description", doc)
 	}
 }
