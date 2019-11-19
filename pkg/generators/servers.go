@@ -412,6 +412,7 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 		Function("locatorName", g.locatorName).
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
+		Function("methodSegment", g.binding.MethodSegment).
 		Function("parameterName", g.binding.ParameterName).
 		Function("readRequestName", g.readRequestName).
 		Function("readerName", g.readerName).
@@ -502,39 +503,54 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 			if len(segments) == 0 {
 				switch r.Method {
 				{{ range .Resource.Methods }}
-					case "{{ httpMethod . }}":
-						{{ adaptRequestName . }}(w, r, server)
+					{{ $methodSegment := methodSegment . }}
+					{{ if not $methodSegment }}
+						case "{{ httpMethod . }}":
+							{{ adaptRequestName . }}(w, r, server)
+							return
+					{{ end }}
 				{{ end }}
 				default:
 					errors.SendMethodNotAllowed(w, r)
 					return
 				}
-			} else {
-				switch segments[0] {
-				{{ range .Resource.ConstantLocators }}
-					case "{{ locatorSegment . }}":
-						target := server.{{ locatorName . }}()
+			}
+			switch segments[0] {
+			{{ range .Resource.Methods }}
+				{{ $methodSegment := methodSegment . }}
+				{{ if $methodSegment }}
+					case "{{ methodSegment . }}":
+						if r.Method != "POST" {
+							errors.SendMethodNotAllowed(w, r)
+							return
+						}
+						{{ adaptRequestName . }}(w, r, server)
+						return
+				{{ end }}
+			{{ end }}
+			{{ range .Resource.ConstantLocators }}
+				case "{{ locatorSegment . }}":
+					target := server.{{ locatorName . }}()
+					if target == nil {
+						errors.SendNotFound(w, r)
+						return
+					}
+					{{ dispatchName .Target }}(w, r, target, segments[1:])
+			{{ end }}
+			default:
+				{{ if .Resource.VariableLocator }}
+					{{ with .Resource.VariableLocator }}
+						target := server.{{ locatorName . }}(segments[0])
 						if target == nil {
 							errors.SendNotFound(w, r)
 							return
 						}
 						{{ dispatchName .Target }}(w, r, target, segments[1:])
-				{{ end }}
-				default:
-					{{ if .Resource.VariableLocator }}
-						{{ with .Resource.VariableLocator }}
-							target := server.{{ locatorName . }}(segments[0])
-							if target == nil {
-								errors.SendNotFound(w, r)
-								return
-							}
-							{{ dispatchName .Target }}(w, r, target, segments[1:])
-						{{ end }}
-					{{ else }}
-						errors.SendNotFound(w, r)
-						return
 					{{ end }}
-				}
+				{{ else }}
+					errors.SendNotFound(w, r)
+					return
+				{{ end }}
 			}
 		}
 

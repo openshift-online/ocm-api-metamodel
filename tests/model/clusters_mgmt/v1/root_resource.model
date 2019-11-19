@@ -16,6 +16,14 @@ limitations under the License.
 
 // Root of the tree of resources of the clusters management service.
 resource Root {
+	method RegisterCluster {
+		in out Body Cluster
+	}
+
+	method RegisterDisconnected {
+		in out Body Cluster
+	}
+
 	// Reference to the resource that manages the collection of clusters.
 	locator Clusters {
 		target Clusters

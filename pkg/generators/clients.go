@@ -466,6 +466,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Function("locatorName", g.locatorName).
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
+		Function("methodSegment", g.binding.MethodSegment).
 		Function("parameterName", g.binding.ParameterName).
 		Function("pollRequestName", g.pollRequestName).
 		Function("pollResponseName", g.pollResponseName).
@@ -513,29 +514,35 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 		}
 
 		// New{{ $clientName }} creates a new client for the '{{ .Resource.Name }}'
-		// resource using the given transport to sned the requests and receive the
+		// resource using the given transport to send the requests and receive the
 		// responses.
 		func New{{ $clientName }}(transport http.RoundTripper, path string, metric string) *{{ $clientName }} {
-			client := new({{ $clientName }})
-			client.transport = transport
-			client.path = path
-			client.metric = metric
-			return client
+			return &{{ $clientName }}{
+				transport: transport,
+				path:      path,
+				metric:    metric,
+			}
 		}
 
 		{{ range .Resource.Methods }}
 			{{ $methodName := methodName . }}
+			{{ $methodSegment := methodSegment . }}
 			{{ $requestName := requestName . }}
 
 			// {{ $methodName }} creates a request for the '{{ .Name }}' method.
 			//
 			{{ lineComment .Doc }}
 			func (c *{{ $clientName }}) {{ $methodName }}() *{{ $requestName }} {
-				request := new({{ $requestName }})
-				request.transport = c.transport
-				request.path = c.path
-				request.metric = c.metric
-				return request
+				return &{{ $requestName }}{
+					transport: c.transport,
+					{{ if $methodSegment }}
+						path:   path.Join(c.path, "{{ $methodSegment }}"),
+						metric: path.Join(c. metric, "{{ $methodSegment }}"),
+					{{ else }}
+						path:   c.path,
+						metric: c.metric,
+					{{ end }}
+				}
 			}
 		{{ end }}
 

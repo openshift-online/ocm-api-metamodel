@@ -122,4 +122,47 @@ var _ = Describe("Client", func() {
 		Expect(body).ToNot(BeNil())
 		Expect(body.ServerVersion()).To(Equal("123"))
 	})
+
+	It("Can execute non REST method", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyRequest(
+					http.MethodPost,
+					"/api/clusters_mgmt/v1/register_cluster",
+				),
+				RespondWith(
+					http.StatusOK,
+					`{
+						"id": "123",
+						"name": "mycluster",
+						"external_id": "456"
+					}`,
+				),
+			),
+		)
+
+		// Prepare the request body:
+		body, err := cmv1.NewCluster().
+			ID("123").
+			Name("mycluster").
+			ExternalID("456").
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+
+		// Send the request:
+		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1", "")
+		response, err := client.RegisterCluster().
+			Body(body).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+
+		// Verify the response:
+		body = response.Body()
+		Expect(body).ToNot(BeNil())
+		Expect(body.ID()).To(Equal("123"))
+		Expect(body.Name()).To(Equal("mycluster"))
+		Expect(body.ExternalID()).To(Equal("456"))
+	})
 })

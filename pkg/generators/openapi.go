@@ -228,24 +228,35 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 	// be predictable:
 	index := map[string][]*concepts.Locator{}
 	for _, path := range version.Paths() {
-		absolute := g.absolutePath(version, path)
-		index[absolute] = path
+		prefix := g.absolutePath(version, path)
+		index[prefix] = path
 	}
-	absolutes := make([]string, len(index))
+	prefixes := make([]string, len(index))
 	i := 0
-	for text := range index {
-		absolutes[i] = text
+	for prefix := range index {
+		prefixes[i] = prefix
 		i++
 	}
-	sort.Strings(absolutes)
+	sort.Strings(prefixes)
 
 	// Generate the specification:
 	g.buffer.StartObject("paths")
+
+	// Add the metadata path:
 	g.generateMetadataPath(version)
-	for _, absolute := range absolutes {
-		path := index[absolute]
-		g.generatePath(version, path)
+
+	// Add the path for the root resource:
+	empty := []*concepts.Locator{}
+	root := g.absolutePath(version, empty)
+	g.generateResourcePaths(root, empty, version.Root())
+
+	// Add the paths for the rest of the resources:
+	for _, prefix := range prefixes {
+		path := index[prefix]
+		resource := path[len(path)-1].Target()
+		g.generateResourcePaths(prefix, path, resource)
 	}
+
 	g.buffer.EndObject()
 }
 
@@ -279,16 +290,37 @@ func (g *OpenAPIGenerator) generateMetadataPath(version *concepts.Version) {
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generatePath(version *concepts.Version, path []*concepts.Locator) {
-	absolute := g.absolutePath(version, path)
-	resource := path[len(path)-1].Target()
-	g.buffer.StartObject(absolute)
+func (g *OpenAPIGenerator) generateResourcePaths(prefix string,
+	path []*concepts.Locator, resource *concepts.Resource) {
+	// Methods that don't have their URL segment need to be all under the same OpenAPI path
+	// object. The others need to be in their own path object. So first we need to classify
+	// them.
+	var with []*concepts.Method
+	var without []*concepts.Method
 	for _, method := range resource.Methods() {
-		g.generateMethod(path, method)
+		if g.binding.MethodSegment(method) == "" {
+			without = append(without, method)
+		} else {
+			with = append(with, method)
+		}
 	}
-	g.buffer.EndObject()
-}
 
+	// Methods that don't have their own URL segment share the same path object:
+	if len(without) > 0 {
+		g.buffer.StartObject(prefix)
+		for _, method := range without {
+			g.generateMethod(path, method)
+		}
+		g.buffer.EndObject()
+	}
+
+	// Methods that have their own URL segment need their own path object:
+	for _, method := range with {
+		g.buffer.StartObject(prefix + "/" + g.binding.MethodSegment(method))
+		g.generateMethod(path, method)
+		g.buffer.EndObject()
+	}
+}
 func (g *OpenAPIGenerator) generateMethod(path []*concepts.Locator, method *concepts.Method) {
 	g.buffer.StartObject(strings.ToLower(g.binding.Method(method)))
 	g.generateDescription(method.Doc())
@@ -298,7 +330,7 @@ func (g *OpenAPIGenerator) generateMethod(path []*concepts.Locator, method *conc
 		bodyParameter := bodyParameters[0]
 		g.generateRequestBody(bodyParameter)
 	}
-	g.generateResponses(path, method)
+	g.generateResponses(method)
 	g.buffer.EndObject()
 }
 
@@ -348,7 +380,7 @@ func (g *OpenAPIGenerator) generateRequestBody(parameter *concepts.Parameter) {
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generateResponses(path []*concepts.Locator, method *concepts.Method) {
+func (g *OpenAPIGenerator) generateResponses(method *concepts.Method) {
 	g.buffer.StartObject("responses")
 	g.buffer.StartObject(g.binding.DefaultStatus(method))
 	g.generateDescription("Success.")

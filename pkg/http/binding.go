@@ -135,20 +135,20 @@ func (c *BindingCalculator) ResponseBodyParameters(method *concepts.Method) []*c
 func (c *BindingCalculator) Method(method *concepts.Method) string {
 	name := method.Name()
 	switch {
-	case name.Equals(nomenclator.Post):
-		return http.MethodPost
 	case name.Equals(nomenclator.Add):
 		return http.MethodPost
-	case name.Equals(nomenclator.List):
-		return http.MethodGet
-	case name.Equals(nomenclator.Get):
-		return http.MethodGet
-	case name.Equals(nomenclator.Update):
-		return http.MethodPatch
 	case name.Equals(nomenclator.Delete):
 		return http.MethodDelete
-	default:
+	case name.Equals(nomenclator.Get):
 		return http.MethodGet
+	case name.Equals(nomenclator.List):
+		return http.MethodGet
+	case name.Equals(nomenclator.Post):
+		return http.MethodPost
+	case name.Equals(nomenclator.Update):
+		return http.MethodPatch
+	default:
+		return http.MethodPost
 	}
 }
 
@@ -189,6 +189,27 @@ func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
 // VersionSegment calculates the URL segment corresponding to the given version.
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
 	return version.Name().Snake()
+}
+
+// LocatorSegment calculates the URL segment corresponding to the given method.
+func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
+	name := method.Name()
+	switch {
+	case name.Equals(nomenclator.Add):
+		return ""
+	case name.Equals(nomenclator.Delete):
+		return ""
+	case name.Equals(nomenclator.Get):
+		return ""
+	case name.Equals(nomenclator.List):
+		return ""
+	case name.Equals(nomenclator.Post):
+		return ""
+	case name.Equals(nomenclator.Update):
+		return ""
+	default:
+		return name.Snake()
+	}
 }
 
 // LocatorSegment calculates the URL segment corresponding to the given locator.

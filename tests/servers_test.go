@@ -22,6 +22,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -236,6 +237,26 @@ var _ = Describe("Server", func() {
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
 	})
+
+	It("Supports non REST method", func() {
+		request := httptest.NewRequest(
+			http.MethodPost,
+			"/clusters_mgmt/v1/register_cluster",
+			strings.NewReader(`{
+				"id": "123",
+				"name": "mycluster",
+				"external_id": "456"
+			}`),
+		)
+		adapter.ServeHTTP(recorder, request)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+		Expect(recorder.Body).To(MatchJSON(`{
+			"kind": "Cluster",
+			"id": "123",
+			"name": "mycluster",
+			"external_id": "456"
+		}`))
+	})
 })
 
 // MyServer is the implementation of the top level server.
@@ -277,6 +298,20 @@ type MyCMV1Server struct {
 
 // Make sure that we implement the interface:
 var _ cmv1.Server = &MyCMV1Server{}
+
+func (s *MyCMV1Server) RegisterCluster(ctx context.Context,
+	request *cmv1.RootRegisterClusterServerRequest,
+	response *cmv1.RootRegisterClusterServerResponse) error {
+	response.Body(request.Body())
+	return nil
+}
+
+func (s *MyCMV1Server) RegisterDisconnected(ctx context.Context,
+	request *cmv1.RootRegisterDisconnectedServerRequest,
+	response *cmv1.RootRegisterDisconnectedServerResponse) error {
+	response.Body(request.Body())
+	return nil
+}
 
 func (s *MyCMV1Server) Clusters() cmv1.ClustersServer {
 	return &MyClustersServer{}
