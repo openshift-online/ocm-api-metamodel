@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.15 Nov 19 2019
+
+- Add support for the version metadata resource.
+
 == 0.0.14 Nov 17 2019
 
 - Add `Poll` method to clients that have a `Get` method.
