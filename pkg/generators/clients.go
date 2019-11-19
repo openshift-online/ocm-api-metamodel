@@ -265,13 +265,178 @@ func (g *ClientsGenerator) generateServiceClientSource(service *concepts.Service
 }
 
 func (g *ClientsGenerator) generateVersionClient(version *concepts.Version) error {
+	// Generate the metadata client:
+	err := g.generateVersionMetadataClient(version)
+	if err != nil {
+		return err
+	}
+
+	// Generate the resource clients:
 	for _, resource := range version.Resources() {
 		err := g.generateResourceClient(resource)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
+}
+
+func (g *ClientsGenerator) generateVersionMetadataClient(version *concepts.Version) error {
+	var err error
+
+	// Calculate the package and file name:
+	pkgName := g.packages.VersionPackage(version)
+	fileName := g.metadataFile()
+
+	// Create the buffer for the generated code:
+	g.buffer, err = golang.NewBufferBuilder().
+		Reporter(g.reporter).
+		Output(g.output).
+		Packages(g.packages).
+		Package(pkgName).
+		File(fileName).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	// Generate the code:
+	g.generateVersionMetadataClientSource(version)
+
+	// Write the generated code:
+	return g.buffer.Write()
+}
+
+func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts.Version) {
+	g.buffer.Import("context", "")
+	g.buffer.Import("net/http", "")
+	g.buffer.Import("net/url", "")
+	g.buffer.Import(g.packages.ErrorsImport(), "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Emit(`
+		// MetadataRequest is the request to retrieve the metadata.
+		type MetadataRequest struct {
+			transport http.RoundTripper
+			path      string
+			metric    string
+			query     url.Values
+			header    http.Header
+		}
+
+		// MetadataResponse is the response for the metadata request.
+		type MetadataResponse struct {
+			status int
+			header http.Header
+			err    *errors.Error
+			body   *Metadata
+		}
+
+		// Parameter adds a query parameter.
+		func (r *MetadataRequest) Parameter(name string, value interface{}) *MetadataRequest {
+			helpers.AddValue(&r.query, name, value)
+			return r
+		}
+
+		// Header adds a request header.
+		func (r *MetadataRequest) Header(name string, value interface{}) *MetadataRequest {
+			helpers.AddHeader(&r.header, name, value)
+			return r
+		}
+
+		// Send sends the metadata request, waits for the response, and returns it.
+		//
+		// This is a potentially lengthy operation, as it requires network communication.
+		// Consider using a context and the SendContext method.
+		func (r *MetadataRequest) Send() (result *MetadataResponse, err error) {
+			return r.SendContext(context.Background())
+		}
+
+		// SendContext sends the metadata request, waits for the response, and returns it.
+		func (r *MetadataRequest) SendContext(ctx context.Context) (result *MetadataResponse, err error) {
+			query := helpers.CopyQuery(r.query)
+			header := helpers.SetHeader(r.header, r.metric)
+			uri := &url.URL{
+				Path: r.path,
+				RawQuery: query.Encode(),
+			}
+			request := &http.Request{
+				Method: http.MethodGet,
+				URL:    uri,
+				Header: header,
+			}
+			if ctx != nil {
+				request = request.WithContext(ctx)
+			}
+			response, err := r.transport.RoundTrip(request)
+			if err != nil {
+				return
+			}
+			defer response.Body.Close()
+			result = &MetadataResponse{
+				status: response.StatusCode,
+				header: response.Header,
+			}
+			if result.status >= 400 {
+				result.err, err = errors.UnmarshalError(response.Body)
+				if err != nil {
+					return
+				}
+				err = result.err
+				return
+			}
+			err = result.unmarshal(response.Body)
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Status returns the response status code.
+		func (r *MetadataResponse) Status() int {
+			if r == nil {
+				return 0
+			}
+			return r.status
+		}
+
+		// Header returns header of the response.
+		func (r *MetadataResponse) Header() http.Header {
+			if r == nil {
+				return nil
+			}
+			return r.header
+		}
+
+		// Error returns the response error.
+		func (r *MetadataResponse) Error() *errors.Error {
+			if r == nil {
+				return nil
+			}
+			return r.err
+		}
+
+		// Body returns the response body.
+		func (r *MetadataResponse) Body() *Metadata {
+			return r.body
+		}
+
+		// unmarshal is the method used internally to unmarshal metadata responses.
+		func (r *MetadataResponse) unmarshal(reader io.Reader) error {
+			decoder := json.NewDecoder(reader)
+			data := &metadataData{}
+			err := decoder.Decode(data)
+			if err != nil {
+				return err
+			}
+			r.body, err = data.unwrap()
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		`,
+	)
 }
 
 func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) error {
@@ -279,7 +444,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 
 	// Calculate the package and file name:
 	pkgName := g.packages.VersionPackage(resource.Owner())
-	fileName := g.fileName(resource)
+	fileName := g.resourceFile(resource)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = golang.NewBufferBuilder().
@@ -329,6 +494,10 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 }
 
 func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resource) {
+	// We need to know if this is the root resource in order to add the metadata methods:
+	root := resource == resource.Owner().Root()
+
+	// Generate the source:
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("path", "")
 	g.buffer.Emit(`
@@ -370,6 +539,17 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 			}
 		{{ end }}
 
+		{{ if .Root }}
+			// Creates a new request for the method that retrieves the metadata.
+			func (c *{{ $clientName }}) Get() *MetadataRequest {
+				return &MetadataRequest{
+					transport: c.transport,
+					path:      c.path,
+					metric:    c.metric,
+				}
+			}
+		{{ end }}
+
 		{{ range .Resource.Locators }}
 			{{ $locatorName := locatorName . }}
 			{{ $locatorSegment := locatorSegment . }}
@@ -401,6 +581,7 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 		{{ end }}
 		`,
 		"Resource", resource,
+		"Root", root,
 	)
 
 	// If the resource has a `Get` method then generate the `Poll` method:
@@ -908,7 +1089,11 @@ func (g *ClientsGenerator) versionName(version *concepts.Version) string {
 	return g.names.Public(version.Name())
 }
 
-func (g *ClientsGenerator) fileName(resource *concepts.Resource) string {
+func (g *ClientsGenerator) metadataFile() string {
+	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Client))
+}
+
+func (g *ClientsGenerator) resourceFile(resource *concepts.Resource) string {
 	return g.names.File(names.Cat(resource.Name(), nomenclator.Client))
 }
 
