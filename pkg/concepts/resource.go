@@ -126,6 +126,11 @@ func (r *Resource) AddLocator(locator *Locator) {
 	}
 }
 
+// IsRoot returns `true` if this is the root of the tree of resources of the version.
+func (r *Resource) IsRoot() bool {
+	return r.owner != nil && r == r.owner.Root()
+}
+
 // ResourceSlice is used to simplify sorting of slices of resources by name.
 type ResourceSlice []*Resource
 

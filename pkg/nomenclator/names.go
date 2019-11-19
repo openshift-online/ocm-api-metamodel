@@ -27,6 +27,7 @@ var (
 	Add     = names.ParseUsingCase("Add")
 
 	// B:
+	Body    = names.ParseUsingCase("Body")
 	Boolean = names.ParseUsingCase("Boolean")
 	Builder = names.ParseUsingCase("Builder")
 
@@ -59,6 +60,7 @@ var (
 	ID      = names.ParseUsingCase("ID")
 	Index   = names.ParseUsingCase("Index")
 	Integer = names.ParseUsingCase("Integer")
+	Items   = names.ParseUsingCase("Items")
 
 	// J:
 	Kind = names.ParseUsingCase("Kind")
@@ -90,18 +92,19 @@ var (
 	Resource = names.ParseUsingCase("Resource")
 	Response = names.ParseUsingCase("Response")
 	Root     = names.ParseUsingCase("Root")
-	Router   = names.ParseUsingCase("Router")
 
 	// S:
-	Service = names.ParseUsingCase("Service")
-	Set     = names.ParseUsingCase("Set")
-	Spec    = names.ParseUsingCase("Spec")
-	String  = names.ParseUsingCase("String")
 	Server  = names.ParseUsingCase("Server")
 	Servers = names.ParseUsingCase("Servers")
+	Service = names.ParseUsingCase("Service")
+	Set     = names.ParseUsingCase("Set")
+	Size    = names.ParseUsingCase("Size")
+	Spec    = names.ParseUsingCase("Spec")
+	String  = names.ParseUsingCase("String")
 
 	// T:
-	Type = names.ParseUsingCase("Type")
+	Total = names.ParseUsingCase("Total")
+	Type  = names.ParseUsingCase("Type")
 
 	// U:
 	Unmarshal = names.ParseUsingCase("Unmarshal")
