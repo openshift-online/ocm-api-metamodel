@@ -69,8 +69,9 @@ var (
 	Long = names.ParseUsingCase("Long")
 
 	// M:
-	Map     = names.ParseUsingCase("Map")
-	Marshal = names.ParseUsingCase("Marshal")
+	Map      = names.ParseUsingCase("Map")
+	Marshal  = names.ParseUsingCase("Marshal")
+	Metadata = names.ParseUsingCase("Metadata")
 
 	// N:
 	New = names.ParseUsingCase("New")

@@ -157,6 +157,13 @@ func (g *ReadersGenerator) Run() error {
 	// Generate the code for each type:
 	for _, service := range g.model.Services() {
 		for _, version := range service.Versions() {
+			// Generate the code for the version metadata type:
+			err := g.generateVersionMetadataReader(version)
+			if err != nil {
+				return err
+			}
+
+			// Generate the code for the model types:
 			for _, typ := range version.Types() {
 				switch {
 				case typ.IsStruct():
@@ -376,12 +383,105 @@ func (g *ReadersGenerator) generateHelpers() error {
 	return g.buffer.Write()
 }
 
+func (g *ReadersGenerator) generateVersionMetadataReader(version *concepts.Version) error {
+	var err error
+
+	// Calculate the package and file name:
+	pkgName := g.packages.VersionPackage(version)
+	fileName := g.metadataFile()
+
+	// Create the buffer for the generated code:
+	g.buffer, err = golang.NewBufferBuilder().
+		Reporter(g.reporter).
+		Output(g.output).
+		Packages(g.packages).
+		Package(pkgName).
+		File(fileName).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	// Generate the code:
+	g.generateVersionMetadataReaderSource(version)
+
+	// Write the generated code:
+	return g.buffer.Write()
+}
+
+func (g *ReadersGenerator) generateVersionMetadataReaderSource(version *concepts.Version) {
+	g.buffer.Import("fmt", "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Emit(`
+		// metadataData is the data structure used internally to marshal and unmarshal
+		// metadata.
+		type metadataData struct {
+			ServerVersion *string "json:\"server_version,omitempty\""
+		}
+
+		// MarshalMetadata writes a value of the metadata type to the given target, which
+		// can be a writer or a JSON encoder.
+		func MarshalMetadata(object *Metadata, target interface{}) error {
+			encoder, err := helpers.NewEncoder(target)
+			if err != nil {
+				return err
+			}
+			data, err := object.wrap()
+			if err != nil {
+				return err
+			}
+			return encoder.Encode(data)
+		}
+
+		// wrap is the method used internally to convert a metadata object to a JSON
+		// document.
+		func (m *Metadata) wrap() (data *metadataData, err error) {
+			if m == nil {
+				return
+			}
+			data = &metadataData{
+				ServerVersion: m.serverVersion,
+			}
+			return
+		}
+
+		// UnmarshalMetadata reads a value of the metadata type from the given source, which
+		// which can be an slice of bytes, a string, a reader or a JSON decoder.
+		func UnmarshalMetadata(source interface{}) (object *Metadata, err error) {
+			decoder, err := helpers.NewDecoder(source)
+			if err != nil {
+				return
+			}
+			data := &metadataData{}
+			err = decoder.Decode(data)
+			if err != nil {
+				return
+			}
+			object, err = data.unwrap()
+			return
+		}
+
+		// unwrap is the function used internally to convert the JSON unmarshalled data to a
+		// value of the metadata type.
+		func (d *metadataData) unwrap() (object *Metadata, err error) {
+			if d == nil {
+				return
+			}
+			object = &Metadata{
+				serverVersion: d.ServerVersion,
+			}
+			return
+		}
+		`,
+	)
+}
+
 func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
 	pkgName := g.packages.VersionPackage(typ.Owner())
-	fileName := g.fileName(typ)
+	fileName := g.readerFile(typ)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = golang.NewBufferBuilder().
@@ -599,7 +699,7 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 
 	// Calculate the package and file name:
 	pkgName := g.packages.VersionPackage(typ.Owner())
-	fileName := g.fileName(typ)
+	fileName := g.readerFile(typ)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = golang.NewBufferBuilder().
@@ -773,7 +873,11 @@ func (g *ReadersGenerator) readersFile() string {
 	return g.names.File(nomenclator.Readers)
 }
 
-func (g *ReadersGenerator) fileName(typ *concepts.Type) string {
+func (g *ReadersGenerator) metadataFile() string {
+	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Reader))
+}
+
+func (g *ReadersGenerator) readerFile(typ *concepts.Type) string {
 	return g.names.File(names.Cat(typ.Name(), nomenclator.Reader))
 }
 

@@ -162,7 +162,7 @@ func (g *DocsGenerator) generateIndex() error {
 		Output(g.output).
 		File(fileName).
 		Function("displayName", g.displayName).
-		Function("fileName", g.fileName).
+		Function("resourceFile", g.fileName).
 		Build()
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (g *DocsGenerator) documentIndex() {
 		{{ range .Model.Services }}
 			{{ range .Versions }}
 				{{ range .Resources }}
-					link:{{ fileName . }}.html[{{ displayName . }}]
+					link:{{ resourceFile . }}.html[{{ displayName . }}]
 				{{ end }}
 			{{ end }}
 		{{ end }}
@@ -200,7 +200,7 @@ func (g *DocsGenerator) documentIndex() {
 		{{ range .Model.Services }}
 			{{ range .Versions }}
 				{{ range .Types }}
-					link:{{ fileName . }}.html[{{ displayName . }}]
+					link:{{ resourceFile . }}.html[{{ displayName . }}]
 				{{ end }}
 			{{ end }}
 		{{ end }}

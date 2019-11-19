@@ -227,7 +227,7 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 	// be predictable:
 	index := map[string][]*concepts.Locator{}
 	for _, path := range version.Paths() {
-		absolute := g.absolutePath(path)
+		absolute := g.absolutePath(version, path)
 		index[absolute] = path
 	}
 	absolutes := make([]string, len(index))
@@ -240,15 +240,46 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 
 	// Generate the specification:
 	g.buffer.StartObject("paths")
+	g.generateMetadataPath(version)
 	for _, absolute := range absolutes {
 		path := index[absolute]
-		g.generatePath(path)
+		g.generatePath(version, path)
 	}
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generatePath(path []*concepts.Locator) {
-	absolute := g.absolutePath(path)
+func (g *OpenAPIGenerator) generateMetadataPath(version *concepts.Version) {
+	g.buffer.StartObject(g.absolutePath(version, nil))
+	g.buffer.StartObject("get")
+	g.generateDescription("Retrieves the version metadata.")
+	g.buffer.StartObject("responses")
+	g.buffer.StartObject("200")
+	g.generateDescription("Success.")
+	g.buffer.StartObject("content")
+	g.buffer.StartObject("application/json")
+	g.buffer.StartObject("schema")
+	g.buffer.Field("$ref", "#/components/schemas/Metadata")
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.StartObject("default")
+	g.generateDescription("Error.")
+	g.buffer.StartObject("content")
+	g.buffer.StartObject("application/json")
+	g.buffer.StartObject("schema")
+	g.buffer.Field("$ref", "#/components/schemas/Error")
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+}
+
+func (g *OpenAPIGenerator) generatePath(version *concepts.Version, path []*concepts.Locator) {
+	absolute := g.absolutePath(version, path)
 	resource := path[len(path)-1].Target()
 	g.buffer.StartObject(absolute)
 	for _, method := range resource.Methods() {
@@ -364,6 +395,7 @@ func (g *OpenAPIGenerator) generateResponseProperty(parameter *concepts.Paramete
 func (g *OpenAPIGenerator) generateComponents(version *concepts.Version) {
 	g.buffer.StartObject("components")
 	g.buffer.StartObject("schemas")
+	g.generateMetadataSchema()
 	for _, typ := range version.Types() {
 		g.generateSchema(typ)
 	}
@@ -379,6 +411,21 @@ func (g *OpenAPIGenerator) generateSchema(typ *concepts.Type) {
 	case typ.IsStruct():
 		g.generateStructSchema(typ)
 	}
+}
+
+func (g *OpenAPIGenerator) generateMetadataSchema() {
+	g.buffer.StartObject("Metadata")
+	g.generateDescription("Version metadata.")
+	g.buffer.StartObject("properties")
+
+	// Server version:
+	g.buffer.StartObject("server_version")
+	g.generateDescription("Version of the server.")
+	g.buffer.Field("type", "string")
+
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+	g.buffer.EndObject()
 }
 
 func (g *OpenAPIGenerator) generateEnumSchema(typ *concepts.Type) {
@@ -543,21 +590,20 @@ func (g *OpenAPIGenerator) generateDescription(doc string) {
 	}
 }
 
-func (g *OpenAPIGenerator) absolutePath(path []*concepts.Locator) string {
-	version := path[0].Owner().Owner()
-	service := version.Owner()
+func (g *OpenAPIGenerator) absolutePath(version *concepts.Version,
+	path []*concepts.Locator) string {
+	prefix := []string{
+		g.binding.ServiceSegment(version.Owner()),
+		g.binding.VersionSegment(version),
+	}
 	segments := make([]string, len(path))
 	for i, locator := range path {
 		if locator.Variable() {
-			segments[i] = fmt.Sprintf("{%s_id}", locator.Name().String())
+			segments[i] = fmt.Sprintf("{%s_id}", g.binding.LocatorSegment(locator))
 		} else {
 			segments[i] = locator.Name().String()
 		}
 	}
-	return fmt.Sprintf(
-		"/api/%s/%s/%s",
-		service.Name(),
-		version.Name(),
-		strings.Join(segments, "/"),
-	)
+	segments = append(prefix, segments...)
+	return "/api/" + strings.Join(segments, "/")
 }

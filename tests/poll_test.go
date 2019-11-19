@@ -54,7 +54,7 @@ var _ = Describe("Poll", func() {
 
 	It("Refuses to start without an interval", func() {
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 1 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			StartContext(ctx)
 		Expect(err).To(HaveOccurred())
@@ -62,7 +62,7 @@ var _ = Describe("Poll", func() {
 
 	It("Refuses to start without zero interval", func() {
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 1 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(0).
 			StartContext(ctx)
@@ -71,7 +71,7 @@ var _ = Describe("Poll", func() {
 
 	It("Refuses to start without negative interval", func() {
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 1 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(-1 * time.Millisecond).
 			StartContext(ctx)
@@ -86,7 +86,7 @@ var _ = Describe("Poll", func() {
 			"name": "mycluster"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			StartContext(ctx)
@@ -109,7 +109,7 @@ var _ = Describe("Poll", func() {
 			"reason": "Not found"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			Status(http.StatusNotFound).
@@ -139,7 +139,7 @@ var _ = Describe("Poll", func() {
 			"name": "mycluster"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			StartContext(ctx)
@@ -167,7 +167,7 @@ var _ = Describe("Poll", func() {
 			"name": "mycluster"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			StartContext(ctx)
@@ -193,7 +193,7 @@ var _ = Describe("Poll", func() {
 			}`),
 		)
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			StartContext(ctx)
@@ -211,10 +211,10 @@ var _ = Describe("Poll", func() {
 			"state": "ready"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			Predicate(func (response *cmv1.ClusterGetResponse) bool {
+			Predicate(func(response *cmv1.ClusterGetResponse) bool {
 				return response.Body().State() == cmv1.ClusterStateReady
 			}).
 			StartContext(ctx)
@@ -244,10 +244,10 @@ var _ = Describe("Poll", func() {
 			"state": "ready"
 		}`))
 		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10 * time.Millisecond)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			Predicate(func (response *cmv1.ClusterGetResponse) bool {
+			Predicate(func(response *cmv1.ClusterGetResponse) bool {
 				return response.Body().State() == cmv1.ClusterStateReady
 			}).
 			StartContext(ctx)

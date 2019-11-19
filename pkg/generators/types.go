@@ -138,9 +138,16 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 func (g *TypesGenerator) Run() error {
 	var err error
 
-	// Generate the Go type for each model type:
+	// Generate the go types:
 	for _, service := range g.model.Services() {
 		for _, version := range service.Versions() {
+			// Generate the version metadata type:
+			err := g.generateVersionMetadataTypeFile(version)
+			if err != nil {
+				return err
+			}
+
+			// Generate the Go types that correspond to model types:
 			for _, typ := range version.Types() {
 				switch {
 				case typ.IsEnum() || typ.IsStruct():
@@ -166,12 +173,66 @@ func (g *TypesGenerator) Run() error {
 	return nil
 }
 
+func (g *TypesGenerator) generateVersionMetadataTypeFile(version *concepts.Version) error {
+	var err error
+
+	// Calculate the package and file name:
+	pkgName := g.packages.VersionPackage(version)
+	fileName := g.metadataFile()
+
+	// Create the buffer for the generated code:
+	g.buffer, err = golang.NewBufferBuilder().
+		Reporter(g.reporter).
+		Output(g.output).
+		Packages(g.packages).
+		Package(pkgName).
+		File(fileName).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	// Generate the source:
+	g.generateVersionMetadataTypeSource(version)
+
+	// Write the generated code:
+	return g.buffer.Write()
+}
+
+func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Version) {
+	g.buffer.Emit(`
+		// Metadata contains the version metadata.
+		type Metadata struct {
+			serverVersion *string
+		}
+
+		// ServerVersion returns the version of the server.
+		func (m *Metadata) ServerVersion() string {
+			if m != nil && m.serverVersion != nil {
+				return *m.serverVersion
+			}
+			return ""
+		}
+
+		// GetServerVersion returns the value of the server version and a flag indicating if
+		// the attribute has a value.
+		func (m *Metadata) GetServerVersion() (value string, ok bool) {
+			ok = m != nil && m.serverVersion != nil
+			if ok {
+				value = *m.serverVersion
+			}
+			return
+		}
+		`,
+	)
+}
+
 func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 	var err error
 
 	// Calculate the package and file name:
 	pkgName := g.packages.VersionPackage(typ.Owner())
-	fileName := g.fileName(typ)
+	fileName := g.typeFile(typ)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = golang.NewBufferBuilder().
@@ -511,7 +572,11 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 	)
 }
 
-func (g *TypesGenerator) fileName(typ *concepts.Type) string {
+func (g *TypesGenerator) metadataFile() string {
+	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Type))
+}
+
+func (g *TypesGenerator) typeFile(typ *concepts.Type) string {
 	return g.names.File(names.Cat(typ.Name(), nomenclator.Type))
 }
 

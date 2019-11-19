@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/gomega/ghttp"
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
 )
 
 var _ = Describe("Client", func() {
@@ -107,5 +108,18 @@ var _ = Describe("Client", func() {
 		Expect(second).ToNot(BeNil())
 		Expect(second.Username()).To(Equal("youruser"))
 		Expect(second.Email()).To(Equal("yourmail"))
+	})
+
+	It("Can retrieve version metadata", func() {
+		server.AppendHandlers(RespondWith(http.StatusOK, `{
+			"server_version": "123"
+		}`))
+		client := cmv1.NewClient(transport, "", "")
+		response, err := client.Get().Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+		body := response.Body()
+		Expect(body).ToNot(BeNil())
+		Expect(body.ServerVersion()).To(Equal("123"))
 	})
 })
