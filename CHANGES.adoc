@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.16 Nov 19 2019
+
+- Add simple conversion from AsciiDoc to Markdown.
+
 == 0.0.15 Nov 19 2019
 
 - Add support for the version metadata resource.
