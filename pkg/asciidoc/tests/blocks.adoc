@@ -1,0 +1,19 @@
+....
+First line.
+Second line.
+....
+
+[source,go]
+----
+fmt.Printf("First line\n")
+fmt.Printf("Second line\n")
+----
+
+[source,json]
+----
+{
+  "first": "value",
+  "second": "value"
+}
+----
+
