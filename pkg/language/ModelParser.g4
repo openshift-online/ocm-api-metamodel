@@ -115,7 +115,11 @@ methodMemberDecl returns[result: interface{}]:
 ;
 
 methodParameterDecl returns[result: *concepts.Parameter]:
-  'parameter'? directions += parameterDirection* name = identifier reference = typeReference ( '=' expression )?
+  'parameter'?
+  directions += parameterDirection*
+  name = identifier reference =
+  typeReference
+  ( '=' dflt = literal )?
 ;
 
 parameterDirection:
@@ -160,9 +164,23 @@ errorCodeDecl returns[result: int]:
   'code' code = INTEGER_LITERAL
 ;
 
-expression:
+literal returns[result: interface{}]:
+  booleanLiteral
+| integerLiteral
+| stringLiteral
+;
+
+booleanLiteral returns[result: bool]:
   'true'
 | 'false'
+;
+
+integerLiteral returns[result: int]:
+  INTEGER_LITERAL
+;
+
+stringLiteral returns[result: string]:
+  STRING_LITERAL
 ;
 
 identifier returns[result: *names.Name]:

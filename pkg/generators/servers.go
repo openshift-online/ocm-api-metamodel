@@ -18,6 +18,7 @@ package generators
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -399,10 +400,12 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 		Package(pkgName).
 		File(fileName).
 		Function("adaptRequestName", g.adaptRequestName).
+		Function("allocatorName", g.allocatorName).
 		Function("dataFieldName", g.dataFieldName).
 		Function("dataFieldType", g.dataFieldType).
 		Function("dataStruct", g.dataStruct).
 		Function("defaultStatus", g.binding.DefaultStatus).
+		Function("defaultValue", g.defaultValue).
 		Function("dispatchName", g.dispatchName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
@@ -565,6 +568,11 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 						if err != nil {
 							return nil, err
 						}
+						{{ if .Default }}
+							if result.{{ $fieldName }} == nil {
+								result.{{ $fieldName }} = helpers.{{ allocatorName .Type }}({{ defaultValue . }})
+							}
+						{{ end }}
 					{{ end }}
 				{{ end }}
 				{{ if $requestBodyParameters }}
@@ -991,9 +999,10 @@ func (g *ServersGenerator) avoidBuiltin(name string, builtins map[string]interfa
 }
 
 func (g *ServersGenerator) readerName(typ *concepts.Type) string {
-	// see helpers.go file where the following methods are defined.
 	version := typ.Owner()
 	switch typ {
+	case version.Boolean():
+		return "ParseBoolean"
 	case version.Integer():
 		return "ParseInteger"
 	case version.Float():
@@ -1002,10 +1011,46 @@ func (g *ServersGenerator) readerName(typ *concepts.Type) string {
 		return "ParseString"
 	case version.Date():
 		return "ParseDate"
-	case version.Boolean():
-		return "ParseBoolean"
 	default:
-		g.reporter.Errorf("We do not know how to handle type %v", typ.Name().String())
+		g.reporter.Errorf("We do not know how to handle type '%s'", typ)
+		return ""
+	}
+}
+
+func (g *ServersGenerator) allocatorName(typ *concepts.Type) string {
+	version := typ.Owner()
+	switch typ {
+	case version.Boolean():
+		return "NewBoolean"
+	case version.Integer():
+		return "NewInteger"
+	case version.Float():
+		return "NewFloat"
+	case version.String():
+		return "NewString"
+	case version.Date():
+		return "NewDate"
+	default:
+		g.reporter.Errorf("Don't know how to generate allocator name for type '%s'", typ)
+		return ""
+	}
+}
+
+func (g *ServersGenerator) defaultValue(parameter *concepts.Parameter) string {
+	switch value := parameter.Default().(type) {
+	case nil:
+		return "nil"
+	case bool:
+		return strconv.FormatBool(value)
+	case int:
+		return strconv.FormatInt(int64(value), 10)
+	case string:
+		return strconv.Quote(value)
+	default:
+		g.reporter.Errorf(
+			"Don't know how to render default value '%v' for parameter '%s'",
+			value, parameter,
+		)
 		return ""
 	}
 }

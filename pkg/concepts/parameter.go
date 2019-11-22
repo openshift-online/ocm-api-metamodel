@@ -28,6 +28,7 @@ type Parameter struct {
 	typ   *Type
 	in    bool
 	out   bool
+	dflt  interface{}
 }
 
 // NewParameter creates a new parameter.
@@ -93,6 +94,16 @@ func (p *Parameter) Out() bool {
 // SetOut sets the output direction flag.
 func (p *Parameter) SetOut(value bool) {
 	p.out = value
+}
+
+// Default returns the default value of the parameter.
+func (p *Parameter) Default() interface{} {
+	return p.dflt
+}
+
+// SetDefault sets the default value of the parameter.
+func (p *Parameter) SetDefault(value interface{}) {
+	p.dflt = value
 }
 
 // ParameterSlice is used to simplify sorting of slices of attributes by name.

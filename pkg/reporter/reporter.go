@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
@@ -63,9 +65,46 @@ func (r *Reporter) printf(format string, args []interface{}) string {
 	// as that is what users type in the source files:
 	for i, arg := range args {
 		switch typed := arg.(type) {
+		case *concepts.Service:
+			args[i] = r.fqn(typed)
+		case *concepts.Version:
+			service := typed.Owner()
+			args[i] = r.fqn(service, typed)
+		case *concepts.Resource:
+			version := typed.Owner()
+			service := version.Owner()
+			args[i] = r.fqn(service, version, typed)
+		case *concepts.Type:
+			if typed.IsScalar() || !typed.IsEnum() {
+				args[i] = typed.Name().Camel()
+			} else {
+				version := typed.Owner()
+				service := version.Owner()
+				args[i] = r.fqn(service, version, typed)
+			}
+		case *concepts.Attribute:
+			typ := typed.Owner()
+			version := typ.Owner()
+			service := version.Owner()
+			args[i] = r.fqn(service, version, typ, typed)
+		case *concepts.Method:
+			resource := typed.Owner()
+			version := resource.Owner()
+			service := version.Owner()
+			args[i] = r.fqn(service, version, resource, typed)
+		case *concepts.Locator:
+			resource := typed.Owner()
+			version := resource.Owner()
+			service := version.Owner()
+			args[i] = r.fqn(service, version, resource, typed)
+		case *concepts.Parameter:
+			method := typed.Owner()
+			resource := method.Owner()
+			version := resource.Owner()
+			service := version.Owner()
+			args[i] = r.fqn(service, version, resource, method, typed)
 		case names.Named:
-			name := typed.Name()
-			args[i] = name.Camel()
+			args[i] = r.fqn(typed)
 		case *names.Name:
 			args[i] = typed.Camel()
 		}
@@ -73,6 +112,15 @@ func (r *Reporter) printf(format string, args []interface{}) string {
 
 	// Format the message:
 	return fmt.Sprintf(format, args...)
+}
+
+func (r *Reporter) fqn(nameds ...names.Named) string {
+	segments := make([]string, len(nameds))
+	for i, named := range nameds {
+		name := named.Name()
+		segments[i] = name.Camel()
+	}
+	return strings.Join(segments, ".")
 }
 
 // Errors returns the number of errors that have been reported via this reporter.
