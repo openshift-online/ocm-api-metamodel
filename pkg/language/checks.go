@@ -23,8 +23,38 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
-// checkMethod performs method level semantics checks.
+func (r *Reader) checkModel() {
+	for _, service := range r.model.Services() {
+		r.checkService(service)
+	}
+}
+
+func (r *Reader) checkService(service *concepts.Service) {
+	for _, version := range service.Versions() {
+		r.checkVersion(version)
+	}
+}
+
+func (r *Reader) checkVersion(version *concepts.Version) {
+	// Check that there is a root resource:
+	if version.Root() == nil {
+		r.reporter.Errorf("Version '%s' doesn't have a root resource", version)
+	}
+
+	// Check the resources:
+	for _, resource := range version.Resources() {
+		r.checkResource(resource)
+	}
+}
+
+func (r *Reader) checkResource(resource *concepts.Resource) {
+	for _, method := range resource.Methods() {
+		r.checkMethod(method)
+	}
+}
+
 func (r *Reader) checkMethod(method *concepts.Method) {
+	// Run specific checks according tot he type of method:
 	name := method.Name()
 	switch {
 	case name.Equals(nomenclator.Add):
@@ -42,19 +72,20 @@ func (r *Reader) checkMethod(method *concepts.Method) {
 	default:
 		r.checkAction(method)
 	}
+
+	// Check the parameters:
+	for _, parameter := range method.Parameters() {
+		r.checkParameter(parameter)
+	}
 }
 
 func (r *Reader) checkAdd(method *concepts.Method) {
-	// Get the reference the resource:
-	resource := method.Owner()
-
 	// Only scalar and struct parameters:
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
 			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have parameters that are "+
-					"scalars or structs, but type of parameter '%s' is %s",
-				method, resource, parameter, parameter.Type().Kind(),
+				"Type of parameter '%s' should be scalar or struct but it is %s",
+				parameter, parameter.Type().Kind(),
 			)
 		}
 	}
@@ -69,9 +100,8 @@ func (r *Reader) checkAdd(method *concepts.Method) {
 	count := len(structs)
 	if count != 1 {
 		r.reporter.Errorf(
-			"Method '%s' of resource '%s' should have exactly one struct parameter "+
-				"but it has %d",
-			method, resource, count,
+			"Method '%s' should have exactly one struct parameter but it has %d",
+			method, count,
 		)
 	}
 
@@ -79,8 +109,8 @@ func (r *Reader) checkAdd(method *concepts.Method) {
 	for _, parameter := range structs {
 		if !parameter.In() || !parameter.Out() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' should be 'in out'",
-				parameter, method, resource,
+				"Direction of parameter '%s' should be 'in out'",
+				parameter,
 			)
 		}
 	}
@@ -89,60 +119,39 @@ func (r *Reader) checkAdd(method *concepts.Method) {
 	for _, parameter := range structs {
 		if !nomenclator.Body.Equals(parameter.Name()) {
 			r.reporter.Errorf(
-				"Name of parameter '%s' of method '%s' of resource '%s' should "+
-					"be '%s'",
-				parameter, method, resource, nomenclator.Body,
+				"Name of parameter '%s' should be '%s'",
+				parameter, nomenclator.Body,
 			)
 		}
 	}
 }
 
 func (r *Reader) checkDelete(method *concepts.Method) {
-	// Get the reference the resource:
-	resource := method.Owner()
-
 	// Only scalar parameters:
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() {
 			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have scalar parameters, "+
-					"parameter '%s' is %s",
-				method, resource, parameter, parameter.Type().Kind(),
+				"Type of parameter '%s' should be scalar but it is %s",
+				method, parameter.Type().Kind(),
 			)
 		}
 	}
 
 	// Only input parameters:
 	for _, parameter := range method.Parameters() {
-		if !parameter.In() {
-			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have 'in' parameters, but "+
-					"parameter '%s' isn't",
-				method, resource, parameter,
-			)
-		}
-		if parameter.Out() {
-			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have 'in' parameters, but "+
-					"parameter '%s' is 'out'",
-				method, resource, parameter,
-			)
+		if !parameter.In() || parameter.Out() {
+			r.reporter.Errorf("Direction of parameter '%s' must be 'in'", parameter)
 		}
 	}
 }
 
 func (r *Reader) checkGet(method *concepts.Method) {
-	// Get the reference to the resource:
-	resource := method.Owner()
-
 	// Only scalar and struct parameters:
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
 			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have parameters that are "+
-					"scalars or structs, but type of parameter '%s' is %s",
-				method, resource, parameter,
-				parameter.Type().Kind(),
+				"Type of parameter '%s' must be scalar or struct but it is %s",
+				parameter, parameter.Type().Kind(),
 			)
 		}
 	}
@@ -157,27 +166,18 @@ func (r *Reader) checkGet(method *concepts.Method) {
 	count := len(structs)
 	if count != 1 {
 		r.reporter.Errorf(
-			"Method '%s' of resource '%s' should have exactly one struct parameter "+
-				"but it has %d",
-			method, resource, count,
+			"Method '%s' should have exactly one struct parameter but it has %d",
+			method, count,
 		)
 	}
 
 	// Scalar parameters should be input only:
 	for _, parameter := range method.Parameters() {
 		if parameter.Type().IsScalar() {
-			if !parameter.In() {
+			if !parameter.In() || parameter.Out() {
 				r.reporter.Errorf(
-					"Scalar parameters of method '%s' of resource '%s' " +
-						"should be 'in' but parameter '%s' isn't",
-					method, resource, parameter,
-				)
-			}
-			if parameter.Out() {
-				r.reporter.Errorf(
-					"Scalar parameters of method '%s' of resource '%s" +
-						"should be 'in' but parameter '%s' is 'out'",
-					method, resource, parameter,
+					"Direction of parameter '%s' should be 'in'",
+					parameter,
 				)
 			}
 		}
@@ -185,19 +185,8 @@ func (r *Reader) checkGet(method *concepts.Method) {
 
 	// Struct parameters should be output only:
 	for _, parameter := range structs {
-		if !parameter.Out() {
-			r.reporter.Errorf(
-				"Non scalar parameters of method '%s' of resource '%s' should "+
-					"be 'out' but parameter '%s' isn't",
-				method, resource, parameter,
-			)
-		}
-		if parameter.In() {
-			r.reporter.Errorf(
-				"Non scalar parameters of method '%s' of resource '%s' should "+
-					"be 'out' but parameter '%s' is 'in'",
-				method, resource, parameter,
-			)
+		if !parameter.Out() || parameter.In() {
+			r.reporter.Errorf("Direction of parameter '%s' should be 'out'", parameter)
 		}
 	}
 
@@ -205,10 +194,8 @@ func (r *Reader) checkGet(method *concepts.Method) {
 	for _, parameter := range structs {
 		if !nomenclator.Body.Equals(parameter.Name()) {
 			r.reporter.Errorf(
-				"Name of parameter '%s' of method '%s' of resource '%s' should "+
-					"be '%s'",
-				parameter, method, resource,
-				nomenclator.Body,
+				"Name of parameter '%s' should be '%s'",
+				parameter, nomenclator.Body,
 			)
 		}
 	}
@@ -223,10 +210,8 @@ func (r *Reader) checkList(method *concepts.Method) {
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsList() {
 			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have parameters that are "+
-					"scalars or lists, but type of parameter '%s' is %s",
-				method, resource, parameter,
-				parameter.Type().Kind(),
+				"Type of parameter '%s' should be scalar or struct but it is '%s'",
+				parameter, parameter.Type().Kind(),
 			)
 		}
 	}
@@ -241,9 +226,8 @@ func (r *Reader) checkList(method *concepts.Method) {
 	count := len(lists)
 	if count != 1 {
 		r.reporter.Errorf(
-			"Method '%s' of resource '%s' should have exactly one list parameter "+
-				"but it has %d",
-			method, resource, count,
+			"Method '%s' should have exactly one list parameter but it has %d",
+			method, count,
 		)
 	}
 
@@ -251,21 +235,20 @@ func (r *Reader) checkList(method *concepts.Method) {
 	page := method.GetParameter(nomenclator.Page)
 	if page == nil {
 		r.reporter.Warnf(
-			"Method '%s' of resource '%s' doesn't have a '%s' parameter",
-			method, resource, nomenclator.Page,
+			"Method '%s' doesn't have a '%s' parameter",
+			method, nomenclator.Page,
 		)
 	} else {
 		if page.Type() != version.Integer() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' doesn't have "+
-					"should be integer but it is %s",
-				page, method, resource, page.Type(),
+				"Type of parameter '%s' should be integer but it is '%s'",
+				page, page.Type(),
 			)
 		}
 		if !page.In() || !page.Out() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' should be 'in out'",
-				page, method, resource,
+				"Direction of parameter '%s' should be 'in out'",
+				page,
 			)
 		}
 	}
@@ -274,21 +257,20 @@ func (r *Reader) checkList(method *concepts.Method) {
 	size := method.GetParameter(nomenclator.Size)
 	if size == nil {
 		r.reporter.Warnf(
-			"Method '%s' of resource '%s' doesn't have a '%s' parameter",
-			method, resource, nomenclator.Size,
+			"Method '%s' doesn't have a '%s' parameter",
+			method, nomenclator.Size,
 		)
 	} else {
 		if size.Type() != version.Integer() {
 			r.reporter.Warnf(
-				"Parameter '%s' of method '%s' of resource '%s' doesn't have "+
-					"should be integer but it is %s",
-				size, method, resource, size.Type(),
+				"Type of parameter '%s' should be integer but it is '%s'",
+				size, size.Type(),
 			)
 		}
 		if !size.In() || !size.Out() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' should be 'in out'",
-				size, method, resource,
+				"Direction of parameter '%s' should be 'in out'",
+				size,
 			)
 		}
 	}
@@ -297,21 +279,20 @@ func (r *Reader) checkList(method *concepts.Method) {
 	total := method.GetParameter(nomenclator.Total)
 	if total == nil {
 		r.reporter.Warnf(
-			"Method '%s' of resource '%s' doesn't have a '%s' parameter",
-			method, resource, nomenclator.Total,
+			"Method '%s' doesn't have a '%s' parameter",
+			method, nomenclator.Total,
 		)
 	} else {
 		if total.Type() != version.Integer() {
 			r.reporter.Warnf(
-				"Parameter '%s' of method '%s' of resource '%s' doesn't have "+
-					"should be integer but it is %s",
-				total, method, resource, total.Type(),
+				"Type of parameter '%s' should be integer but it is '%s'",
+				total, total.Type(),
 			)
 		}
 		if total.In() || !total.Out() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' should be 'out'",
-				total, method, resource,
+				"Direction of parameter '%s' should be 'out'",
+				total,
 			)
 		}
 	}
@@ -320,8 +301,8 @@ func (r *Reader) checkList(method *concepts.Method) {
 	items := method.GetParameter(nomenclator.Items)
 	if items == nil {
 		r.reporter.Errorf(
-			"Method '%s' of resource '%s' doesn't have a '%s' parameter",
-			method, resource, nomenclator.Items,
+			"Method '%s' doesn't have a '%s' parameter",
+			method, nomenclator.Items,
 		)
 	}
 
@@ -329,8 +310,8 @@ func (r *Reader) checkList(method *concepts.Method) {
 	for _, parameter := range lists {
 		if parameter.In() || !parameter.Out() {
 			r.reporter.Errorf(
-				"Parameters '%s' of method '%s' of resource '%s' should be 'out'",
-				parameter, method, resource.Name(),
+				"Direction of parameter '%s' should be 'out'",
+				parameter,
 			)
 		}
 	}
@@ -339,9 +320,8 @@ func (r *Reader) checkList(method *concepts.Method) {
 	for _, parameter := range lists {
 		if !nomenclator.Items.Equals(parameter.Name()) {
 			r.reporter.Errorf(
-				"Name of parameter '%s' of method '%s' of resource '%s' should "+
-					"be '%s'",
-				parameter, method, resource, nomenclator.Items,
+				"Name of parameter '%s' should be '%s'",
+				parameter, nomenclator.Items,
 			)
 		}
 	}
@@ -352,17 +332,12 @@ func (r *Reader) checkPost(method *concepts.Method) {
 }
 
 func (r *Reader) checkUpdate(method *concepts.Method) {
-	// Get the reference to the resource:
-	resource := method.Owner()
-
 	// Only scalar and struct parameters:
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
 			r.reporter.Errorf(
-				"Method '%s' of resource '%s' can only have parameters that are "+
-					"scalars or structs, but type of parameter '%s' is %s",
-				method.Name(), resource.Name(), parameter.Name(),
-				parameter.Type().Kind,
+				"Type of parameter '%s' should be scalar or struct but it is '%s'",
+				parameter, parameter.Type().Kind,
 			)
 		}
 	}
@@ -377,27 +352,18 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 	count := len(structs)
 	if count != 1 {
 		r.reporter.Errorf(
-			"Method '%s' of resource '%s' should have exactly one struct parameter "+
-				"but it has %d",
-			method.Name(), resource.Name(), count,
+			"Method '%s' should have exactly one struct parameter but it has %d",
+			method, count,
 		)
 	}
 
 	// Scalar parameters should be input only:
 	for _, parameter := range method.Parameters() {
 		if parameter.Type().IsScalar() {
-			if !parameter.In() {
+			if !parameter.In() || parameter.Out() {
 				r.reporter.Errorf(
-					"Scalar parameters of method '%s' of resource '%s' " +
-						"should be 'in' but parameter '%s' isn't",
-					method.Name(), resource.Name(), parameter.Name(),
-				)
-			}
-			if parameter.Out() {
-				r.reporter.Errorf(
-					"Scalar parameters of method '%s' of resource '%s" +
-						"should be 'in' but parameter '%s' is 'out'",
-					method.Name(), resource.Name(), parameter.Name(),
+					"Direction of parameter '%s' should be 'in'",
+					parameter,
 				)
 			}
 		}
@@ -407,8 +373,8 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 	for _, parameter := range structs {
 		if !parameter.In() || !parameter.Out() {
 			r.reporter.Errorf(
-				"Parameter '%s' of method '%s' of resource '%s' should be 'in out'",
-				parameter.Name(), method.Name(), resource.Name(),
+				"Direction of parameter '%s' should be 'in out'",
+				parameter,
 			)
 		}
 	}
@@ -417,10 +383,8 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 	for _, parameter := range structs {
 		if !nomenclator.Body.Equals(parameter.Name()) {
 			r.reporter.Errorf(
-				"Name of parameter '%s' of method '%s' of resource '%s' should "+
-					"be '%s'",
-				parameter.Name(), method.Name(), resource.Name(),
-				nomenclator.Body,
+				"Name of parameter '%s' should be be '%s'",
+				parameter, nomenclator.Body,
 			)
 		}
 	}
@@ -428,4 +392,35 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 
 func (r *Reader) checkAction(method *concepts.Method) {
 	// Empty on purpose.
+}
+
+func (r *Reader) checkParameter(parameter *concepts.Parameter) {
+	// Get the version:
+	version := parameter.Owner().Owner().Owner()
+
+	// Check that the default value is of a type compatible with the type of the parameter:
+	value := parameter.Default()
+	if value != nil {
+		var typ *concepts.Type
+		switch value.(type) {
+		case bool:
+			typ = version.Boolean()
+		case int:
+			typ = version.Integer()
+		case string:
+			typ = version.String()
+		default:
+			r.reporter.Errorf(
+				"Don't know how to check if default value '%v' is compatible "+
+					"with type of parameter '%s'",
+				value, parameter,
+			)
+		}
+		if typ != nil && typ != parameter.Type() {
+			r.reporter.Errorf(
+				"Type of default value of parameter '%s' should be '%s'",
+				parameter, parameter.Type(),
+			)
+		}
+	}
 }

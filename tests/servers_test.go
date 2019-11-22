@@ -34,23 +34,176 @@ import (
 )
 
 var _ = Describe("Server", func() {
-	var adapter *api.Adapter
-	var recorder *httptest.ResponseRecorder
+	var (
+		server   *MyServer
+		adapter  *api.Adapter
+		recorder *httptest.ResponseRecorder
+	)
 
 	BeforeEach(func() {
-		adapter = api.NewAdapter(&MyServer{})
+		// Create the server:
+		server = &MyServer{
+			clustersMgmt: &MyCMServer{
+				v1: &MyCMV1Server{
+					clusters: &MyClustersServer{
+						cluster: &MyClusterServer{},
+					},
+				},
+			},
+		}
+
+		// Create the adapter:
+		adapter = api.NewAdapter(server)
+
+		// Create the recorder:
 		recorder = httptest.NewRecorder()
 	})
 
-	It("Can receive a request and return response", func() {
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters", nil)
-		adapter.ServeHTTP(recorder, request)
-		Expect(recorder.Code).To(Equal(http.StatusOK))
+	Describe("Parameter default values", func() {
+		It("Assigns integer default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.list = func(
+				ctx context.Context,
+				request *cmv1.ClustersListServerRequest,
+				response *cmv1.ClustersListServerResponse,
+			) error {
+				Expect(request.Size()).To(Equal(100))
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodGet,
+				"/clusters_mgmt/v1/clusters",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
+
+		It("Overrides integer default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.list = func(
+				ctx context.Context,
+				request *cmv1.ClustersListServerRequest,
+				response *cmv1.ClustersListServerResponse,
+			) error {
+				Expect(request.Size()).To(Equal(10))
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodGet,
+				"/clusters_mgmt/v1/clusters?size=10",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
+
+		It("Assigns boolean default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.cluster.del = func(
+				ctx context.Context,
+				request *cmv1.ClusterDeleteServerRequest,
+				response *cmv1.ClusterDeleteServerResponse,
+			) error {
+				Expect(request.Deprovision()).To(BeTrue())
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodDelete,
+				"/clusters_mgmt/v1/clusters/123",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
+
+		It("Overrides boolean default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.cluster.del = func(
+				ctx context.Context,
+				request *cmv1.ClusterDeleteServerRequest,
+				response *cmv1.ClusterDeleteServerResponse,
+			) error {
+				Expect(request.Deprovision()).To(BeFalse())
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodDelete,
+				"/clusters_mgmt/v1/clusters/123?deprovision=false",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
+
+		It("Assigns string default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.cluster.del = func(
+				ctx context.Context,
+				request *cmv1.ClusterDeleteServerRequest,
+				response *cmv1.ClusterDeleteServerResponse,
+			) error {
+				Expect(request.Reason()).To(Equal("myreason"))
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodDelete,
+				"/clusters_mgmt/v1/clusters/123",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
+
+		It("Overrides string default", func() {
+			// Prepare the server:
+			server.clustersMgmt.v1.clusters.cluster.del = func(
+				ctx context.Context,
+				request *cmv1.ClusterDeleteServerRequest,
+				response *cmv1.ClusterDeleteServerResponse,
+			) error {
+				Expect(request.Reason()).To(Equal("yourreason"))
+				return nil
+			}
+
+			// Send the request:
+			request := httptest.NewRequest(
+				http.MethodDelete,
+				"/clusters_mgmt/v1/clusters/123?reason=yourreason",
+				nil,
+			)
+			adapter.ServeHTTP(recorder, request)
+		})
 	})
 
 	It("Returns the list of clusters with a trailing slash", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.list = func(
+			ctx context.Context,
+			request *cmv1.ClustersListServerRequest,
+			response *cmv1.ClustersListServerResponse,
+		) error {
+			items, err := cmv1.NewClusterList().Build()
+			if err != nil {
+				return err
+			}
+			response.Items(items)
+			response.Page(1)
+			response.Size(0)
+			response.Total(0)
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters/", nil)
 		adapter.ServeHTTP(recorder, request)
+
+		// Verify the response:
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 	})
 
@@ -61,96 +214,242 @@ var _ = Describe("Server", func() {
 	})
 
 	It("Can get a list of clusters", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.list = func(
+			ctx context.Context,
+			request *cmv1.ClustersListServerRequest,
+			response *cmv1.ClustersListServerResponse,
+		) error {
+			items, err := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().
+						Name("mycluster"),
+				).
+				Build()
+			if err != nil {
+				return err
+			}
+			response.Items(items)
+			response.Page(1)
+			response.Size(1)
+			response.Total(1)
+
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters", nil)
 		adapter.ServeHTTP(recorder, request)
+
+		// Verify the response:
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
-			"page": 0,
-			"size": 0,
+			"page": 1,
+			"size": 1,
 			"total": 1,
 			"items": [
 				{
 					"kind": "Cluster",
-					"name": "test-list-clusters"
+					"name": "mycluster"
 				}
 			]
 		}`))
 	})
 
 	It("Can get a list of clusters by page", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.list = func(
+			ctx context.Context,
+			request *cmv1.ClustersListServerRequest,
+			response *cmv1.ClustersListServerResponse,
+		) error {
+			// Verify the request:
+			Expect(request.Page()).To(Equal(2))
+
+			// Send the response:
+			items, err := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().
+						Name("mycluster"),
+				).
+				Build()
+			if err != nil {
+				return err
+			}
+			response.Items(items)
+			response.Page(2)
+			response.Size(1)
+			response.Total(1)
+
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
 			"/clusters_mgmt/v1/clusters?page=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
+
+		// Verify the response:
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
 			"page": 2,
-			"size": 0,
+			"size": 1,
 			"total": 1,
 			"items": [
 				{
 					"kind": "Cluster",
-					"name": "test-list-clusters"
+					"name": "mycluster"
 				}
 			]
 		}`))
 	})
 
 	It("Can get a list of clusters by size", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.list = func(
+			ctx context.Context,
+			request *cmv1.ClustersListServerRequest,
+			response *cmv1.ClustersListServerResponse,
+		) error {
+			// Verify the request:
+			Expect(request.Size()).To(Equal(2))
+
+			// Send the response:
+			items, err := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().
+						Name("mycluster"),
+					cmv1.NewCluster().
+						Name("yourcluster"),
+				).
+				Build()
+			if err != nil {
+				return err
+			}
+			response.Items(items)
+			response.Page(1)
+			response.Size(2)
+			response.Total(2)
+
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
 			"/clusters_mgmt/v1/clusters?size=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
+
+		// Verify the response:
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
-			"page": 0,
+			"page": 1,
 			"size": 2,
-			"total": 1,
+			"total": 2,
 			"items": [
 				{
 					"kind": "Cluster",
-					"name": "test-list-clusters"
+					"name": "mycluster"
+				},
+				{
+					"kind": "Cluster",
+					"name": "yourcluster"
 				}
 			]
 		}`))
 	})
 
 	It("Can get a list of clusters by size and page", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.list = func(
+			ctx context.Context,
+			request *cmv1.ClustersListServerRequest,
+			response *cmv1.ClustersListServerResponse,
+		) error {
+			// Verify the request:
+			Expect(request.Page()).To(Equal(2))
+			Expect(request.Size()).To(Equal(2))
+
+			// Send the response:
+			items, err := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().
+						Name("mycluster"),
+					cmv1.NewCluster().
+						Name("yourcluster"),
+				).
+				Build()
+			if err != nil {
+				return err
+			}
+			response.Items(items)
+			response.Page(2)
+			response.Size(2)
+			response.Total(4)
+
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters?size=2&page=1",
+			"/clusters_mgmt/v1/clusters?size=2&page=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
-			"page": 1,
+			"page": 2,
 			"size": 2,
-			"total": 1,
+			"total": 4,
 			"items": [
 				{
 					"kind": "Cluster",
-					"name": "test-list-clusters"
+					"name": "mycluster"
+				},
+				{
+					"kind": "Cluster",
+					"name": "yourcluster"
 				}
 			]
 		}`))
 	})
 
 	It("Can get a cluster by identifier", func() {
+		// Prepare the server:
+		server.clustersMgmt.v1.clusters.cluster.get = func(
+			ctx context.Context,
+			request *cmv1.ClusterGetServerRequest,
+			response *cmv1.ClusterGetServerResponse,
+		) error {
+			cluster, err := cmv1.NewCluster().
+				Name("mycluster").
+				Build()
+			if err != nil {
+				return err
+			}
+			response.Body(cluster)
+			return nil
+		}
+
+		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
 			"/clusters_mgmt/v1/clusters/123",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
+
+		// Verify the response:
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
 			"kind": "Cluster",
-			"name": "test-get-cluster-by-id"
+			"name": "mycluster"
 		}`))
 	})
 
@@ -240,7 +539,7 @@ var _ = Describe("Server", func() {
 
 // MyServer is the implementation of the top level server.
 type MyServer struct {
-	// Empty on purpose.
+	clustersMgmt *MyCMServer
 }
 
 // Make sure that we implement the interface:
@@ -255,31 +554,31 @@ func (s *MyServer) Authorizations() az.Server {
 }
 
 func (s *MyServer) ClustersMgmt() cm.Server {
-	return &MyCMServer{}
+	return s.clustersMgmt
 }
 
 // MyCMServer is the implementation of the clusters management server.
 type MyCMServer struct {
-	// Empty on purpose.
+	v1 *MyCMV1Server
 }
 
 // Make sure that we implement the interface:
 var _ cm.Server = &MyCMServer{}
 
 func (s *MyCMServer) V1() cmv1.Server {
-	return &MyCMV1Server{}
+	return s.v1
 }
 
 // MyCMV1Server is the implementation of version 1 of the clusters management server.
 type MyCMV1Server struct {
-	// Empty on purpose.
+	clusters *MyClustersServer
 }
 
 // Make sure that we implement the interface:
 var _ cmv1.Server = &MyCMV1Server{}
 
 func (s *MyCMV1Server) Clusters() cmv1.ClustersServer {
-	return &MyClustersServer{}
+	return s.clusters
 }
 
 func (s *MyCMV1Server) Nil() cmv1.NilServer {
@@ -290,22 +589,20 @@ func (s *MyCMV1Server) Nil() cmv1.NilServer {
 
 // MyClustersServer is the implementation of the server that manages the collection of clusters.
 type MyClustersServer struct {
-	// Empty on purpose.
+	// Methods:
+	list func(
+		ctx context.Context,
+		request *cmv1.ClustersListServerRequest,
+		response *cmv1.ClustersListServerResponse,
+	) error
+
+	// Locators:
+	cluster *MyClusterServer
 }
 
 func (s *MyClustersServer) List(ctx context.Context, request *cmv1.ClustersListServerRequest,
 	response *cmv1.ClustersListServerResponse) error {
-	items, err := cmv1.NewClusterList().
-		Items(cmv1.NewCluster().Name("test-list-clusters")).
-		Build()
-	if err != nil {
-		return err
-	}
-	response.Items(items)
-	response.Page(request.Page())
-	response.Size(request.Size())
-	response.Total(items.Len())
-	return nil
+	return s.list(ctx, request, response)
 }
 
 func (s *MyClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddServerRequest,
@@ -314,12 +611,28 @@ func (s *MyClustersServer) Add(ctx context.Context, request *cmv1.ClustersAddSer
 }
 
 func (s *MyClustersServer) Cluster(id string) cmv1.ClusterServer {
-	return &MyClusterServer{}
+	s.cluster.id = id
+	return s.cluster
 }
 
 // MyCluster servier is the implementation of the server that manages a specific cluster.
 type MyClusterServer struct {
-	// Empty on purpose.
+	// Identifier:
+	id string
+
+	// Get method:
+	get func(
+		ctx context.Context,
+		request *cmv1.ClusterGetServerRequest,
+		response *cmv1.ClusterGetServerResponse,
+	) error
+
+	// Delete method:
+	del func(
+		ctx context.Context,
+		request *cmv1.ClusterDeleteServerRequest,
+		response *cmv1.ClusterDeleteServerResponse,
+	) error
 }
 
 // Make sure we implement the interface:
@@ -327,12 +640,7 @@ var _ cmv1.ClusterServer = &MyClusterServer{}
 
 func (s *MyClusterServer) Get(ctx context.Context, request *cmv1.ClusterGetServerRequest,
 	response *cmv1.ClusterGetServerResponse) error {
-	cluster, err := cmv1.NewCluster().Name("test-get-cluster-by-id").Build()
-	if err != nil {
-		return err
-	}
-	response.Body(cluster)
-	return nil
+	return s.get(ctx, request, response)
 }
 
 func (s *MyClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdateServerRequest,
@@ -342,7 +650,7 @@ func (s *MyClusterServer) Update(ctx context.Context, request *cmv1.ClusterUpdat
 
 func (s *MyClusterServer) Delete(ctx context.Context, request *cmv1.ClusterDeleteServerRequest,
 	response *cmv1.ClusterDeleteServerResponse) error {
-	return nil
+	return s.del(ctx, request, response)
 }
 
 func (s *MyClusterServer) Groups() cmv1.GroupsServer {

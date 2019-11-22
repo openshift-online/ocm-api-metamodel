@@ -147,28 +147,8 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 		}
 	}
 
-	// Check that there is a root resource for all services and versions:
-	for _, service := range r.model.Services() {
-		for _, version := range service.Versions() {
-			if version.Root() == nil {
-				r.reporter.Errorf(
-					"Version '%s' of service '%s' doesn't have a root resource",
-					version.Name(), service.Name(),
-				)
-			}
-		}
-	}
-
-	// Check methods:
-	for _, service := range r.model.Services() {
-		for _, version := range service.Versions() {
-			for _, resource := range version.Resources() {
-				for _, method := range resource.Methods() {
-					r.checkMethod(method)
-				}
-			}
-		}
-	}
+	// Run checks:
+	r.checkModel()
 
 	// Check if there are errors:
 	errors := r.reporter.Errors()
@@ -707,6 +687,12 @@ func (r *Reader) ExitMethodParameterDecl(ctx *MethodParameterDeclContext) {
 		parameter.SetOut(true)
 	}
 
+	// Set the default value:
+	dfltCtx := ctx.GetDflt()
+	if dfltCtx != nil {
+		parameter.SetDefault(dfltCtx.GetResult())
+	}
+
 	// Return the parameter:
 	ctx.SetResult(parameter)
 }
@@ -810,6 +796,51 @@ func (r *Reader) ExitErrorCodeDecl(ctx *ErrorCodeDeclContext) {
 		r.reporter.Errorf("Error code '%s' isn't a valid integer", text)
 	}
 	ctx.SetResult(code)
+}
+
+func (r *Reader) ExitBooleanLiteral(ctx *BooleanLiteralContext) {
+	if ctx.TRUE() != nil {
+		ctx.SetResult(true)
+		return
+	}
+	if ctx.FALSE() != nil {
+		ctx.SetResult(false)
+		return
+	}
+	r.reporter.Errorf("Unknown boolean literal '%s'", ctx.GetText())
+}
+
+func (r *Reader) ExitIntegerLiteral(ctx *IntegerLiteralContext) {
+	text := ctx.INTEGER_LITERAL().GetText()
+	value, err := strconv.Atoi(text)
+	if err != nil {
+		r.reporter.Errorf("Incorrect integer literal '%s': %v", text, err)
+		return
+	}
+	ctx.SetResult(value)
+}
+
+func (r *Reader) ExitStringLiteral(ctx *StringLiteralContext) {
+	text := ctx.STRING_LITERAL().GetText()
+	text, err := strconv.Unquote(text)
+	if err != nil {
+		r.reporter.Errorf("Incorrect string literal '%s': %v", text, err)
+		return
+	}
+	ctx.SetResult(text)
+}
+
+func (r *Reader) ExitLiteral(ctx *LiteralContext) {
+	switch {
+	case ctx.BooleanLiteral() != nil:
+		ctx.SetResult(ctx.BooleanLiteral().GetResult())
+	case ctx.IntegerLiteral() != nil:
+		ctx.SetResult(ctx.IntegerLiteral().GetResult())
+	case ctx.StringLiteral() != nil:
+		ctx.SetResult(ctx.StringLiteral().GetResult())
+	default:
+		r.reporter.Errorf("Unknown kind of literal '%s'", ctx.GetText())
+	}
 }
 
 func (r *Reader) isUndefinedType(typ *concepts.Type) bool {
