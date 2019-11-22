@@ -20,6 +20,7 @@ import (
 	"sort"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
 // Method represents a method of a resource.
@@ -91,6 +92,26 @@ func (m *Method) GetParameter(name *names.Name) *Parameter {
 		}
 	}
 	return nil
+}
+
+// IsAction determined if this method is an action instead of a regular REST method.
+func (m *Method) IsAction() bool {
+	switch {
+	case m.name.Equals(nomenclator.Add):
+		return false
+	case m.name.Equals(nomenclator.Delete):
+		return false
+	case m.name.Equals(nomenclator.Get):
+		return false
+	case m.name.Equals(nomenclator.List):
+		return false
+	case m.name.Equals(nomenclator.Post):
+		return false
+	case m.name.Equals(nomenclator.Update):
+		return false
+	default:
+		return true
+	}
 }
 
 // MethodSlice is used to simplify sorting of slices of methods by name.

@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // Reporter is the reported used by the metamodel tools. It prints the messages to the standard
@@ -36,18 +38,41 @@ func NewReporter() *Reporter {
 
 // Infof prints an informative message with the given format and arguments.
 func (r *Reporter) Infof(format string, args ...interface{}) {
-	message := fmt.Sprintf(format, args...)
+	message := r.printf(format, args)
 	fmt.Fprintf(os.Stdout, "%s%s\n", infoPrefix, message)
+}
+
+// Warnf prints an warning message with the given format and arguments.
+func (r *Reporter) Warnf(format string, args ...interface{}) {
+	message := r.printf(format, args)
+	fmt.Fprintf(os.Stdout, "%s%s\n", warnPrefix, message)
 }
 
 // Errorf prints an error message with the given format and arguments. It also return an error
 // containing the same information, which will be usually discarded, except when the caller needs to
 // report the error and also return it.
 func (r *Reporter) Errorf(format string, args ...interface{}) error {
-	message := fmt.Sprintf(format, args...)
+	message := r.printf(format, args)
 	fmt.Fprintf(os.Stdout, "%s%s\n", errorPrefix, message)
 	r.errors++
 	return errors.New(message)
+}
+
+func (r *Reporter) printf(format string, args []interface{}) string {
+	// Replace arguments that are named objects or names with their camel case equivalent,
+	// as that is what users type in the source files:
+	for i, arg := range args {
+		switch typed := arg.(type) {
+		case names.Named:
+			name := typed.Name()
+			args[i] = name.Camel()
+		case *names.Name:
+			args[i] = typed.Camel()
+		}
+	}
+
+	// Format the message:
+	return fmt.Sprintf(format, args...)
 }
 
 // Errors returns the number of errors that have been reported via this reporter.
@@ -58,5 +83,6 @@ func (r *Reporter) Errors() int {
 // Message prefix using ANSI scape seequences to set colors:
 const (
 	infoPrefix  = "\033[0;32mI:\033[m "
+	warnPrefix  = "\033[0;33mW:\033[m "
 	errorPrefix = "\033[0;31mE:\033[m "
 )
