@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.17 Nov 23 2019
+
+- Add semantic checks.
+- Add support for default values.
+- Check default values of paging parameters.
+
 == 0.0.16 Nov 19 2019
 
 - Add simple conversion from AsciiDoc to Markdown.
