@@ -251,6 +251,12 @@ func (r *Reader) checkList(method *concepts.Method) {
 				page,
 			)
 		}
+		if page.Default() != 1 {
+			r.reporter.Errorf(
+				"Default value of parameter `%s` should be 1",
+				page,
+			)
+		}
 	}
 
 	// Check the `size` parameter:
@@ -270,6 +276,12 @@ func (r *Reader) checkList(method *concepts.Method) {
 		if !size.In() || !size.Out() {
 			r.reporter.Errorf(
 				"Direction of parameter '%s' should be 'in out'",
+				size,
+			)
+		}
+		if size.Default() == nil {
+			r.reporter.Errorf(
+				"Parameter `%s` should have a default value",
 				size,
 			)
 		}
