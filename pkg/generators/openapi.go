@@ -216,10 +216,19 @@ func (g *OpenAPIGenerator) generateInfo(version *concepts.Version) {
 
 func (g *OpenAPIGenerator) generateServers(version *concepts.Version) {
 	g.buffer.StartArray("servers")
+
+	// Production:
 	g.buffer.StartObject()
 	g.buffer.Field("description", "Production")
 	g.buffer.Field("url", "https://api.openshift.com")
 	g.buffer.EndObject()
+
+	// Staging:
+	g.buffer.StartObject()
+	g.buffer.Field("description", "Stage")
+	g.buffer.Field("url", "https://api.stage.openshift.com")
+	g.buffer.EndObject()
+
 	g.buffer.EndArray()
 }
 
@@ -395,6 +404,8 @@ func (g *OpenAPIGenerator) generateResponseProperty(parameter *concepts.Paramete
 
 func (g *OpenAPIGenerator) generateComponents(version *concepts.Version) {
 	g.buffer.StartObject("components")
+
+	// Schemas:
 	g.buffer.StartObject("schemas")
 	g.generateMetadataSchema()
 	for _, typ := range version.Types() {
@@ -402,6 +413,16 @@ func (g *OpenAPIGenerator) generateComponents(version *concepts.Version) {
 	}
 	g.generateErrorSchema()
 	g.buffer.EndObject()
+
+	// Security schemes:
+	g.buffer.StartObject("securitySchemes")
+	g.buffer.StartObject("bearer")
+	g.buffer.Field("type", "http")
+	g.buffer.Field("scheme", "bearer")
+	g.buffer.Field("bearerFormat", "JWT")
+	g.buffer.EndObject()
+	g.buffer.EndObject()
+
 	g.buffer.EndObject()
 }
 
