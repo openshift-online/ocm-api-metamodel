@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.18 Nov 25 2019
+
+- Add stage URL and `securitySchemes` to the generated _OpenAPI_
+  specifications.
+
 == 0.0.17 Nov 23 2019
 
 - Add semantic checks.
