@@ -385,7 +385,7 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 				err = result.err
 				return
 			}
-			err = result.unmarshal(response.Body)
+			result.body, err = UnmarshalMetadata(response.Body)
 			if err != nil {
 				return
 			}
@@ -420,21 +420,6 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 		func (r *MetadataResponse) Body() *Metadata {
 			return r.body
 		}
-
-		// unmarshal is the method used internally to unmarshal metadata responses.
-		func (r *MetadataResponse) unmarshal(reader io.Reader) error {
-			decoder := json.NewDecoder(reader)
-			data := &metadataData{}
-			err := decoder.Decode(data)
-			if err != nil {
-				return err
-			}
-			r.body, err = data.unwrap()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
 		`,
 	)
 }
@@ -454,9 +439,6 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Package(pkgName).
 		File(fileName).
 		Function("clientName", g.clientName).
-		Function("dataFieldName", g.dataFieldName).
-		Function("dataFieldType", g.dataFieldType).
-		Function("dataStruct", g.dataStruct).
 		Function("enumName", g.enumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
@@ -466,20 +448,22 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Function("locatorName", g.locatorName).
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
+		Function("methodSegment", g.binding.MethodSegment).
 		Function("parameterName", g.binding.ParameterName).
 		Function("pollRequestName", g.pollRequestName).
 		Function("pollResponseName", g.pollResponseName).
+		Function("readResponseFunc", g.readResponseFunc).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
-		Function("requestData", g.requestData).
 		Function("requestName", g.requestName).
 		Function("requestParameters", g.binding.RequestParameters).
 		Function("requestQueryParameters", g.binding.RequestQueryParameters).
-		Function("responseBodyParameters", g.binding.ResponseBodyParameters).
-		Function("responseData", g.responseData).
 		Function("responseName", g.responseName).
 		Function("responseParameters", g.binding.ResponseParameters).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
+		Function("structName", g.types.StructName).
+		Function("valueType", g.types.ValueReference).
+		Function("writeRequestFunc", g.writeRequestFunc).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
@@ -513,29 +497,35 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 		}
 
 		// New{{ $clientName }} creates a new client for the '{{ .Resource.Name }}'
-		// resource using the given transport to sned the requests and receive the
+		// resource using the given transport to send the requests and receive the
 		// responses.
 		func New{{ $clientName }}(transport http.RoundTripper, path string, metric string) *{{ $clientName }} {
-			client := new({{ $clientName }})
-			client.transport = transport
-			client.path = path
-			client.metric = metric
-			return client
+			return &{{ $clientName }}{
+				transport: transport,
+				path:      path,
+				metric:    metric,
+			}
 		}
 
 		{{ range .Resource.Methods }}
 			{{ $methodName := methodName . }}
+			{{ $methodSegment := methodSegment . }}
 			{{ $requestName := requestName . }}
 
 			// {{ $methodName }} creates a request for the '{{ .Name }}' method.
 			//
 			{{ lineComment .Doc }}
 			func (c *{{ $clientName }}) {{ $methodName }}() *{{ $requestName }} {
-				request := new({{ $requestName }})
-				request.transport = c.transport
-				request.path = c.path
-				request.metric = c.metric
-				return request
+				return &{{ $requestName }}{
+					transport: c.transport,
+					{{ if $methodSegment }}
+						path:   path.Join(c.path, "{{ $methodSegment }}"),
+						metric: path.Join(c. metric, "{{ $methodSegment }}"),
+					{{ else }}
+						path:   c.path,
+						metric: c.metric,
+					{{ end }}
+				}
 			}
 		{{ end }}
 
@@ -764,6 +754,18 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 }
 
 func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
+	// Classify the parameters:
+	all := g.binding.RequestBodyParameters(method)
+	var main *concepts.Parameter
+	var others []*concepts.Parameter
+	for _, parameter := range all {
+		if parameter.IsItems() || parameter.IsBody() {
+			main = parameter
+		} else {
+			others = append(others, parameter)
+		}
+	}
+
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("context", "")
 	g.buffer.Import("encoding/json", "")
@@ -771,19 +773,18 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
+	g.buffer.Import("gitub.com/json-iterator/go", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestData := requestData .Method }}
 		{{ $requestName := requestName .Method }}
 		{{ $requestParameters := requestParameters .Method }}
 		{{ $requestQueryParameters := requestQueryParameters .Method }}
 		{{ $requestBodyParameters := requestBodyParameters .Method }}
 		{{ $requestBodyLen := len $requestBodyParameters }}
-		{{ $responseData := responseData .Method }}
 		{{ $responseName := responseName .Method }}
 		{{ $responseParameters := responseParameters .Method }}
-		{{ $responseBodyParameters := responseBodyParameters .Method }}
+		{{ $isAction := .Method.IsAction }}
 
 		// {{ $requestName }} is the request for the '{{ .Method.Name }}' method.
 		type {{ $requestName }} struct {
@@ -847,8 +848,8 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			{{ end }}
 			header := helpers.SetHeader(r.header, r.metric)
 			{{ if $requestBodyParameters }}
-				buffer := new(bytes.Buffer)
-				err = r.marshal(buffer)
+				buffer := &bytes.Buffer{}
+				err = {{ writeRequestFunc .Method }}(r, buffer)
 				if err != nil {
 					return
 				}
@@ -873,7 +874,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				return
 			}
 			defer response.Body.Close()
-			result = new({{ $responseName }})
+			result = &{{ $responseName }}{}
 			result.status = response.StatusCode
 			result.header = response.Header
 			if result.status >= 400 {
@@ -884,8 +885,8 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				err = result.err
 				return
 			}
-			{{ if $responseBodyParameters }}
-				err = result.unmarshal(response.Body)
+			{{ if $responseParameters }}
+				err = {{ readResponseFunc .Method }}(result, response.Body)
 				if err != nil {
 					return
 				}
@@ -897,59 +898,43 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			// marshall is the method used internally to marshal requests for the
 			// '{{ .Method.Name }}' method.
 			func (r *{{ $requestName }}) marshal(writer io.Writer) error {
-				var err error
-				encoder := json.NewEncoder(writer)
-				{{ if eq $requestBodyLen 1 }}
-					{{ with index $requestBodyParameters 0 }}
-						data, err := r.{{ fieldName . }}.wrap()
-						if err != nil {
-							return err
-						}
-					{{ end }}
-				{{ else }}
-					data := new({{ $requestData }})
-					{{ range $requestBodyParameters }}
-						{{ $dataFieldName := dataFieldName . }}
-						{{ $fieldName := fieldName . }}
-						{{ if or .Type.IsScalar }}
-							data.{{ $dataFieldName }} = r.{{ $fieldName }}
-						{{ else }}
-							data.{{ $dataFieldName }}, err = r.{{ $fieldName }}.wrap()
-							if err != nil {
-								return err
-							}
-						{{ end }}
-					{{ end }}
-				{{ end }}
-				err = encoder.Encode(data)
-				return err
+				stream := helpers.NewStream(writer)
+				r.stream(stream)
+				return stream.Error
 			}
 
-			{{ if gt $requestBodyLen 1 }}
-				// {{ $requestData }} is the structure used internally to write the request of the
-				// '{{ .Method.Name }}' method.
-				type {{ $requestData }} struct {
-					{{ range $requestBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
-					{{ end }}
-				}
-			{{ end }}
+			func (r *{{ $requestName }}) stream(stream *jsoniter.Stream) {
+			}
 		{{ end }}
 		`,
 		"Method", method,
+		"Main", main,
+		"Others", others,
 	)
 }
 
 func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
+	// Classify the parameters:
+	all := g.binding.ResponseBodyParameters(method)
+	var main *concepts.Parameter
+	var others []*concepts.Parameter
+	for _, parameter := range all {
+		if parameter.IsItems() || parameter.IsBody() {
+			main = parameter
+		} else {
+			others = append(others, parameter)
+		}
+	}
+
+	// Generate the code:
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
-		{{ $responseData := responseData .Method }}
 		{{ $responseParameters := responseParameters .Method }}
-		{{ $responseBodyParameters := responseBodyParameters .Method }}
-		{{ $responseBodyLen := len $responseBodyParameters }}
+		{{ $responseBodyLen := len $responseParameters }}
+		{{ $isAction := .Method.IsAction }}
 
 		// {{ $responseName }} is the response for the '{{ .Method.Name }}' method.
 		type  {{ $responseName }} struct {
@@ -986,7 +971,6 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 		}
 
 		{{ range $responseParameters }}
-			{{ $parameterType := .Type.Name.String }}
 			{{ $fieldName := fieldName . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
@@ -995,16 +979,16 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 			//
 			{{ lineComment .Doc }}
 			func (r *{{ $responseName }}) {{ $getterName }}() {{ $getterType }} {
-				{{ if or .Type.IsStruct .Type.IsList .Type.IsMap }}
-					if r == nil {
-						return nil
-					}
-					return r.{{ $fieldName }}
-				{{ else }}
+				{{ if .Type.IsScalar }}
 					if r != nil && r.{{ $fieldName }} != nil {
 						return *r.{{ $fieldName }}
 					}
 					return {{ zeroValue .Type }}
+				{{ else if or .Type.IsStruct .Type.IsList .Type.IsMap }}
+					if r == nil {
+						return nil
+					}
+					return r.{{ $fieldName }}
 				{{ end }}
 			}
 
@@ -1015,69 +999,19 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 			func (r *{{ $responseName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
 				ok = r != nil && r.{{ $fieldName }} != nil
 				if ok {
-					{{ if or .Type.IsStruct .Type.IsList .Type.IsMap }}
-						value = r.{{ $fieldName }}
-					{{ else }}
+					{{ if .Type.IsScalar }}
 						value = *r.{{ $fieldName }}
+					{{ else if or .Type.IsStruct .Type.IsList .Type.IsMap }}
+						value = r.{{ $fieldName }}
 					{{ end }}
 				}
 				return
 			}
 		{{ end }}
-
-		{{ if $responseBodyParameters }}
-			// unmarshal is the method used internally to unmarshal responses to the
-			// '{{ .Method.Name }}' method.
-			func (r *{{ $responseName }}) unmarshal(reader io.Reader) error {
-				var err error
-				decoder := json.NewDecoder(reader)
-				{{ if eq $responseBodyLen 1 }}
-					{{ with index $responseBodyParameters 0 }}
-						data := new({{ dataStruct . }})
-					{{ end }}
-				{{ else }}
-					data := new({{ $responseData }})
-				{{ end }}
-				err = decoder.Decode(data)
-				if err != nil {
-					return err
-				}
-				{{ if eq $responseBodyLen 1 }}
-					{{ with index $responseBodyParameters 0 }}
-						r.{{ fieldName . }}, err = data.unwrap()
-						if err != nil {
-							return err
-						}
-					{{ end }}
-				{{ else }}
-					{{ range $responseBodyParameters }}
-						{{ $dataFieldName := dataFieldName . }}
-						{{ $fieldName := fieldName . }}
-						{{ if or .Type.IsScalar }}
-							r.{{ $fieldName }} = data.{{ $dataFieldName }}
-						{{ else }}
-							r.{{ $fieldName }}, err = data.{{ $dataFieldName }}.unwrap()
-							if err != nil {
-								return err
-							}
-						{{ end }}
-					{{ end }}
-				{{ end }}
-				return err
-			}
-
-			{{ if gt $responseBodyLen 1 }}
-				// {{ $responseData }} is the structure used internally to unmarshal
-				// the response of the '{{ .Method.Name }}' method.
-				type {{ $responseData }} struct {
-					{{ range $responseBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
-					{{ end }}
-				}
-			{{ end }}
-		{{ end }}
 		`,
 		"Method", method,
+		"Main", main,
+		"Others", others,
 	)
 }
 
@@ -1108,19 +1042,21 @@ func (g *ClientsGenerator) fieldName(parameter *concepts.Parameter) string {
 }
 
 func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.types.NullableReference(parameter.Type())
-}
-
-func (g *ClientsGenerator) dataStruct(parameter *concepts.Parameter) string {
-	return g.types.DataReference(parameter.Type()).Name()
-}
-
-func (g *ClientsGenerator) dataFieldName(parameter *concepts.Parameter) string {
-	return g.names.Public(parameter.Name())
-}
-
-func (g *ClientsGenerator) dataFieldType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.types.DataReference(parameter.Type())
+	var ref *golang.TypeReference
+	typ := parameter.Type()
+	switch {
+	case parameter.IsItems():
+		ref = g.types.ListReference(typ)
+	case typ.IsScalar() || typ.IsStruct() || typ.IsList() || typ.IsMap():
+		ref = g.types.NullableReference(typ)
+	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate field type for parameter '%s'",
+			parameter,
+		)
+	}
+	return ref
 }
 
 func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
@@ -1130,7 +1066,7 @@ func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
 }
 
 func (g *ClientsGenerator) getterType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.accessorType(parameter.Type())
+	return g.accessorType(parameter)
 }
 
 func (g *ClientsGenerator) setterName(parameter *concepts.Parameter) string {
@@ -1140,25 +1076,27 @@ func (g *ClientsGenerator) setterName(parameter *concepts.Parameter) string {
 }
 
 func (g *ClientsGenerator) setterType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.accessorType(parameter.Type())
+	return g.accessorType(parameter)
 }
 
-func (g *ClientsGenerator) accessorType(typ *concepts.Type) *golang.TypeReference {
+func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *golang.TypeReference {
+	var ref *golang.TypeReference
+	typ := parameter.Type()
 	switch {
-	case typ.IsList():
-		element := typ.Element()
-		switch {
-		case element.IsStruct():
-			name := g.names.Public(names.Cat(element.Name(), nomenclator.List))
-			return g.types.Reference("", "", "", "*"+name)
-		default:
-			return g.types.NullableReference(typ)
-		}
-	case typ.IsStruct():
-		return g.types.NullableReference(typ)
-	default:
-		return g.types.ValueReference(typ)
+	case parameter.IsItems():
+		ref = g.types.ListReference(typ)
+	case typ.IsScalar():
+		ref = g.types.ValueReference(typ)
+	case typ.IsStruct() || typ.IsList() || typ.IsMap():
+		ref = g.types.NullableReference(typ)
 	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate accessor type for parameter '%s'",
+			parameter,
+		)
+	}
+	return ref
 }
 
 func (g *ClientsGenerator) locatorName(locator *concepts.Locator) string {
@@ -1170,31 +1108,35 @@ func (g *ClientsGenerator) methodName(method *concepts.Method) string {
 }
 
 func (g *ClientsGenerator) clientName(resource *concepts.Resource) string {
-	root := resource.Owner().Root()
-	if resource == root {
-		return g.names.Public(nomenclator.Client)
+	var name *names.Name
+	if resource.IsRoot() {
+		name = nomenclator.Client
+	} else {
+		name = names.Cat(resource.Name(), nomenclator.Client)
 	}
-	return g.names.Public(names.Cat(resource.Name(), nomenclator.Client))
+	return g.names.Public(name)
 }
 
 func (g *ClientsGenerator) requestName(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Request)
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(method.Name(), nomenclator.Request)
+	} else {
+		name = names.Cat(resource.Name(), method.Name(), nomenclator.Request)
+	}
 	return g.names.Public(name)
-}
-
-func (g *ClientsGenerator) requestData(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Request, nomenclator.Data)
-	return g.names.Private(name)
 }
 
 func (g *ClientsGenerator) responseName(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response)
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(method.Name(), nomenclator.Response)
+	} else {
+		name = names.Cat(resource.Name(), method.Name(), nomenclator.Response)
+	}
 	return g.names.Public(name)
-}
-
-func (g *ClientsGenerator) responseData(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Response, nomenclator.Data)
-	return g.names.Private(name)
 }
 
 func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
@@ -1205,6 +1147,46 @@ func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
 func (g *ClientsGenerator) pollResponseName(resource *concepts.Resource) string {
 	name := names.Cat(resource.Name(), nomenclator.Poll, nomenclator.Response)
 	return g.names.Public(name)
+}
+
+func (g *ClientsGenerator) writeRequestFunc(method *concepts.Method) string {
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(
+			nomenclator.Write,
+			method.Name(),
+			nomenclator.Request,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Write,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Request,
+		)
+	}
+	return g.names.Private(name)
+}
+
+func (g *ClientsGenerator) readResponseFunc(method *concepts.Method) string {
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(
+			nomenclator.Read,
+			method.Name(),
+			nomenclator.Response,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Read,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Response,
+		)
+	}
+	return g.names.Private(name)
 }
 
 func (g *ClientsGenerator) avoidBuiltin(name string, builtins map[string]interface{}) string {

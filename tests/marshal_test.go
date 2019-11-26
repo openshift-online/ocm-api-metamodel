@@ -29,7 +29,20 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/tests/api/errors"
 )
 
-var _ = Describe("Writer", func() {
+var _ = Describe("Marshal", func() {
+	It("Can write nil map of strings", func() {
+		object, err := cmv1.NewCluster().
+			Properties(nil).
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+		buffer := new(bytes.Buffer)
+		err = cmv1.MarshalCluster(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`{
+			"kind": "Cluster"
+		}`))
+	})
+
 	It("Can write empty map of strings", func() {
 		object, err := cmv1.NewCluster().
 			Properties(map[string]string{}).
@@ -39,7 +52,8 @@ var _ = Describe("Writer", func() {
 		err = cmv1.MarshalCluster(object, buffer)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(buffer).To(MatchJSON(`{
-			"kind": "Cluster"
+			"kind": "Cluster",
+			"properties": {}
 		}`))
 	})
 
@@ -81,29 +95,44 @@ var _ = Describe("Writer", func() {
 		}`))
 	})
 
-	It("Can write empty map of objects", func() {
-		object, err := amv1.NewAccessToken().
-			Auths(map[string]*amv1.AuthBuilder{}).
+	It("Can write nil map of objects", func() {
+		object, err := amv1.NewRegistryAuths().
+			Map(nil).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 		buffer := new(bytes.Buffer)
-		err = amv1.MarshalAccessToken(object, buffer)
+		err = amv1.MarshalRegistryAuths(object, buffer)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(buffer).To(MatchJSON(`{}`))
 	})
 
+	It("Can write empty map of objects", func() {
+		object, err := amv1.NewRegistryAuths().
+			Map(map[string]*amv1.RegistryAuthBuilder{}).
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+		buffer := new(bytes.Buffer)
+		err = amv1.MarshalRegistryAuths(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`{
+			"map": {}
+		}`))
+	})
+
 	It("Can write map of objects with one value", func() {
-		object, err := amv1.NewAccessToken().
-			Auths(map[string]*amv1.AuthBuilder{
-				"my.com": amv1.NewAuth().Username("myuser").Email("mymail"),
+		object, err := amv1.NewRegistryAuths().
+			Map(map[string]*amv1.RegistryAuthBuilder{
+				"my.com": amv1.NewRegistryAuth().
+					Username("myuser").
+					Email("mymail"),
 			}).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 		buffer := new(bytes.Buffer)
-		err = amv1.MarshalAccessToken(object, buffer)
+		err = amv1.MarshalRegistryAuths(object, buffer)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(buffer).To(MatchJSON(`{
-			"auths": {
+			"map": {
 				"my.com": {
 					"username": "myuser",
 					"email": "mymail"
@@ -113,18 +142,22 @@ var _ = Describe("Writer", func() {
 	})
 
 	It("Can write map of objects with two values", func() {
-		object, err := amv1.NewAccessToken().
-			Auths(map[string]*amv1.AuthBuilder{
-				"my.com":   amv1.NewAuth().Username("myuser").Email("mymail"),
-				"your.com": amv1.NewAuth().Username("youruser").Email("yourmail"),
+		object, err := amv1.NewRegistryAuths().
+			Map(map[string]*amv1.RegistryAuthBuilder{
+				"my.com": amv1.NewRegistryAuth().
+					Username("myuser").
+					Email("mymail"),
+				"your.com": amv1.NewRegistryAuth().
+					Username("youruser").
+					Email("yourmail"),
 			}).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 		buffer := new(bytes.Buffer)
-		err = amv1.MarshalAccessToken(object, buffer)
+		err = amv1.MarshalRegistryAuths(object, buffer)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(buffer).To(MatchJSON(`{
-			"auths": {
+			"map": {
 				"my.com": {
 					"username": "myuser",
 					"email": "mymail"

@@ -55,22 +55,27 @@ func (r *Reader) checkResource(resource *concepts.Resource) {
 
 func (r *Reader) checkMethod(method *concepts.Method) {
 	// Run specific checks according tot he type of method:
-	name := method.Name()
 	switch {
-	case name.Equals(nomenclator.Add):
+	case method.IsAdd():
 		r.checkAdd(method)
-	case name.Equals(nomenclator.Delete):
+	case method.IsDelete():
 		r.checkDelete(method)
-	case name.Equals(nomenclator.Get):
+	case method.IsGet():
 		r.checkGet(method)
-	case name.Equals(nomenclator.List):
+	case method.IsList():
 		r.checkList(method)
-	case name.Equals(nomenclator.Post):
+	case method.IsPost():
 		r.checkPost(method)
-	case name.Equals(nomenclator.Update):
+	case method.IsUpdate():
 		r.checkUpdate(method)
-	default:
+	case method.IsAction():
 		r.checkAction(method)
+	default:
+		r.reporter.Errorf(
+			"Don't know how to check method '%s' because it doesn't belong to any "+
+				"of the known categories",
+			method,
+		)
 	}
 
 	// Check the parameters:
@@ -239,7 +244,7 @@ func (r *Reader) checkList(method *concepts.Method) {
 			method, nomenclator.Page,
 		)
 	} else {
-		if page.Type() != version.Integer() {
+		if page.Type() != version.IntegerType() {
 			r.reporter.Errorf(
 				"Type of parameter '%s' should be integer but it is '%s'",
 				page, page.Type(),
@@ -267,7 +272,7 @@ func (r *Reader) checkList(method *concepts.Method) {
 			method, nomenclator.Size,
 		)
 	} else {
-		if size.Type() != version.Integer() {
+		if size.Type() != version.IntegerType() {
 			r.reporter.Warnf(
 				"Type of parameter '%s' should be integer but it is '%s'",
 				size, size.Type(),
@@ -295,7 +300,7 @@ func (r *Reader) checkList(method *concepts.Method) {
 			method, nomenclator.Total,
 		)
 	} else {
-		if total.Type() != version.Integer() {
+		if total.Type() != version.IntegerType() {
 			r.reporter.Warnf(
 				"Type of parameter '%s' should be integer but it is '%s'",
 				total, total.Type(),
@@ -340,7 +345,49 @@ func (r *Reader) checkList(method *concepts.Method) {
 }
 
 func (r *Reader) checkPost(method *concepts.Method) {
-	// Empty on purpose.
+	// Get the input and output parameters:
+	var in []*concepts.Parameter
+	var out []*concepts.Parameter
+	for _, parameter := range method.Parameters() {
+		if parameter.In() {
+			in = append(in, parameter)
+		}
+		if parameter.Out() {
+			out = append(out, parameter)
+		}
+	}
+
+	// At most one input parameter that should be an struct:
+	if len(in) > 1 {
+		r.reporter.Errorf(
+			"Method '%s' should have at most one input parameter but it has %d",
+			method, len(in),
+		)
+	}
+	for _, parameter := range in {
+		if !parameter.Type().IsStruct() {
+			r.reporter.Errorf(
+				"Parameter '%s' should be a struct but it is %s",
+				parameter, parameter.Type().Kind(),
+			)
+		}
+	}
+
+	// At most one output parameter that should be an struct:
+	if len(out) != 1 {
+		r.reporter.Errorf(
+			"Method '%s' should have at most one output parameter but it has %d",
+			method, len(out),
+		)
+	}
+	for _, parameter := range out {
+		if !parameter.Type().IsStruct() {
+			r.reporter.Errorf(
+				"Parameter '%s' should be a struct but it is %s",
+				parameter, parameter.Type().Kind(),
+			)
+		}
+	}
 }
 
 func (r *Reader) checkUpdate(method *concepts.Method) {
@@ -349,7 +396,7 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
 			r.reporter.Errorf(
 				"Type of parameter '%s' should be scalar or struct but it is '%s'",
-				parameter, parameter.Type().Kind,
+				parameter, parameter.Type().Kind(),
 			)
 		}
 	}
@@ -418,9 +465,9 @@ func (r *Reader) checkParameter(parameter *concepts.Parameter) {
 		case bool:
 			typ = version.Boolean()
 		case int:
-			typ = version.Integer()
+			typ = version.IntegerType()
 		case string:
-			typ = version.String()
+			typ = version.StringType()
 		default:
 			r.reporter.Errorf(
 				"Don't know how to check if default value '%v' is compatible "+

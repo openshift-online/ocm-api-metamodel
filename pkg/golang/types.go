@@ -102,101 +102,122 @@ func (c *TypesCalculator) Reference(imprt, selector, name, text string) *TypeRef
 	return reference
 }
 
+// EnumName calculates the name of the given enumerated type.
+func (c *TypesCalculator) EnumName(typ *concepts.Type) string {
+	return c.EnumReference(typ).Name()
+}
+
+// EnumReference calculates a reference to the Go type used to represent the given model enumerated
+// type.
+func (c *TypesCalculator) EnumReference(typ *concepts.Type) *TypeReference {
+	var ref *TypeReference
+	if !typ.IsEnum() {
+		c.reporter.Errorf(
+			"Don't know how to calculate enumerated type reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	} else {
+		ref = c.ValueReference(typ)
+	}
+	return ref
+}
+
+// StructName calculates the name of the struct type used to represent objects of the given type.
+func (c *TypesCalculator) StructName(typ *concepts.Type) string {
+	return c.StructReference(typ).Name()
+}
+
+// StructReference calculates a reference to the struct type used to represent objects of the given
+// type.
+func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
+	var ref *TypeReference
+	if typ.IsList() || typ.IsStruct() {
+		ref = &TypeReference{}
+		ref.imprt, ref.selector = c.Package(typ)
+		ref.name = c.names.Public(typ.Name())
+		ref.text = ref.name
+	}
+	if ref == nil {
+		c.reporter.Errorf(
+			"Don't know how to calculate struct type reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	}
+	return ref
+}
+
 // ValueReference calculates a type reference to a value of the given type.
 func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
+	var ref *TypeReference
 	version := typ.Owner()
 	switch {
 	case typ == version.Boolean():
-		ref := new(TypeReference)
+		ref = &TypeReference{}
 		ref.name = "bool"
 		ref.text = "bool"
-		return ref
-	case typ == version.Integer():
-		ref := new(TypeReference)
+	case typ == version.IntegerType():
+		ref = &TypeReference{}
 		ref.name = "int"
 		ref.text = "int"
-		return ref
-	case typ == version.Long():
-		ref := new(TypeReference)
+	case typ == version.LongType():
+		ref = &TypeReference{}
 		ref.name = "int64"
 		ref.text = "int64"
-		return ref
-	case typ == version.Float():
-		ref := new(TypeReference)
+	case typ == version.FloatType():
+		ref = &TypeReference{}
 		ref.name = "float64"
 		ref.text = "float64"
-		return ref
-	case typ == version.String():
-		ref := new(TypeReference)
+	case typ == version.StringType():
+		ref = &TypeReference{}
 		ref.name = "string"
 		ref.text = "string"
-		return ref
-	case typ == version.Date():
-		ref := new(TypeReference)
+	case typ == version.DateType():
+		ref = &TypeReference{}
 		ref.imprt = "time"
 		ref.selector = "time"
 		ref.name = "Time"
 		ref.text = "time.Time"
-		return ref
 	case typ.IsEnum():
-		ref := new(TypeReference)
+		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
 		ref.name = c.names.Public(typ.Name())
 		ref.text = ref.name
-		return ref
 	case typ.IsList():
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			ref := c.ValueReference(element)
+			ref = c.ValueReference(element)
 			ref.text = fmt.Sprintf("[]%s", ref.text)
-			return ref
 		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(element.Name(), nomenclator.List))
-			ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make value reference for list of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
+			ref = c.ValueReference(element)
+			ref.text = fmt.Sprintf("[]*%s", ref.text)
 		}
 	case typ.IsMap():
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			ref := c.ValueReference(element)
+			ref = c.ValueReference(element)
 			ref.text = fmt.Sprintf("map[string]%s", ref.text)
-			return ref
 		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(element.Name(), nomenclator.Map))
-			ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make value reference for map of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
+			ref = c.ValueReference(element)
+			ref.text = fmt.Sprintf("map[string]*%s", ref.text)
 		}
 	case typ.IsStruct():
-		ref := new(TypeReference)
+		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
 		ref.name = c.names.Public(typ.Name())
 		ref.text = ref.name
-		return ref
-	default:
-		c.reporter.Errorf(
-			"Don't know how to make value reference for type '%s' of kind '%s'",
-			typ.Name(), typ.Kind(),
-		)
-		return new(TypeReference)
 	}
+	if ref == nil {
+		c.reporter.Errorf(
+			"Don't know how to calculate value reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	}
+	return ref
 }
 
 // NullableReference calculates a type reference for a value of the given type that can be assigned
@@ -207,189 +228,119 @@ func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 		ref := c.ValueReference(typ)
 		ref.text = fmt.Sprintf("*%s", ref.text)
 		return ref
-	case typ.IsList():
-		element := typ.Element()
-		switch {
-		case element.IsScalar():
-			ref := c.ValueReference(element)
-			ref.text = fmt.Sprintf("[]%s", ref.text)
-			return ref
-		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(element.Name(), nomenclator.List))
-			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make type reference for list of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
-		}
-	case typ.IsMap():
-		element := typ.Element()
-		switch {
-		case element.IsScalar():
-			ref := c.ValueReference(element)
-			ref.text = fmt.Sprintf("map[string]%s", ref.text)
-			return ref
-		case element.IsStruct():
-			ref := c.ValueReference(element)
-			ref.text = fmt.Sprintf("map[string]*%s", ref.text)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make type reference for map of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
-		}
 	default:
-		c.reporter.Errorf(
-			"Don't know how to make type reference for type '%s' of kind '%s'",
-			typ.Name(), typ.Kind(),
-		)
-		return new(TypeReference)
+		return c.ValueReference(typ)
 	}
 }
 
-// DataReference calculates a reference for the type used to marshal and unmarshal JSON documents
-// containing the given type.
-func (c *TypesCalculator) DataReference(typ *concepts.Type) *TypeReference {
+// ListName calculates the name of the type used to represent the given list type.
+func (c *TypesCalculator) ListName(typ *concepts.Type) string {
+	return c.ListReference(typ).Name()
+}
+
+// ListReference calculates a type reference for the given list type.
+func (c *TypesCalculator) ListReference(typ *concepts.Type) *TypeReference {
+	// Check that the given type is actually a list type:
+	if !typ.IsList() {
+		c.reporter.Errorf(
+			"Don't know how to calculate list type reference for type '%s'",
+			typ,
+		)
+		return &TypeReference{}
+	}
+
+	// Calculate the type reference:
+	ref := &TypeReference{}
+	ref.imprt, ref.selector = c.Package(typ)
+	ref.name = c.names.Public(typ.Name())
+	ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+	return ref
+}
+
+// JSONTypeReference calculates a reference for the type used to marshal and unmarshal JSON
+// documents containing the given type.
+func (c *TypesCalculator) JSONTypeReference(typ *concepts.Type) *TypeReference {
+	var ref *TypeReference
 	switch {
 	case typ.IsScalar():
-		return c.NullableReference(typ)
+		ref = c.NullableReference(typ)
 	case typ.IsList():
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			return c.NullableReference(typ)
+			ref = c.NullableReference(typ)
 		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Private(names.Cat(
-				element.Name(), nomenclator.List, nomenclator.Data),
-			)
-			ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make data reference for list of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
+			ref = c.JSONTypeReference(element)
+			ref.text = fmt.Sprintf("[]%s", ref.text)
 		}
 	case typ.IsMap():
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			return c.NullableReference(typ)
+			ref = c.NullableReference(typ)
 		case element.IsStruct():
-			ref := c.DataReference(element)
+			ref = c.JSONTypeReference(element)
 			ref.text = fmt.Sprintf("map[string]%s", ref.text)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make data reference for map of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
 		}
 	case typ.IsStruct():
-		ref := new(TypeReference)
+		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Private(names.Cat(typ.Name(), nomenclator.Data))
+		ref.name = c.names.Private(names.Cat(typ.Name(), nomenclator.JSON))
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-		return ref
-	default:
-		c.reporter.Errorf(
-			"Don't know how to make data reference for type '%s'",
-			typ.Name(),
-		)
-		return new(TypeReference)
 	}
+	if ref == nil {
+		c.reporter.Errorf(
+			"Don't know how to calculate JSON type reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	}
+	return ref
 }
 
-// LinkDataReferece reference calculates a reference for the type used to marshal and unmarshal
-// links to objects of the given type.
-func (c *TypesCalculator) LinkDataReference(typ *concepts.Type) *TypeReference {
-	switch {
-	case typ.IsList() && typ.Element().IsClass():
-		element := typ.Element()
-		ref := new(TypeReference)
-		ref.imprt, ref.selector = c.Package(element)
-		ref.name = c.names.Private(names.Cat(
-			element.Name(),
-			nomenclator.List,
-			nomenclator.Link,
-			nomenclator.Data,
-		))
+// JSONStructName calculates the name of the struct type used to marshal and unmarshal JSON
+// documents containing the given type.
+func (c *TypesCalculator) JSONStructName(typ *concepts.Type) string {
+	return c.JSONStructReference(typ).Name()
+}
+
+// JSONStructReference calculates a reference for the struct type used to marshal and unmarshal JSON
+// documents containing objects of the given type.
+func (c *TypesCalculator) JSONStructReference(typ *concepts.Type) *TypeReference {
+	var ref *TypeReference
+	if typ.IsStruct() || typ.IsList() {
+		ref = &TypeReference{}
+		ref.imprt, ref.selector = c.Package(typ)
+		ref.name = c.names.Private(names.Cat(typ.Name(), nomenclator.JSON))
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-		return ref
-	case typ.IsStruct():
-		return c.DataReference(typ)
-	default:
-		c.reporter.Errorf(
-			"Don't know how to make link data reference for type '%s'",
-			typ.Name(),
-		)
-		return new(TypeReference)
 	}
+	if ref == nil {
+		c.reporter.Errorf(
+			"Don't know how to calculate JSON struct type reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	}
+	return ref
 }
 
 // Builder reference calculates a reference for the type used build objects of the given type.
 func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
-	switch {
-	case typ.IsList():
-		element := typ.Element()
-		switch {
-		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(
-				element.Name(), nomenclator.List, nomenclator.Builder,
-			))
-			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make builder reference for list of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
-		}
-	case typ.IsMap():
-		element := typ.Element()
-		switch {
-		case element.IsStruct():
-			ref := new(TypeReference)
-			ref.imprt, ref.selector = c.Package(element)
-			ref.name = c.names.Public(names.Cat(
-				element.Name(), nomenclator.Map, nomenclator.Builder,
-			))
-			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-			return ref
-		default:
-			c.reporter.Errorf(
-				"Don't know how to make builder reference for map of '%s'",
-				element.Name(),
-			)
-			return new(TypeReference)
-		}
-	case typ.IsStruct():
-		ref := new(TypeReference)
+	var ref *TypeReference
+	if typ.IsStruct() || typ.IsList() {
+		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
 		ref.name = c.names.Public(names.Cat(typ.Name(), nomenclator.Builder))
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-		return ref
-	default:
-		c.reporter.Errorf(
-			"Don't know how to make builder reference for type '%s' of kind '%s'",
-			typ.Name(), typ.Kind(),
-		)
-		return new(TypeReference)
 	}
+	if ref == nil {
+		c.reporter.Errorf(
+			"Don't know how to calculate builder reference for type '%s'",
+			typ,
+		)
+		ref = &TypeReference{}
+	}
+	return ref
 }
 
 // Zero value calculates the zero value for the given type.
@@ -403,15 +354,15 @@ func (c *TypesCalculator) ZeroValue(typ *concepts.Type) string {
 		return fmt.Sprintf(`%s("")`, ref.Name())
 	case typ == version.Boolean():
 		return `false`
-	case typ == version.Integer():
+	case typ == version.IntegerType():
 		return `0`
-	case typ == version.Long():
+	case typ == version.LongType():
 		return `0`
-	case typ == version.Float():
+	case typ == version.FloatType():
 		return `0.0`
-	case typ == version.Date():
+	case typ == version.DateType():
 		return `time.Time{}`
-	case typ == version.String():
+	case typ == version.StringType():
 		return `""`
 	default:
 		c.reporter.Errorf(
@@ -429,13 +380,13 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 	switch {
 	case typ == version.Boolean():
 		return
-	case typ == version.Integer():
+	case typ == version.IntegerType():
 		return
-	case typ == version.Float():
+	case typ == version.FloatType():
 		return
-	case typ == version.String():
+	case typ == version.StringType():
 		return
-	case typ == version.Date():
+	case typ == version.DateType():
 		imprt = "time"
 		selector = "time"
 		return

@@ -66,7 +66,9 @@ var _ = Describe("Builder", func() {
 
 		It("Can set empty struct list attribute", func() {
 			object, err := cmv1.NewCluster().
-				Groups().
+				Groups(
+					cmv1.NewGroupList(),
+				).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(object).ToNot(BeNil())
@@ -76,10 +78,11 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Can set struct list attribute with one value", func() {
+			items := cmv1.NewGroupList().Items(
+				cmv1.NewGroup().ID("a-group"),
+			)
 			object, err := cmv1.NewCluster().
-				Groups(
-					cmv1.NewGroup().ID("a-group"),
-				).
+				Groups(items).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(object).ToNot(BeNil())
@@ -94,11 +97,12 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Can set struct list attribute with two values", func() {
+			items := cmv1.NewGroupList().Items(
+				cmv1.NewGroup().ID("a-group"),
+				cmv1.NewGroup().ID("b-group"),
+			)
 			object, err := cmv1.NewCluster().
-				Groups(
-					cmv1.NewGroup().ID("a-group"),
-					cmv1.NewGroup().ID("b-group"),
-				).
+				Groups(items).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(object).ToNot(BeNil())
@@ -150,22 +154,24 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Can set empty map of objects", func() {
-			object, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{}).
+			object, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := object.Auths()
+			auths := object.Map()
 			Expect(auths).To(BeEmpty())
 		})
 
 		It("Can set map of objects with one value", func() {
-			object, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com": amv1.NewAuth().Username("myuser").Email("mymail"),
+			object, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().
+						Username("myuser").
+						Email("mymail"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := object.Auths()
+			auths := object.Map()
 			Expect(auths).To(HaveLen(1))
 			auth := auths["my.com"]
 			Expect(auth).ToNot(BeNil())
@@ -174,18 +180,18 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Can set map of objects with two values", func() {
-			object, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com": amv1.NewAuth().
+			object, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().
 						Username("myuser").
 						Email("mymail"),
-					"your.com": amv1.NewAuth().
+					"your.com": amv1.NewRegistryAuth().
 						Username("youruser").
 						Email("yourmail"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := object.Auths()
+			auths := object.Map()
 			Expect(auths).To(HaveLen(2))
 			first := auths["my.com"]
 			Expect(first).ToNot(BeNil())
@@ -277,30 +283,32 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Copies empty map of objects", func() {
-			original, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{}).
+			original, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			replica, err := amv1.NewAccessToken().
+			replica, err := amv1.NewRegistryAuths().
 				Copy(original).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := replica.Auths()
+			auths := replica.Map()
 			Expect(auths).To(BeEmpty())
 		})
 
 		It("Copies map of objects with one value", func() {
-			original, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com": amv1.NewAuth().Username("myuser").Email("mymail"),
+			original, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().
+						Username("myuser").
+						Email("mymail"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			replica, err := amv1.NewAccessToken().
+			replica, err := amv1.NewRegistryAuths().
 				Copy(original).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := replica.Auths()
+			auths := replica.Map()
 			Expect(auths).To(HaveLen(1))
 			auth := auths["my.com"]
 			Expect(auth).ToNot(BeNil())
@@ -309,22 +317,22 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("Copies map of objects with two values", func() {
-			original, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com": amv1.NewAuth().
+			original, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().
 						Username("myuser").
 						Email("mymail"),
-					"your.com": amv1.NewAuth().
+					"your.com": amv1.NewRegistryAuth().
 						Username("youruser").
 						Email("yourmail"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			replica, err := amv1.NewAccessToken().
+			replica, err := amv1.NewRegistryAuths().
 				Copy(original).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			auths := replica.Auths()
+			auths := replica.Map()
 			Expect(auths).To(HaveLen(2))
 			first := auths["my.com"]
 			Expect(first).ToNot(BeNil())

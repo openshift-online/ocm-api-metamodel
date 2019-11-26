@@ -144,7 +144,7 @@ func (b *Buffer) Import(imprt, selector string) {
 	}
 }
 
-// Emit writes to the code buffer, using the given template and arguments. The syntax of the
+// Eval evaluates the given template and arguments and returns the resulting text. The syntax of the
 // template is the one used by the text/template package. The arguments should be a set nave/value
 // pairs. Names should be strings, and values can be anything. These names and values will be put in
 // a map that will then be the data object used to execute the template. For example, a template
@@ -155,7 +155,7 @@ func (b *Buffer) Import(imprt, selector string) {
 //	methodName := ...
 //
 //	// Generate the code of the method:
-//	buffer.Emit(`
+//	code := buffer.Eval(`
 //		func (c *{{ .type }}) {{ .method }} {
 //			...
 //		}
@@ -166,7 +166,7 @@ func (b *Buffer) Import(imprt, selector string) {
 //
 // All the facilities defined in the text/template package will also be available in these
 // templates.
-func (b *Buffer) Emit(tmpl string, args ...interface{}) {
+func (b *Buffer) Eval(tmpl string, args ...interface{}) string {
 	// Check that there is an even number of args, and that the first of each pair is
 	// an string:
 	count := len(args)
@@ -175,7 +175,7 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 			"Template '%s' should have an even number of arguments, but it has %d",
 			tmpl, count,
 		)
-		return
+		return ""
 	}
 	for i := 0; i < count; i = i + 2 {
 		name := args[i]
@@ -189,7 +189,7 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 		}
 	}
 	if b.reporter.Errors() > 0 {
-		return
+		return ""
 	}
 
 	// Put the variables in the map that will be passed as the data object for the execution of
@@ -210,9 +210,13 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 	// references in the returned values:
 	functions := make(map[string]interface{})
 	for name, function := range b.functions {
-		value := reflect.ValueOf(function)
-		wrapper := func(data interface{}) (result interface{}, err error) {
-			results := value.Call([]reflect.Value{reflect.ValueOf(data)})
+		callable := reflect.ValueOf(function)
+		wrapper := func(args ...interface{}) (result interface{}, err error) {
+			values := make([]reflect.Value, len(args))
+			for i, arg := range args {
+				values[i] = reflect.ValueOf(arg)
+			}
+			results := callable.Call(values)
 			if len(results) > 2 {
 				err = fmt.Errorf(
 					"expected at most 2 return values from '%s' but got %d",
@@ -239,7 +243,7 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 		Parse(tmpl)
 	if err != nil {
 		b.reporter.Errorf("Can't parse template '%s': %v", tmpl, err)
-		return
+		return ""
 	}
 
 	// Execute the template:
@@ -247,12 +251,41 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 	err = obj.Execute(buffer, data)
 	if err != nil {
 		b.reporter.Errorf("Can't execute template '%s': %v", tmpl, err)
-		return
+		return ""
 	}
 
+	// Return the generated text:
+	return buffer.String()
+}
+
+// Emit writes to the code buffer, using the given template and arguments. The syntax of the
+// template is the one used by the text/template package. The arguments should be a set nave/value
+// pairs. Names should be strings, and values can be anything. These names and values will be put in
+// a map that will then be the data object used to execute the template. For example, a template
+// that generates the code of a Go method could be used like this:
+//
+//	// Calculate the name of the method and of the type:
+//	typeName := ...
+//	methodName := ...
+//
+//	// Generate the code of the method:
+//	buffer.Emit(`
+//		func (c *{{ .type }}) {{ .method }} {
+//			...
+//		}
+//		`,
+//		"type", typeName,
+//		"method", methodName,
+//	)
+//
+// All the facilities defined in the text/template package will also be available in these
+// templates.
+func (b *Buffer) Emit(tmpl string, args ...interface{}) {
+	// Evaluate the template:
+	text := b.Eval(tmpl, args...)
+
 	// Add the generated text to the code:
-	text := buffer.String()
-	_, err = b.code.WriteString(text)
+	_, err := b.code.WriteString(text)
 	if err != nil {
 		b.reporter.Errorf("Can't add generated text '%s' to the buffer: %v", text, err)
 		return

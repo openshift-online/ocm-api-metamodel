@@ -16,8 +16,8 @@ limitations under the License.
 
 // Root of the tree of resources of the clusters management service.
 resource Root {
-	// Reference to the resource that manages generates access tokens.
-	locator AccessToken {
-		target AccessToken
+	method AccessToken {
+		out List []RegistryAuth
+		out Map [String]RegistryAuth
 	}
 }

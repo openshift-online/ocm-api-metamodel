@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Manages access tokens.
-resource AccessToken {
-	// Returns access token generated from registries in docker format.
+// Manages access review.
+resource AccessReview {
+	// Reviews a user's access to a resource
 	method Post {
-		out Body AccessToken
+		in Request AccessReviewRequest
+		out Response AccessReviewResponse
 	}
 }

@@ -42,7 +42,7 @@ func NewInitialism(text string) *Word {
 	}
 }
 
-// String returns a string representation of this word.
+// StringType returns a string representation of this word.
 func (w *Word) String() string {
 	return w.text
 }

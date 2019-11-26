@@ -19,6 +19,8 @@ limitations under the License.
 package tests
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -27,7 +29,7 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/tests/api/errors"
 )
 
-var _ = Describe("Reader", func() {
+var _ = Describe("Unmarshal", func() {
 	It("Can read empty object", func() {
 		object, err := cmv1.UnmarshalCluster(`{}`)
 		Expect(err).ToNot(HaveOccurred())
@@ -129,12 +131,42 @@ var _ = Describe("Reader", func() {
 		Expect(object.Compute()).To(Equal(-1))
 	})
 
-	It("Can read false", func() {
+	It("Can floating point zero", func() {
 		object, err := cmv1.UnmarshalCluster(`{
-			"managed": false
+			"factor": 0.0
 		}`)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(object.Managed()).To(BeFalse())
+		Expect(object.Factor()).To(Equal(0.0))
+	})
+
+	It("Can read floating point one", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"factor": 1.0
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object.Factor()).To(Equal(1.0))
+	})
+
+	It("Can read floating point minus one", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"factor": -1.0
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object.Factor()).To(Equal(-1.0))
+	})
+
+	It("Can read date", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"creation_timestamp": "2019-07-12T17:12:57.019504Z"
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		date := object.CreationTimestamp()
+		Expect(date.Year()).To(Equal(2019))
+		Expect(date.Month()).To(Equal(time.July))
+		Expect(date.Day()).To(Equal(12))
+		Expect(date.Hour()).To(Equal(17))
+		Expect(date.Minute()).To(Equal(12))
+		Expect(date.Second()).To(Equal(57))
 	})
 
 	It("Can read object with one unknown attribute", func() {
@@ -158,7 +190,7 @@ var _ = Describe("Reader", func() {
 		object, err := cmv1.UnmarshalClusterList(`[]`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		Expect(object.Len()).To(BeZero())
+		Expect(object).To(BeEmpty())
 	})
 
 	It("Can read list with one element", func() {
@@ -169,12 +201,9 @@ var _ = Describe("Reader", func() {
 		]`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(list).ToNot(BeNil())
-		Expect(list.Len()).To(Equal(1))
-		slice := list.Slice()
-		Expect(slice).ToNot(BeNil())
-		Expect(len(slice)).To(Equal(1))
-		Expect(slice[0]).ToNot(BeNil())
-		Expect(slice[0].Name()).To(Equal("mycluster"))
+		Expect(list).To(HaveLen(1))
+		Expect(list[0]).ToNot(BeNil())
+		Expect(list[0].Name()).To(Equal("mycluster"))
 	})
 
 	It("Can read list with two elements", func() {
@@ -188,14 +217,11 @@ var _ = Describe("Reader", func() {
 		]`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(list).ToNot(BeNil())
-		Expect(list.Len()).To(Equal(2))
-		slice := list.Slice()
-		Expect(slice).ToNot(BeNil())
-		Expect(len(slice)).To(Equal(2))
-		Expect(slice[0]).ToNot(BeNil())
-		Expect(slice[0].Name()).To(Equal("mycluster"))
-		Expect(slice[1]).ToNot(BeNil())
-		Expect(slice[1].Name()).To(Equal("yourcluster"))
+		Expect(list).To(HaveLen(2))
+		Expect(list[0]).ToNot(BeNil())
+		Expect(list[0].Name()).To(Equal("mycluster"))
+		Expect(list[1]).ToNot(BeNil())
+		Expect(list[1].Name()).To(Equal("yourcluster"))
 	})
 
 	It("Can read empty string list attribute", func() {
@@ -384,14 +410,14 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read empty map of objects", func() {
-		object, err := amv1.UnmarshalAccessToken(`{}`)
+		object, err := amv1.UnmarshalRegistryAuths(`{}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
 	})
 
 	It("Can read map of objects with one value", func() {
-		object, err := amv1.UnmarshalAccessToken(`{
-			"auths": {
+		object, err := amv1.UnmarshalRegistryAuths(`{
+			"map": {
 				"my.com": {
 					"username": "myuser",
 					"email": "mymail"
@@ -400,7 +426,7 @@ var _ = Describe("Reader", func() {
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		auths := object.Auths()
+		auths := object.Map()
 		Expect(auths).ToNot(BeNil())
 		Expect(auths).To(HaveLen(1))
 		auth := auths["my.com"]
@@ -410,8 +436,8 @@ var _ = Describe("Reader", func() {
 	})
 
 	It("Can read map of objects with two values", func() {
-		object, err := amv1.UnmarshalAccessToken(`{
-			"auths": {
+		object, err := amv1.UnmarshalRegistryAuths(`{
+			"map": {
 				"my.com": {
 					"username": "myuser",
 					"email": "mymail"
@@ -424,7 +450,7 @@ var _ = Describe("Reader", func() {
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
-		auths := object.Auths()
+		auths := object.Map()
 		Expect(auths).ToNot(BeNil())
 		Expect(auths).To(HaveLen(2))
 		first := auths["my.com"]

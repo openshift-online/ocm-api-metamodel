@@ -237,24 +237,35 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 	// be predictable:
 	index := map[string][]*concepts.Locator{}
 	for _, path := range version.Paths() {
-		absolute := g.absolutePath(version, path)
-		index[absolute] = path
+		prefix := g.absolutePath(version, path)
+		index[prefix] = path
 	}
-	absolutes := make([]string, len(index))
+	prefixes := make([]string, len(index))
 	i := 0
-	for text := range index {
-		absolutes[i] = text
+	for prefix := range index {
+		prefixes[i] = prefix
 		i++
 	}
-	sort.Strings(absolutes)
+	sort.Strings(prefixes)
 
 	// Generate the specification:
 	g.buffer.StartObject("paths")
+
+	// Add the metadata path:
 	g.generateMetadataPath(version)
-	for _, absolute := range absolutes {
-		path := index[absolute]
-		g.generatePath(version, path)
+
+	// Add the path for the root resource:
+	empty := []*concepts.Locator{}
+	root := g.absolutePath(version, empty)
+	g.generateResourcePaths(root, empty, version.Root())
+
+	// Add the paths for the rest of the resources:
+	for _, prefix := range prefixes {
+		path := index[prefix]
+		resource := path[len(path)-1].Target()
+		g.generateResourcePaths(prefix, path, resource)
 	}
+
 	g.buffer.EndObject()
 }
 
@@ -288,40 +299,88 @@ func (g *OpenAPIGenerator) generateMetadataPath(version *concepts.Version) {
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generatePath(version *concepts.Version, path []*concepts.Locator) {
-	absolute := g.absolutePath(version, path)
-	resource := path[len(path)-1].Target()
-	g.buffer.StartObject(absolute)
+func (g *OpenAPIGenerator) generateResourcePaths(prefix string,
+	path []*concepts.Locator, resource *concepts.Resource) {
+	// Methods that don't have their URL segment need to be all under the same OpenAPI path
+	// object. The others need to be in their own path object. So first we need to classify
+	// them.
+	var with []*concepts.Method
+	var without []*concepts.Method
 	for _, method := range resource.Methods() {
-		g.generateMethod(path, method)
+		if g.binding.MethodSegment(method) == "" {
+			without = append(without, method)
+		} else {
+			with = append(with, method)
+		}
 	}
-	g.buffer.EndObject()
-}
 
+	// Methods that don't have their own URL segment share the same path object:
+	if len(without) > 0 {
+		g.buffer.StartObject(prefix)
+		for _, method := range without {
+			g.generateMethod(path, method)
+		}
+		g.buffer.EndObject()
+	}
+
+	// Methods that have their own URL segment need their own path object:
+	for _, method := range with {
+		g.buffer.StartObject(prefix + "/" + g.binding.MethodSegment(method))
+		g.generateMethod(path, method)
+		g.buffer.EndObject()
+	}
+}
 func (g *OpenAPIGenerator) generateMethod(path []*concepts.Locator, method *concepts.Method) {
 	g.buffer.StartObject(strings.ToLower(g.binding.Method(method)))
 	g.generateDescription(method.Doc())
-	g.generateParameters(path, method)
-	bodyParameters := g.binding.RequestBodyParameters(method)
-	if len(bodyParameters) > 0 {
-		bodyParameter := bodyParameters[0]
-		g.generateRequestBody(bodyParameter)
+	g.generateURLParameters(path, method)
+	parameters := g.binding.RequestBodyParameters(method)
+	if len(parameters) > 0 {
+		g.buffer.StartObject("requestBody")
+		g.buffer.StartObject("content")
+		g.buffer.StartObject("application/json")
+		g.buffer.StartObject("schema")
+		if len(parameters) > 1 || method.IsAction() {
+			g.buffer.Field("type", "object")
+			g.buffer.StartObject("properties")
+			for _, parameter := range parameters {
+				g.genrateParameterProperty(parameter)
+			}
+			g.buffer.EndObject()
+		} else {
+			g.generateSchemaReference(parameters[0].Type())
+		}
+		g.buffer.EndObject()
+		g.buffer.EndObject()
+		g.buffer.EndObject()
+		g.buffer.EndObject()
 	}
-	g.generateResponses(path, method)
+	g.generateResponses(method)
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generateParameters(path []*concepts.Locator, method *concepts.Method) {
-	g.buffer.StartArray("parameters")
+func (g *OpenAPIGenerator) generateURLParameters(path []*concepts.Locator,
+	method *concepts.Method) {
+	var locators []*concepts.Locator
 	for _, locator := range path {
 		if locator.Variable() {
-			g.generatePathParameter(locator)
+			locators = append(locators, locator)
 		}
 	}
+	var parameters []*concepts.Parameter
 	for _, parameter := range g.binding.RequestQueryParameters(method) {
-		g.generateQueryParameter(parameter)
+		parameters = append(parameters, parameter)
 	}
-	g.buffer.EndArray()
+	if len(locators)+len(parameters) > 0 {
+		g.buffer.StartArray("parameters")
+		for _, locator := range locators {
+			g.generatePathParameter(locator)
+		}
+		for _, parameter := range parameters {
+			g.generateQueryParameter(parameter)
+		}
+		g.buffer.EndArray()
+	}
 }
 
 func (g *OpenAPIGenerator) generatePathParameter(locator *concepts.Locator) {
@@ -345,19 +404,7 @@ func (g *OpenAPIGenerator) generateQueryParameter(parameter *concepts.Parameter)
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generateRequestBody(parameter *concepts.Parameter) {
-	g.buffer.StartObject("requestBody")
-	g.buffer.StartObject("content")
-	g.buffer.StartObject("application/json")
-	g.buffer.StartObject("schema")
-	g.generateSchemaReference(parameter.Type())
-	g.buffer.EndObject()
-	g.buffer.EndObject()
-	g.buffer.EndObject()
-	g.buffer.EndObject()
-}
-
-func (g *OpenAPIGenerator) generateResponses(path []*concepts.Locator, method *concepts.Method) {
+func (g *OpenAPIGenerator) generateResponses(method *concepts.Method) {
 	g.buffer.StartObject("responses")
 	g.buffer.StartObject(g.binding.DefaultStatus(method))
 	g.generateDescription("Success.")
@@ -366,11 +413,11 @@ func (g *OpenAPIGenerator) generateResponses(path []*concepts.Locator, method *c
 		g.buffer.StartObject("content")
 		g.buffer.StartObject("application/json")
 		g.buffer.StartObject("schema")
-		if len(parameters) > 1 {
+		if len(parameters) > 1 || method.IsAction() {
 			g.buffer.Field("type", "object")
 			g.buffer.StartObject("properties")
 			for _, parameter := range parameters {
-				g.generateResponseProperty(parameter)
+				g.genrateParameterProperty(parameter)
 			}
 			g.buffer.EndObject()
 		} else {
@@ -394,7 +441,7 @@ func (g *OpenAPIGenerator) generateResponses(path []*concepts.Locator, method *c
 	g.buffer.EndObject()
 }
 
-func (g *OpenAPIGenerator) generateResponseProperty(parameter *concepts.Parameter) {
+func (g *OpenAPIGenerator) genrateParameterProperty(parameter *concepts.Parameter) {
 	name := g.names.ParameterPropertyName(parameter)
 	g.buffer.StartObject(name)
 	g.generateDescription(parameter.Doc())
@@ -520,18 +567,18 @@ func (g *OpenAPIGenerator) generateSchemaReference(typ *concepts.Type) {
 	switch {
 	case typ == version.Boolean():
 		g.buffer.Field("type", "boolean")
-	case typ == version.Integer():
+	case typ == version.IntegerType():
 		g.buffer.Field("type", "integer")
 		g.buffer.Field("format", "int32")
-	case typ == version.Long():
+	case typ == version.LongType():
 		g.buffer.Field("type", "integer")
 		g.buffer.Field("format", "int64")
-	case typ == version.Float():
+	case typ == version.FloatType():
 		g.buffer.Field("type", "number")
 		g.buffer.Field("format", "float")
-	case typ == version.String():
+	case typ == version.StringType():
 		g.buffer.Field("type", "string")
-	case typ == version.Date():
+	case typ == version.DateType():
 		g.buffer.Field("type", "string")
 		g.buffer.Field("format", "date-time")
 	case typ.IsEnum() || typ.IsStruct():

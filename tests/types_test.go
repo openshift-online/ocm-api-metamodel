@@ -267,17 +267,17 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns `true` for empty map of objects", func() {
-			list, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{}).
+			list, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Empty()).To(BeTrue())
 		})
 
 		It("Returns `false` for map of objects with one value", func() {
-			list, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com": amv1.NewAuth().Username("myuser"),
+			list, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().Username("myuser"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -285,10 +285,10 @@ var _ = Describe("Type", func() {
 		})
 
 		It("Returns `false` for map of objects with one value", func() {
-			list, err := amv1.NewAccessToken().
-				Auths(map[string]*amv1.AuthBuilder{
-					"my.com":   amv1.NewAuth().Username("myuser"),
-					"your.com": amv1.NewAuth().Username("youruser"),
+			list, err := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com":   amv1.NewRegistryAuth().Username("myuser"),
+					"your.com": amv1.NewRegistryAuth().Username("youruser"),
 				}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())

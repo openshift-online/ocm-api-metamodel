@@ -16,6 +16,16 @@ limitations under the License.
 
 // Root of the tree of resources of the clusters management service.
 resource Root {
+	method RegisterCluster {
+		in SubscriptionID String
+		in ExternalID String
+		out Cluster Cluster
+	}
+
+	method RegisterDisconnected {
+		in out Cluster Cluster
+	}
+
 	// Reference to the resource that manages the collection of clusters.
 	locator Clusters {
 		target Clusters

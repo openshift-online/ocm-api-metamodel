@@ -241,7 +241,7 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
-		Function("enumName", g.enumName).
+		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
@@ -386,16 +386,16 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 				{{ end }}
 				{{ range .Type.Attributes }}
 					{{ $fieldName := fieldName . }}
-					{{ if or .Type.IsList }}
-						{{ if .Type.Element.IsScalar }}
-							len(o.{{ $fieldName }}) == 0 &&
-						{{ else }}
-							o.{{ $fieldName }}.Empty() &&
-						{{ end }}
-					{{ else if or .Type.IsMap }}
-						len(o.{{ $fieldName }}) == 0 &&
-					{{ else }}
+					{{ if .Type.IsScalar }}
 						o.{{ $fieldName }} == nil &&
+					{{ else if .Type.IsList }}
+						{{ if .Link }}
+							o.{{ $fieldName }}.Len()  == 0 &&
+						{{ else }}
+							len(o.{{ $fieldName }}) == 0 &&
+						{{ end }}
+					{{ else if .Type.IsMap }}
+						len(o.{{ $fieldName }}) == 0 &&
 					{{ end }}
 				{{ end }}
 				true);
@@ -442,26 +442,22 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			}
 		{{ end }}
 
-		{{ if .Type.IsClass }}
-			// {{ $listName }}Kind is the name of the type used to represent list of
-			// objects of type '{{ .Type.Name }}'.
-			const {{ $listName }}Kind = "{{ $listName }}"
+		// {{ $listName }}Kind is the name of the type used to represent list of objects of
+		// type '{{ .Type.Name }}'.
+		const {{ $listName }}Kind = "{{ $listName }}"
 
-			// {{ $listName }}LinkKind is the name of the type used to represent links
-			// to list of objects of type '{{ .Type.Name }}'.
-			const {{ $listName }}LinkKind = "{{ $listName }}Link"
+		// {{ $listName }}LinkKind is the name of the type used to represent links to list
+		// of objects of type '{{ .Type.Name }}'.
+		const {{ $listName }}LinkKind = "{{ $listName }}Link"
 
-			// {{ $objectName }}NilKind is the name of the type used to nil lists of
-			// objects of type '{{ .Type.Name }}'.
-			const {{ $listName }}NilKind = "{{ $listName }}Nil"
-		{{ end }}
+		// {{ $objectName }}NilKind is the name of the type used to nil lists of objects of
+		// type '{{ .Type.Name }}'.
+		const {{ $listName }}NilKind = "{{ $listName }}Nil"
 
 		// {{ $listName }} is a list of values of the '{{ .Type.Name }}' type.
 		type {{ $listName }} struct {
-			{{ if .Type.IsClass }}
-				href *string
-				link bool
-			{{ end }}
+			href  *string
+			link  bool
 			items []*{{ $objectName }}
 		}
 
@@ -585,35 +581,34 @@ func (g *TypesGenerator) fieldName(attribute *concepts.Attribute) string {
 }
 
 func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *golang.TypeReference {
+	var ref *golang.TypeReference
 	typ := attribute.Type()
 	switch {
-	case typ.IsStruct() || typ.IsList() || typ.IsMap():
-		return g.types.NullableReference(typ)
-	default:
-		return g.types.ValueReference(typ)
+	case typ.IsScalar():
+		ref = g.types.ValueReference(typ)
+	case typ.IsStruct():
+		ref = g.types.NullableReference(typ)
+	case typ.IsList():
+		if attribute.Link() {
+			ref = g.types.ListReference(typ)
+		} else {
+			ref = g.types.NullableReference(typ)
+		}
+	case typ.IsMap():
+		ref = g.types.NullableReference(typ)
 	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate getter type for attribute '%s'",
+			attribute,
+		)
+		ref = &golang.TypeReference{}
+	}
+	return ref
 }
 
 func (g *TypesGenerator) objectName(typ *concepts.Type) string {
-	if typ.IsStruct() || typ.IsList() || typ.IsMap() {
-		return g.names.Public(typ.Name())
-	}
-	g.reporter.Errorf(
-		"Don't know how to calculate object name for type '%s'",
-		typ.Name(),
-	)
-	return ""
-}
-
-func (g *TypesGenerator) enumName(typ *concepts.Type) string {
-	if typ.IsEnum() {
-		return g.names.Public(typ.Name())
-	}
-	g.reporter.Errorf(
-		"Don't know how to calculate enum name for type '%s'",
-		typ.Name(),
-	)
-	return ""
+	return g.names.Public(typ.Name())
 }
 
 func (g *TypesGenerator) valueName(value *concepts.EnumValue) string {
@@ -629,7 +624,30 @@ func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
 }
 
 func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *golang.TypeReference {
-	return g.types.NullableReference(attribute.Type())
+	var ref *golang.TypeReference
+	typ := attribute.Type()
+	switch {
+	case typ.IsScalar():
+		ref = g.types.NullableReference(typ)
+	case typ.IsStruct():
+		ref = g.types.NullableReference(typ)
+	case typ.IsList():
+		if attribute.Link() {
+			ref = g.types.ListReference(typ)
+		} else {
+			ref = g.types.NullableReference(typ)
+		}
+	case typ.IsMap():
+		ref = g.types.NullableReference(typ)
+	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate field type for attribute '%s'",
+			attribute,
+		)
+		ref = &golang.TypeReference{}
+	}
+	return ref
 }
 
 func (g *TypesGenerator) listName(typ *concepts.Type) string {

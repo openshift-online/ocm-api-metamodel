@@ -121,28 +121,28 @@ func (v *Version) Boolean() *Type {
 	return v.FindType(nomenclator.Boolean)
 }
 
-// Integer returns the integer type.
-func (v *Version) Integer() *Type {
+// IntegerType returns the integer type.
+func (v *Version) IntegerType() *Type {
 	return v.FindType(nomenclator.Integer)
 }
 
-// Long returns the long type.
-func (v *Version) Long() *Type {
+// LongType returns the long type.
+func (v *Version) LongType() *Type {
 	return v.FindType(nomenclator.Long)
 }
 
-// String returns the string type.
-func (v *Version) String() *Type {
+// StringType returns the string type.
+func (v *Version) StringType() *Type {
 	return v.FindType(nomenclator.String)
 }
 
-// Float returns the floating point type.
-func (v *Version) Float() *Type {
+// FloatType returns the floating point type.
+func (v *Version) FloatType() *Type {
 	return v.FindType(nomenclator.Float)
 }
 
-// Date returns the date type.
-func (v *Version) Date() *Type {
+// DateType returns the date type.
+func (v *Version) DateType() *Type {
 	return v.FindType(nomenclator.Date)
 }
 
