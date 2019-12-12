@@ -213,7 +213,6 @@ func (g *ReadersGenerator) generateHelpers() error {
 	// Generate the code:
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("encoding/json", "")
-	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import("strconv", "")
@@ -436,7 +435,6 @@ func (g *ReadersGenerator) generateVersionMetadataReader(version *concepts.Versi
 }
 
 func (g *ReadersGenerator) generateVersionMetadataReaderSource(version *concepts.Version) {
-	g.buffer.Import("fmt", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// metadataData is the data structure used internally to marshal and unmarshal
@@ -539,7 +537,6 @@ func (g *ReadersGenerator) generateStructReader(typ *concepts.Type) error {
 }
 
 func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
-	g.buffer.Import("fmt", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type }}
@@ -659,20 +656,7 @@ func (g *ReadersGenerator) generateStructReaderSource(typ *concepts.Type) {
 				object.id = d.ID
 				object.href = d.HREF
 				if d.Kind != nil {
-					switch *d.Kind {
-					case {{ $objectName }}Kind:
-						object.link = false
-					case {{ $objectName }}LinkKind:
-						object.link = true
-					default:
-						err = fmt.Errorf(
-							"expected kind '%s' or '%s' but got '%s'",
-							{{ $objectName }}Kind,
-							{{ $objectName }}LinkKind,
-							*d.Kind,
-						)
-						return
-					}
+					object.link = *d.Kind == {{ $objectName }}LinkKind
 				}
 			{{ end }}
 			{{ range .Type.Attributes }}
@@ -754,7 +738,6 @@ func (g *ReadersGenerator) generateListReader(typ *concepts.Type) error {
 }
 
 func (g *ReadersGenerator) generateListReaderSource(typ *concepts.Type) {
-	g.buffer.Import("fmt", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type.Element }}
@@ -872,20 +855,7 @@ func (g *ReadersGenerator) generateListReaderSource(typ *concepts.Type) {
 				list.items = items
 				list.href = d.HREF
 				if d.Kind != nil {
-					switch *d.Kind {
-					case {{ $objectName }}ListKind:
-						list.link = false
-					case {{ $objectName }}ListLinkKind:
-						list.link = true
-					default:
-						err = fmt.Errorf(
-							"expected kind '%s' or '%s' but got '%s'",
-							{{ $objectName }}ListKind,
-							{{ $objectName }}ListLinkKind,
-							*d.Kind,
-						)
-						return
-					}
+					list.link = *d.Kind == {{ $objectName }}ListLinkKind
 				}
 				return
 			}
