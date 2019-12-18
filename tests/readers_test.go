@@ -24,6 +24,7 @@ import (
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/api/errors"
 )
 
 var _ = Describe("Reader", func() {
@@ -410,5 +411,22 @@ var _ = Describe("Reader", func() {
 		Expect(second).ToNot(BeNil())
 		Expect(second.Username()).To(Equal("youruser"))
 		Expect(second.Email()).To(Equal("yourmail"))
+	})
+
+	It("Can read an error", func() {
+		object, err := errors.UnmarshalError(`{
+			"kind": "Error",
+			"id": "401",
+			"href": "/api/clusters_mgmt/v1/errors/401",
+			"code": "CLUSTERS-MGMT-401",
+			"reason": "My reason"
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		Expect(object.Kind()).To(Equal(errors.ErrorKind))
+		Expect(object.ID()).To(Equal("401"))
+		Expect(object.HREF()).To(Equal("/api/clusters_mgmt/v1/errors/401"))
+		Expect(object.Code()).To(Equal("CLUSTERS-MGMT-401"))
+		Expect(object.Reason()).To(Equal("My reason"))
 	})
 })
