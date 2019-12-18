@@ -26,6 +26,7 @@ import (
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/api/errors"
 )
 
 var _ = Describe("Writer", func() {
@@ -133,6 +134,26 @@ var _ = Describe("Writer", func() {
 					"email": "yourmail"
 				}
 			}
+		}`))
+	})
+
+	It("Can write an error", func() {
+		object, err := errors.NewError().
+			ID("401").
+			HREF("/api/clusters_mgmt/v1/errors/401").
+			Code("CLUSTERS-MGMT-401").
+			Reason("My reason").
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+		buffer := new(bytes.Buffer)
+		err = errors.MarshalError(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`{
+			"kind": "Error",
+			"id": "401",
+			"href": "/api/clusters_mgmt/v1/errors/401",
+			"code": "CLUSTERS-MGMT-401",
+			"reason": "My reason"
 		}`))
 	})
 })
