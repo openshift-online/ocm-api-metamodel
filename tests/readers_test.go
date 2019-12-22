@@ -49,6 +49,30 @@ var _ = Describe("Reader", func() {
 		Expect(object.Link()).To(BeTrue())
 	})
 
+	It("Ignores wrong struct kind", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"kind": "Junk"
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		Expect(object.Kind()).To(Equal(cmv1.ClusterKind))
+		Expect(object.Link()).To(BeFalse())
+	})
+
+	It("Ignores wrong list link kind", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"groups": {
+				"kind": "Junk"
+			}
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).ToNot(BeNil())
+		list := object.Groups()
+		Expect(list).ToNot(BeNil())
+		Expect(list.Kind()).To(Equal(cmv1.GroupListKind))
+		Expect(list.Link()).To(BeFalse())
+	})
+
 	It("Can read basic object", func() {
 		object, err := cmv1.UnmarshalCluster(`{
 			"kind": "Cluster",
