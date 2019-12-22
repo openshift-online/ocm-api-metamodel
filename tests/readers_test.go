@@ -453,4 +453,25 @@ var _ = Describe("Reader", func() {
 		Expect(object.Code()).To(Equal("CLUSTERS-MGMT-401"))
 		Expect(object.Reason()).To(Equal("My reason"))
 	})
+
+	It("Can read mixed known and unknown attributes", func() {
+		object, err := cmv1.UnmarshalCluster(`{
+			"junk": "rubbish",
+			"id": "123",
+			"first": {
+				"second": {
+					"third": [
+						{
+							"fourth": 4
+						}
+					]
+				}
+			},
+			"name": "mycluster",
+			"debris": "litter"
+		}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object.ID()).To(Equal("123"))
+		Expect(object.Name()).To(Equal("mycluster"))
+	})
 })
