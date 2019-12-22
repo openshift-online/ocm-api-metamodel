@@ -20,6 +20,7 @@ package tests
 
 import (
 	"bytes"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -188,5 +189,191 @@ var _ = Describe("Marshal", func() {
 			"code": "CLUSTERS-MGMT-401",
 			"reason": "My reason"
 		}`))
+	})
+
+	It("Can write empty list of booleans", func() {
+		buffer := &bytes.Buffer{}
+		object := []bool{}
+		err := cmv1.MarshalBooleanList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[]`))
+	})
+
+	It("Can write list with false", func() {
+		buffer := &bytes.Buffer{}
+		object := []bool{false}
+		err := cmv1.MarshalBooleanList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[false]`))
+	})
+
+	It("Can write list with true", func() {
+		buffer := &bytes.Buffer{}
+		object := []bool{true}
+		err := cmv1.MarshalBooleanList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[true]`))
+	})
+
+	It("Can write list with multiple booleans", func() {
+		buffer := &bytes.Buffer{}
+		object := []bool{true, false}
+		err := cmv1.MarshalBooleanList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[true, false]`))
+	})
+
+	It("Can write list of integers", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{-1, 0, 1}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[-1, 0, 1]`))
+	})
+
+	It("Can write empty list of integers", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[]`))
+	})
+
+	It("Can write list with zero", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{0}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[0]`))
+	})
+
+	It("Can write list with positive integer", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{123}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[123]`))
+	})
+
+	It("Can write list with negative integer", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{-123}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[-123]`))
+	})
+
+	It("Can write list with multiple integers", func() {
+		buffer := &bytes.Buffer{}
+		object := []int{-123, 0, 123}
+		err := cmv1.MarshalIntegerList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[-123, 0, 123]`))
+	})
+
+	It("Can write empty list of floats", func() {
+		buffer := &bytes.Buffer{}
+		object := []float64{}
+		err := cmv1.MarshalFloatList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[]`))
+	})
+
+	It("Can write list with float zero", func() {
+		buffer := &bytes.Buffer{}
+		object := []float64{0.0}
+		err := cmv1.MarshalFloatList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[0.0]`))
+	})
+
+	It("Can write list with positive float", func() {
+		buffer := &bytes.Buffer{}
+		object := []float64{123.456}
+		err := cmv1.MarshalFloatList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[123.456]`))
+	})
+
+	It("Can write list with positive float", func() {
+		buffer := &bytes.Buffer{}
+		object := []float64{-123.456}
+		err := cmv1.MarshalFloatList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[-123.456]`))
+	})
+
+	It("Can write list with multiple floats", func() {
+		buffer := &bytes.Buffer{}
+		object := []float64{-123.456, 0, 123.456}
+		err := cmv1.MarshalFloatList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[-123.456, 0, 123.456]`))
+	})
+
+	It("Can write empty list of strings", func() {
+		buffer := &bytes.Buffer{}
+		object := []string{}
+		err := cmv1.MarshalStringList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[]`))
+	})
+
+	It("Can write list with empty string", func() {
+		buffer := &bytes.Buffer{}
+		object := []string{""}
+		err := cmv1.MarshalStringList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[""]`))
+	})
+
+	It("Can write list with one string", func() {
+		buffer := &bytes.Buffer{}
+		object := []string{"mystring"}
+		err := cmv1.MarshalStringList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`["mystring"]`))
+	})
+
+	It("Can write list with multiple strings", func() {
+		buffer := &bytes.Buffer{}
+		object := []string{"mystring", "yourstring"}
+		err := cmv1.MarshalStringList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`["mystring", "yourstring"]`))
+	})
+
+	It("Can write empty list of dates", func() {
+		buffer := &bytes.Buffer{}
+		object := []time.Time{}
+		err := cmv1.MarshalDateList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[]`))
+	})
+
+	It("Can write list with one date", func() {
+		buffer := &bytes.Buffer{}
+		object := []time.Time{
+			time.Date(2019, time.July, 14, 15, 16, 17, 0, time.UTC),
+		}
+		err := cmv1.MarshalDateList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[
+			"2019-07-14T15:16:17Z"
+		]`))
+	})
+
+	It("Can write list with multiple dates", func() {
+		buffer := &bytes.Buffer{}
+		object := []time.Time{
+			time.Date(2019, time.July, 14, 15, 16, 17, 0, time.UTC),
+			time.Date(2019, time.August, 15, 16, 17, 18, 0, time.UTC),
+		}
+		err := cmv1.MarshalDateList(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(`[
+			"2019-07-14T15:16:17Z",
+			"2019-08-15T16:17:18Z"
+		]`))
 	})
 })

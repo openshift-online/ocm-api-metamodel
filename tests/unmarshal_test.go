@@ -500,4 +500,140 @@ var _ = Describe("Unmarshal", func() {
 		Expect(object.ID()).To(Equal("123"))
 		Expect(object.Name()).To(Equal("mycluster"))
 	})
+
+	It("Can read empty list of booleans", func() {
+		object, err := cmv1.UnmarshalBooleanList(`[]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(BeEmpty())
+	})
+
+	It("Can read list with boolean true", func() {
+		object, err := cmv1.UnmarshalBooleanList(`[true]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]bool{true}))
+	})
+
+	It("Can read list with boolean false", func() {
+		object, err := cmv1.UnmarshalBooleanList(`[false]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]bool{false}))
+	})
+
+	It("Can read list with multiple booleans", func() {
+		object, err := cmv1.UnmarshalBooleanList(`[true, false]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]bool{true, false}))
+	})
+
+	It("Can read empty list of integers", func() {
+		object, err := cmv1.UnmarshalIntegerList(`[]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(BeEmpty())
+	})
+
+	It("Can read list with integer zero", func() {
+		object, err := cmv1.UnmarshalIntegerList(`[0]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]int{0}))
+	})
+
+	It("Can read list with positive integer", func() {
+		object, err := cmv1.UnmarshalIntegerList(`[123]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]int{123}))
+	})
+
+	It("Can read list with negative integer", func() {
+		object, err := cmv1.UnmarshalIntegerList(`[-123]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]int{-123}))
+	})
+
+	It("Can read list with multiple integers", func() {
+		object, err := cmv1.UnmarshalIntegerList(`[-123, 0, 123]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]int{-123, 0, 123}))
+	})
+
+	It("Can read empty list of floats", func() {
+		object, err := cmv1.UnmarshalFloatList(`[]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(BeEmpty())
+	})
+
+	It("Can read list with float zero", func() {
+		object, err := cmv1.UnmarshalFloatList(`[0.0]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]float64{0.0}))
+	})
+
+	It("Can read list with positive float", func() {
+		object, err := cmv1.UnmarshalFloatList(`[123.456]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]float64{123.456}))
+	})
+
+	It("Can read list with negative float", func() {
+		object, err := cmv1.UnmarshalFloatList(`[-123.456]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]float64{-123.456}))
+	})
+
+	It("Can read list with multiple floats", func() {
+		object, err := cmv1.UnmarshalFloatList(`[-123.456, 0, 123.456]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]float64{-123.456, 0.0, 123.456}))
+	})
+
+	It("Can read empty list of strings", func() {
+		object, err := cmv1.UnmarshalStringList(`[]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(BeEmpty())
+	})
+
+	It("Can read list with empty string", func() {
+		object, err := cmv1.UnmarshalStringList(`[""]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]string{""}))
+	})
+
+	It("Can read list with one string", func() {
+		object, err := cmv1.UnmarshalStringList(`["mystring"]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]string{"mystring"}))
+	})
+
+	It("Can read list with multiple strings", func() {
+		object, err := cmv1.UnmarshalStringList(`["mystring", "", "yourstring"]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]string{"mystring", "", "yourstring"}))
+	})
+
+	It("Can read empty list of dates", func() {
+		object, err := cmv1.UnmarshalDateList(`[]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(BeEmpty())
+	})
+
+	It("Can read list with one date", func() {
+		object, err := cmv1.UnmarshalDateList(`[
+			"2019-07-14T15:16:17Z"
+		]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]time.Time{
+			time.Date(2019, time.July, 14, 15, 16, 17, 0, time.UTC),
+		}))
+	})
+
+	It("Can read list with multiple dates", func() {
+		object, err := cmv1.UnmarshalDateList(`[
+			"2019-07-14T15:16:17Z",
+			"2019-08-15T16:17:18Z"
+		]`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(object).To(Equal([]time.Time{
+			time.Date(2019, time.July, 14, 15, 16, 17, 0, time.UTC),
+			time.Date(2019, time.August, 15, 16, 17, 18, 0, time.UTC),
+		}))
+	})
 })
