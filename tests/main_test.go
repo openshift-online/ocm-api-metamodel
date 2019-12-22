@@ -52,6 +52,7 @@ type Transport struct {
 func (t *Transport) RoundTrip(request *http.Request) (response *http.Response, err error) {
 	request.URL.Scheme = "http"
 	request.URL.Host = t.server.Addr()
+	request.Header.Set("Content-type", "application/json")
 	response, err = t.wrapped.RoundTrip(request)
 	return
 }

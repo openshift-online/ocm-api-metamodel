@@ -244,7 +244,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the JSON readers generator:
-	gen, err = generators.NewReadersGenerator().
+	gen, err = generators.NewJSONSupportGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).

@@ -62,4 +62,7 @@ class Cluster {
 
 	// Link to the collection of identity providers of the cluster.
 	link IdentityProviders []IdentityProvider
+
+	// Floating point value used for tests.
+	Factor Float
 }

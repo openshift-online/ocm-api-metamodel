@@ -18,6 +18,7 @@ package concepts
 
 import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
 // Parameter represents a parameter of a method.
@@ -104,6 +105,23 @@ func (p *Parameter) Default() interface{} {
 // SetDefault sets the default value of the parameter.
 func (p *Parameter) SetDefault(value interface{}) {
 	p.dflt = value
+}
+
+// IsItems returns true if this is the items parameter of a list method.
+func (p *Parameter) IsItems() bool {
+	return p.owner != nil && p.owner.IsList() && p.name.Equals(nomenclator.Items)
+}
+
+// IsBody returns true if this is the body parameter of an add, get or update method.
+func (p *Parameter) IsBody() bool {
+	if p.owner == nil {
+		return false
+	}
+	isRest := p.owner.IsAdd() || p.owner.IsGet() || p.owner.IsUpdate()
+	if isRest && p.name.Equals(nomenclator.Body) {
+		return true
+	}
+	return false
 }
 
 // ParameterSlice is used to simplify sorting of slices of attributes by name.

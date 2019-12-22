@@ -255,34 +255,33 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ $setterType := setterType . }}
 
 			{{ if .Type.IsList }}
-				{{ $elementType := valueType .Type.Element }}
-
-				{{ if .Type.Element.IsScalar }}
-					// {{ $setterName }} sets the value of the '{{ .Name }}' attribute
-					// to the given values.
-					//
-					{{ lineComment .Type.Doc }}
-					func (b *{{ $builderName }}) {{ $setterName }}(values ...{{ $elementType }}) *{{ $builderName }} {
-						b.{{ $fieldName }} = make([]{{ $elementType }}, len(values))
-						copy(b.{{ $fieldName }}, values)
+				// {{ $setterName }} sets the value of the '{{ .Name }}' attribute to the given values.
+				//
+				{{ lineComment .Type.Doc }}
+				{{ if .Link }}
+					func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
+						b.{{ $fieldName }} = value
 						return b
 					}
 				{{ else }}
-					{{ $elementBuilderName := builderName .Type.Element }}
-
-					// {{ $setterName }} sets the value of the '{{ .Name }}' attribute
-					// to the given values.
-					//
-					{{ lineComment .Type.Doc }}
-					func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ $elementBuilderName }}) *{{ $builderName }} {
-						b.{{ $fieldName }} = make([]*{{ $elementBuilderName }}, len(values))
-						copy(b.{{ $fieldName }}, values)
-						return b
-					}
+					{{ $elementType := valueType .Type.Element }}
+					{{ if .Type.Element.IsScalar }}
+						func (b *{{ $builderName }}) {{ $setterName }}(values ...{{ $elementType }}) *{{ $builderName }} {
+							b.{{ $fieldName }} = make([]{{ $elementType }}, len(values))
+							copy(b.{{ $fieldName }}, values)
+							return b
+						}
+					{{ else }}
+						{{ $elementBuilderName := builderName .Type.Element }}
+						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ $elementBuilderName }}) *{{ $builderName }} {
+							b.{{ $fieldName }} = make([]*{{ $elementBuilderName }}, len(values))
+							copy(b.{{ $fieldName }}, values)
+							return b
+						}
+					{{ end }}
 				{{ end }}
 			{{ else }}
-				// {{ $setterName }} sets the value of the '{{ .Name }}' attribute
-				// to the given value.
+				// {{ $setterName }} sets the value of the '{{ .Name }}' attribute to the given value.
 				//
 				{{ lineComment .Type.Doc }}
 				func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
@@ -309,52 +308,48 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ range .Type.Attributes }}
 				{{ $fieldName := fieldName . }}
 				{{ $fieldType := fieldType . }}
-				{{ if .Type.IsStruct }}
+				{{ if .Type.IsScalar }}
+					b.{{ $fieldName }} = object.{{ $fieldName }}
+				{{ else if .Type.IsStruct }}
 					if object.{{ $fieldName }} != nil {
 						b.{{ $fieldName }} = {{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
 					} else {
 						b.{{ $fieldName }} = nil
 					}
 				{{ else if .Type.IsList }}
-					{{ if .Type.Element.IsScalar }}
-						if len(object.{{ $fieldName }}) > 0 {
-							b.{{ $fieldName }} = make({{ $fieldType }}, len(object.{{ $fieldName }}))
-							copy(b.{{ $fieldName }}, object.{{ $fieldName }})
-						} else {
-							b.{{ $fieldName }} = nil
-						}
-					{{ else if .Type.Element.IsStruct }}
-						if object.{{ $fieldName }} != nil && len(object.{{ $fieldName }}.items) > 0 {
-							b.{{ $fieldName }} = make([]*{{ builderName .Type.Element }}, len(object.{{ $fieldName }}.items))
-							for i, item := range object.{{ $fieldName }}.items {
-								b.{{ $fieldName }}[i] = {{ builderCtor .Type.Element }}().Copy(item)
-							}
-						} else {
-							b.{{ $fieldName }} = nil
-						}
-					{{ end }}
+					if object.{{ $fieldName }} != nil {
+						{{ if .Link }}
+							b.{{ $fieldName }} = {{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
+						{{ else }}
+							{{ if .Type.Element.IsScalar }}
+								b.{{ $fieldName }} = make({{ $fieldType }}, len(object.{{ $fieldName }}))
+								copy(b.{{ $fieldName }}, object.{{ $fieldName }})
+							{{ else if .Type.Element.IsStruct }}
+								b.{{ $fieldName }} = make([]*{{ builderName .Type.Element }}, len(object.{{ $fieldName }}))
+								for i, v := range object.{{ $fieldName }} {
+									b.{{ $fieldName }}[i] = {{ builderCtor .Type.Element }}().Copy(v)
+								}
+							{{ end }}
+						{{ end }}
+					} else {
+						b.{{ $fieldName }} = nil
+					}
 				{{ else if .Type.IsMap }}
-					{{ if .Type.Element.IsScalar }}
-						if len(object.{{ $fieldName }}) > 0 {
+					if len(object.{{ $fieldName }}) > 0 {
+						{{ if .Type.Element.IsScalar }}
 							b.{{ $fieldName }} = make({{ $fieldType }})
-							for key, value := range object.{{ $fieldName }} {
-								b.{{ $fieldName }}[key] = value
+							for k, v := range object.{{ $fieldName }} {
+								b.{{ $fieldName }}[k] = v
 							}
-						} else {
-							b.{{ $fieldName }} = nil
-						}
-					{{ else if .Type.Element.IsStruct }}
-						if len(object.{{ $fieldName }}) > 0 {
+						{{ else if .Type.Element.IsStruct }}
 							b.{{ $fieldName }} = make(map[string]*{{ builderName .Type.Element }})
-							for key, value := range object.{{ $fieldName }} {
-								b.{{ $fieldName }}[key] = {{ builderCtor .Type.Element }}().Copy(value)
+							for k, v := range object.{{ $fieldName }} {
+								b.{{ $fieldName }}[k] = {{ builderCtor .Type.Element }}().Copy(v)
 							}
-						} else {
-							b.{{ $fieldName }} = nil
-						}
-					{{ end }}
-				{{ else }}
-					b.{{ $fieldName }} = object.{{ $fieldName }}
+						{{ end }}
+					} else {
+						b.{{ $fieldName }} = nil
+					}
 				{{ end }}
 			{{ end }}
 			return b
@@ -371,45 +366,55 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ range .Type.Attributes }}
 				{{ $fieldName := fieldName . }}
 				{{ $fieldType := fieldType . }}
-				if b.{{ $fieldName }} != nil {
-					{{ if .Type.IsStruct }}
+				{{ if .Type.IsScalar }}
+					object.{{ $fieldName }} = b.{{ $fieldName }}
+				{{ else if .Type.IsStruct }}
+					if b.{{ $fieldName }} != nil {
 						object.{{ $fieldName }}, err = b.{{ $fieldName }}.Build()
 						if err != nil {
 							return
 						}
-					{{ else if .Type.IsList}}
-						{{ if .Type.Element.IsScalar }}
-							object.{{ $fieldName }} = make({{ $fieldType }}, len(b.{{ $fieldName }}))
-							copy(object.{{ $fieldName }}, b.{{ $fieldName }})
-						{{ else if .Type.Element.IsStruct }}
-							object.{{ $fieldName }} = new({{ objectName .Type }})
-							object.{{ $fieldName }}.items = make([]*{{ objectName .Type.Element }}, len(b.{{ $fieldName }}))
-							for i, item := range b.{{ $fieldName }} {
-								object.{{ $fieldName }}.items[i], err = item.Build()
-								if err != nil {
-									return
-								}
+					}
+				{{ else if .Type.IsList}}
+					if b.{{ $fieldName }} != nil {
+						{{ if .Link }}
+							object.{{ $fieldName }}, err = b.{{ $fieldName }}.Build()
+							if err != nil {
+								return
 							}
+						{{ else }}
+							{{ if .Type.Element.IsScalar }}
+								object.{{ $fieldName }} = make({{ $fieldType }}, len(b.{{ $fieldName }}))
+								copy(object.{{ $fieldName }}, b.{{ $fieldName }})
+							{{ else if .Type.Element.IsStruct }}
+								object.{{ $fieldName }} = make([]*{{ objectName .Type.Element }}, len(b.{{ $fieldName }}))
+								for i, v := range b.{{ $fieldName }} {
+									object.{{ $fieldName }}[i], err = v.Build()
+									if err != nil {
+										return
+									}
+								}
+							{{ end }}
 						{{ end }}
-					{{ else if .Type.IsMap}}
+					}
+				{{ else if .Type.IsMap}}
+					if b.{{ $fieldName }} != nil {
 						{{ if .Type.Element.IsScalar }}
 							object.{{ $fieldName }} = make({{ $fieldType }})
-							for key, value := range b.{{ $fieldName }} {
-								object.{{ $fieldName }}[key] = value
+							for k, v := range b.{{ $fieldName }} {
+								object.{{ $fieldName }}[k] = v
 							}
 						{{ else if .Type.Element.IsStruct }}
 							object.{{ $fieldName }}  = make(map[string]*{{ objectName .Type.Element }})
-							for key, value := range b.{{ $fieldName }} {
-								object.{{ $fieldName }}[key], err = value.Build()
+							for k, v := range b.{{ $fieldName }} {
+								object.{{ $fieldName }}[k], err = v.Build()
 								if err != nil {
 									return
 								}
 							}
 						{{ end }}
-					{{ else }}
-						object.{{ $fieldName }} = b.{{ $fieldName }}
-					{{ end }}
-				}
+					}
+				{{ end }}
 			{{ end }}
 			return
 		}
@@ -460,6 +465,7 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
 		{{ $builderCtor := builderCtor .Type }}
 		{{ $elementObjectName := objectName .Type.Element }}
 		{{ $elementBuilderName := builderName .Type.Element }}
+		{{ $elementBuilderCtor := builderCtor .Type.Element }}
 
 		// {{ $builderName }} contains the data and logic needed to build
 		// '{{ .Type.Element.Name }}' objects.
@@ -476,6 +482,19 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
 		func (b *{{ $builderName }}) Items(values ...*{{ $elementBuilderName }}) *{{ $builderName }} {
                         b.items = make([]*{{ $elementBuilderName }}, len(values))
                         copy(b.items, values)
+			return b
+		}
+
+		// Copy copies the items of the given list into this builder, discarding any previous items.
+		func (b *{{ $builderName }}) Copy(list *{{ $objectName }}) *{{ $builderName }} {
+			if list == nil || list.items == nil {
+				b.items = nil
+			} else {
+				b.items = make([]*{{ $elementBuilderName }}, len(list.items))
+				for i, v := range list.items {
+					b.items[i] = {{ $elementBuilderCtor }}().Copy(v)
+				}
+			}
 			return b
 		}
 
@@ -536,38 +555,51 @@ func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
 
 func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *golang.TypeReference {
 	typ := attribute.Type()
+	var ref *golang.TypeReference
 	switch {
 	case typ.IsScalar():
-		return g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ)
+	case typ.IsStruct():
+		ref = g.types.BuilderReference(typ)
 	case typ.IsList():
-		element := typ.Element()
-		if element.IsScalar() {
-			return g.types.NullableReference(typ)
+		if attribute.Link() {
+			ref = g.types.BuilderReference(typ)
+		} else {
+			element := typ.Element()
+			if element.IsScalar() {
+				ref = g.types.NullableReference(typ)
+			} else {
+				ref = g.types.BuilderReference(element)
+				ref = g.types.Reference(
+					ref.Import(),
+					ref.Selector(),
+					ref.Name(),
+					fmt.Sprintf("[]%s", ref.Text()),
+				)
+			}
 		}
-		ref := g.types.BuilderReference(element)
-		ref = g.types.Reference(
-			ref.Import(),
-			ref.Selector(),
-			ref.Name(),
-			fmt.Sprintf("[]%s", ref.Text()),
-		)
-		return ref
 	case typ.IsMap():
 		element := typ.Element()
 		if element.IsScalar() {
-			return g.types.NullableReference(typ)
+			ref = g.types.NullableReference(typ)
+		} else {
+			ref = g.types.BuilderReference(element)
+			ref = g.types.Reference(
+				ref.Import(),
+				ref.Selector(),
+				ref.Name(),
+				fmt.Sprintf("map[string]%s", ref.Text()),
+			)
 		}
-		ref := g.types.BuilderReference(element)
-		ref = g.types.Reference(
-			ref.Import(),
-			ref.Selector(),
-			ref.Name(),
-			fmt.Sprintf("map[string]%s", ref.Text()),
-		)
-		return ref
-	default:
-		return g.types.BuilderReference(typ)
 	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate builder field type for attribute '%s'",
+			attribute,
+		)
+		ref = &golang.TypeReference{}
+	}
+	return ref
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
@@ -576,31 +608,51 @@ func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
 
 func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *golang.TypeReference {
 	typ := attribute.Type()
+	var ref *golang.TypeReference
 	switch {
 	case typ.IsScalar():
-		return g.types.ValueReference(typ)
+		ref = g.types.ValueReference(typ)
+	case typ.IsStruct():
+		ref = g.types.BuilderReference(typ)
 	case typ.IsList():
-		element := typ.Element()
-		if element.IsScalar() {
-			return g.types.ValueReference(typ)
+		if attribute.Link() {
+			ref = g.types.BuilderReference(typ)
+		} else {
+			element := typ.Element()
+			if element.IsScalar() {
+				ref = g.types.ValueReference(typ)
+			} else {
+				ref = g.types.BuilderReference(element)
+				ref = g.types.Reference(
+					ref.Import(),
+					ref.Selector(),
+					ref.Name(),
+					fmt.Sprintf("[]%s", ref.Text()),
+				)
+			}
 		}
-		return g.types.BuilderReference(element)
 	case typ.IsMap():
 		element := typ.Element()
 		if element.IsScalar() {
-			return g.types.ValueReference(typ)
+			ref = g.types.ValueReference(typ)
+		} else {
+			ref = g.types.BuilderReference(element)
+			ref = g.types.Reference(
+				ref.Import(),
+				ref.Selector(),
+				ref.Name(),
+				fmt.Sprintf("map[string]%s", ref.Text()),
+			)
 		}
-		ref := g.types.BuilderReference(element)
-		ref = g.types.Reference(
-			ref.Import(),
-			ref.Selector(),
-			ref.Name(),
-			fmt.Sprintf("map[string]%s", ref.Text()),
-		)
-		return ref
-	default:
-		return g.types.BuilderReference(typ)
 	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate builder setter type for attribute '%s'",
+			attribute,
+		)
+		ref = &golang.TypeReference{}
+	}
+	return ref
 }
 
 func (g *BuildersGenerator) valueType(typ *concepts.Type) *golang.TypeReference {

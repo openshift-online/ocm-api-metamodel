@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
@@ -400,37 +399,34 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 		Package(pkgName).
 		File(fileName).
 		Function("adaptRequestName", g.adaptRequestName).
-		Function("allocatorName", g.allocatorName).
-		Function("dataFieldName", g.dataFieldName).
-		Function("dataFieldType", g.dataFieldType).
-		Function("dataStruct", g.dataStruct).
 		Function("defaultStatus", g.binding.DefaultStatus).
-		Function("defaultValue", g.defaultValue).
 		Function("dispatchName", g.dispatchName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
 		Function("getterName", g.getterName).
 		Function("getterType", g.getterType).
 		Function("httpMethod", g.binding.Method).
+		Function("jsonFieldName", g.jsonFieldName).
+		Function("jsonFieldType", g.jsonFieldType).
 		Function("locatorName", g.locatorName).
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
+		Function("methodSegment", g.binding.MethodSegment).
 		Function("parameterName", g.binding.ParameterName).
-		Function("readRequestName", g.readRequestName).
+		Function("readRequestFunc", g.readRequestFunc).
 		Function("readerName", g.readerName).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
-		Function("requestData", g.requestData).
 		Function("requestName", g.requestName).
 		Function("requestParameters", g.binding.RequestParameters).
-		Function("requestQueryParameters", g.binding.RequestQueryParameters).
 		Function("responseBodyParameters", g.binding.ResponseBodyParameters).
-		Function("responseData", g.responseData).
 		Function("responseName", g.responseName).
 		Function("responseParameters", g.binding.ResponseParameters).
 		Function("serverName", g.serverName).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
-		Function("writeResponseName", g.writeResponseName).
+		Function("structName", g.types.StructName).
+		Function("writeFunc", g.writeFunc).
+		Function("writeResponseFunc", g.writeResponseFunc).
 		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
@@ -505,39 +501,54 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 			if len(segments) == 0 {
 				switch r.Method {
 				{{ range .Resource.Methods }}
-					case "{{ httpMethod . }}":
-						{{ adaptRequestName . }}(w, r, server)
+					{{ $methodSegment := methodSegment . }}
+					{{ if not $methodSegment }}
+						case "{{ httpMethod . }}":
+							{{ adaptRequestName . }}(w, r, server)
+							return
+					{{ end }}
 				{{ end }}
 				default:
 					errors.SendMethodNotAllowed(w, r)
 					return
 				}
-			} else {
-				switch segments[0] {
-				{{ range .Resource.ConstantLocators }}
-					case "{{ locatorSegment . }}":
-						target := server.{{ locatorName . }}()
+			}
+			switch segments[0] {
+			{{ range .Resource.Methods }}
+				{{ $methodSegment := methodSegment . }}
+				{{ if $methodSegment }}
+					case "{{ methodSegment . }}":
+						if r.Method != "POST" {
+							errors.SendMethodNotAllowed(w, r)
+							return
+						}
+						{{ adaptRequestName . }}(w, r, server)
+						return
+				{{ end }}
+			{{ end }}
+			{{ range .Resource.ConstantLocators }}
+				case "{{ locatorSegment . }}":
+					target := server.{{ locatorName . }}()
+					if target == nil {
+						errors.SendNotFound(w, r)
+						return
+					}
+					{{ dispatchName .Target }}(w, r, target, segments[1:])
+			{{ end }}
+			default:
+				{{ if .Resource.VariableLocator }}
+					{{ with .Resource.VariableLocator }}
+						target := server.{{ locatorName . }}(segments[0])
 						if target == nil {
 							errors.SendNotFound(w, r)
 							return
 						}
 						{{ dispatchName .Target }}(w, r, target, segments[1:])
-				{{ end }}
-				default:
-					{{ if .Resource.VariableLocator }}
-						{{ with .Resource.VariableLocator }}
-							target := server.{{ locatorName . }}(segments[0])
-							if target == nil {
-								errors.SendNotFound(w, r)
-								return
-							}
-							{{ dispatchName .Target }}(w, r, target, segments[1:])
-						{{ end }}
-					{{ else }}
-						errors.SendNotFound(w, r)
-						return
 					{{ end }}
-				}
+				{{ else }}
+					errors.SendNotFound(w, r)
+					return
+				{{ end }}
 			}
 		}
 
@@ -549,60 +560,13 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 			{{ $requestBodyParameters := requestBodyParameters . }}
 			{{ $requestBodyLen := len $requestBodyParameters }}
 			{{ $responseParameters := responseParameters . }}
-			{{ $requestQueryParameters := requestQueryParameters . }}
-			{{ $readRequestName := readRequestName . }}
-			{{ $writeResponseName := writeResponseName . }}
-
-			// {{ $readRequestName }} reads the given HTTP requests and translates it
-			// into an object of type {{ $requestName }}.
-			func {{ $readRequestName }}(r *http.Request) (*{{ $requestName }}, error) {
-				var err error
-				result := new({{ $requestName }})
-				{{ if $requestQueryParameters }}
-					query := r.URL.Query()
-					{{ range  $requestQueryParameters }}
-						{{ $fieldName := fieldName . }}
-						{{ $parameterName := parameterName . }}
-						{{ $readerName := readerName .Type }}
-						result.{{ $fieldName }}, err = helpers.{{ $readerName }}(query, "{{ $parameterName }}")
-						if err != nil {
-							return nil, err
-						}
-						{{ if .Default }}
-							if result.{{ $fieldName }} == nil {
-								result.{{ $fieldName }} = helpers.{{ allocatorName .Type }}({{ defaultValue . }})
-							}
-						{{ end }}
-					{{ end }}
-				{{ end }}
-				{{ if $requestBodyParameters }}
-					err = result.unmarshal(r.Body)
-					if err != nil {
-						return nil, err
-					}
-				{{ end }}
-				return result, err
-			}
-
-			// {{ $writeResponseName }} translates the given request object into an
-			// HTTP response.
-			func {{ $writeResponseName }}(w http.ResponseWriter, r *{{ $responseName }}) error {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(r.status)
-				{{ if $responseParameters }}
-					err := r.marshal(w)
-					if err != nil {
-						return err
-					}
-				{{ end }}
-				return nil
-			}
 
 			// {{ $adaptRequestName }} translates the given HTTP request into a call to
 			// the corresponding method of the given server. Then it translates the
 			// results returned by that method into an HTTP response.
 			func {{ $adaptRequestName }}(w http.ResponseWriter, r *http.Request, server {{ $serverName }}) {
-				request, err := {{ $readRequestName }}(r)
+				request := &{{ $requestName }}{}
+				err := {{ readRequestFunc . }}(request, r)
 				if err != nil {
 					glog.Errorf(
 						"Can't read request for method '%s' and path '%s': %v",
@@ -611,7 +575,7 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 					errors.SendInternalServerError(w, r)
 					return
 				}
-				response := new({{ $responseName }})
+				response := &{{ $responseName }}{}
 				response.status = {{ defaultStatus . }}
 				err = server.{{ $methodName }}(r.Context(), request, response)
 				if err != nil {
@@ -622,7 +586,7 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 					errors.SendInternalServerError(w, r)
 					return
 				}
-				err = {{ $writeResponseName }}(w, response)
+				err = {{ writeResponseFunc . }}(response, w)
 				if err != nil {
 					glog.Errorf(
 						"Can't write response for method '%s' and path '%s': %v",
@@ -638,11 +602,23 @@ func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.R
 }
 
 func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
+	// Classify the parameters:
+	all := g.binding.RequestBodyParameters(method)
+	var main *concepts.Parameter
+	var others []*concepts.Parameter
+	for _, parameter := range all {
+		if parameter.IsItems() || parameter.IsBody() {
+			main = parameter
+		} else {
+			others = append(others, parameter)
+		}
+	}
+
+	// Generate the code:
 	g.buffer.Import("encoding/json", "")
 	g.buffer.Import("io", "")
 	g.buffer.Emit(`
 		{{ $requestName := requestName .Method }}
-		{{ $requestData := requestData .Method }}
 		{{ $requestParameters := requestParameters .Method }}
 		{{ $requestBodyParameters := requestBodyParameters .Method }}
 		{{ $requestBodyLen := len $requestBodyParameters }}
@@ -693,72 +669,34 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 				return
 			}
 		{{ end }}
-
-		{{ if $requestBodyParameters }}
-			// unmarshal is the method used internally to unmarshal request to the
-			// '{{ .Method.Name }}' method.
-			func (r *{{ $requestName }}) unmarshal(reader io.Reader) error {
-				var err error
-				decoder := json.NewDecoder(reader)
-				{{ if eq $requestBodyLen 1 }}
-					{{ with index $requestBodyParameters 0 }}
-						data := new({{ dataStruct . }})
-					{{ end }}
-				{{ else }}
-					data := new({{ $requestData }})
-				{{ end }}
-				err = decoder.Decode(data)
-				if err != nil {
-					return err
-				}
-				{{ if eq $requestBodyLen 1 }}
-					{{ with index $requestBodyParameters 0 }}
-						r.{{ fieldName . }}, err = data.unwrap()
-						if err != nil {
-							return err
-						}
-					{{ end }}
-				{{ else }}
-					{{ range $requestBodyParameters }}
-						{{ $dataFieldName := dataFieldName . }}
-						{{ $fieldName := fieldName . }}
-						{{ if or .Type.IsScalar }}
-							r.{{ $fieldName }} = data.{{ $dataFieldName }}
-						{{ else }}
-							r.{{ $fieldName }}, err = data.{{ $dataFieldName }}.unwrap()
-							if err != nil {
-								return err
-							}
-						{{ end }}
-					{{ end }}
-				{{ end }}
-				return err
-			}
-
-			{{ if gt $requestBodyLen 1 }}
-				// {{ $requestData }} is the structure used internally to unmarshal
-				// the response of the '{{ .Method.Name }}' method.
-				type {{ $requestData }} struct {
-					{{ range $requestBodyParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
-					{{ end }}
-				}
-			{{ end }}
-		{{ end }}
 		`,
 		"Method", method,
+		"Main", main,
+		"Others", others,
 	)
 }
 
 func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
-	g.buffer.Import("io", "")
-	g.buffer.Import(g.packages.ErrorsImport(), "")
+	// Classify the parameters:
+	all := g.binding.ResponseBodyParameters(method)
+	var main *concepts.Parameter
+	var others []*concepts.Parameter
+	for _, parameter := range all {
+		if parameter.IsItems() || parameter.IsBody() {
+			main = parameter
+		} else {
+			others = append(others, parameter)
+		}
+	}
+
+	// Generate the code:
 	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Import("github.com/json-iterator/go", "")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
-		{{ $responseData := responseData .Method }}
 		{{ $responseParameters := responseParameters .Method }}
 		{{ $responseLen := len $responseParameters }}
+		{{ $isAction := .Method.IsAction }}
 
 		// {{ $responseName }} is the response for the '{{ .Method.Name }}' method.
 		type  {{ $responseName }} struct {
@@ -771,6 +709,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 
 		{{ range $responseParameters }}
 			{{ $fieldName := fieldName . }}
+			{{ $fieldType := fieldType . }}
 			{{ $setterName := setterName . }}
 			{{ $setterType := setterType . }}
 
@@ -778,10 +717,28 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 			//
 			{{ lineComment .Doc }}
 			func (r *{{ $responseName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $responseName }} {
-				{{ if or .Type.IsStruct .Type.IsList }}
+				{{ if or .IsItems .Type.IsStruct }}
 					r.{{ $fieldName }} = value
-				{{ else }}
+				{{ else if .Type.IsScalar }}
 					r.{{ $fieldName }} = &value
+				{{ else if .Type.IsList }}
+					if value == nil {
+						r.{{ $fieldName }} = nil
+					} else {
+						r.{{ $fieldName }} = make({{ $fieldType }}, len(value))
+						for i, v := range value {
+							r.{{ $fieldName }}[i] = v
+						}
+					}
+				{{ else if .Type.IsMap }}
+					if value == nil {
+						r.{{ $fieldName }} = nil
+					} else {
+						r.{{ $fieldName }} = {{ $fieldType }}{}
+						for k, v := range value {
+							r.{{ $fieldName }}[k] = v
+						}
+					}
 				{{ end }}
 				return r
 			}
@@ -792,51 +749,10 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 			r.status = value
 			return r
 		}
-
-		{{ if $responseParameters }}
-			// marshall is the method used internally to marshal responses for the
-			// '{{ .Method.Name }}' method.
-			func (r *{{ $responseName }}) marshal(writer io.Writer) error {
-				var err error
-				encoder := json.NewEncoder(writer)
-				{{ if eq $responseLen 1 }}
-					{{ with index $responseParameters 0 }}
-						data, err := r.{{ fieldName . }}.wrap()
-						if err != nil {
-							return err
-						}
-					{{ end }}
-				{{ else }}
-					data := new({{ $responseData }})
-					{{ range $responseParameters }}
-						{{ $dataFieldName := dataFieldName . }}
-						{{ $fieldName := fieldName . }}
-						{{ if or .Type.IsScalar }}
-							data.{{ $dataFieldName }} = r.{{ $fieldName }}
-						{{ else }}
-							data.{{ $dataFieldName }}, err = r.{{ $fieldName }}.wrap()
-							if err != nil {
-								return err
-							}
-						{{ end }}
-					{{ end }}
-				{{ end }}
-				err = encoder.Encode(data)
-				return err
-			}
-
-			{{ if gt $responseLen 1 }}
-				// {{ $responseData }} is the structure used internally to write the request of the
-				// '{{ .Method.Name }}' method.
-				type {{ $responseData }} struct {
-					{{ range $responseParameters }}
-						{{ dataFieldName . }} {{ dataFieldType . }} "json:\"{{ parameterName . }},omitempty\""
-					{{ end }}
-				}
-			{{ end }}
-		{{ end }}
 		`,
 		"Method", method,
+		"Main", main,
+		"Others", others,
 	)
 }
 
@@ -890,44 +806,40 @@ func (g *ServersGenerator) adaptRequestName(method *concepts.Method) string {
 	return g.names.Private(name)
 }
 
-func (g *ServersGenerator) readRequestName(method *concepts.Method) string {
-	name := names.Cat(
-		nomenclator.Read,
-		method.Owner().Name(),
-		method.Name(),
-		nomenclator.Request,
-	)
-	return g.names.Private(name)
-}
-
-func (g *ServersGenerator) writeResponseName(method *concepts.Method) string {
-	name := names.Cat(
-		nomenclator.Write,
-		method.Owner().Name(),
-		method.Name(),
-		nomenclator.Response,
-	)
-	return g.names.Private(name)
-}
-
 func (g *ServersGenerator) requestName(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Request)
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(method.Name(), nomenclator.Server, nomenclator.Request)
+	} else {
+		name = names.Cat(
+			resource.Name(),
+			method.Name(),
+			nomenclator.Server,
+			nomenclator.Request,
+		)
+	}
 	return g.names.Public(name)
-}
-
-func (g *ServersGenerator) requestData(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Request, nomenclator.Data)
-	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) responseName(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Response)
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(
+			method.Name(),
+			nomenclator.Server,
+			nomenclator.Response,
+		)
+	} else {
+		name = names.Cat(
+			resource.Name(),
+			method.Name(),
+			nomenclator.Server,
+			nomenclator.Response,
+		)
+	}
 	return g.names.Public(name)
-}
-
-func (g *ServersGenerator) responseData(method *concepts.Method) string {
-	name := names.Cat(method.Owner().Name(), method.Name(), nomenclator.Server, nomenclator.Response, nomenclator.Data)
-	return g.names.Private(name)
 }
 
 func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
@@ -937,6 +849,9 @@ func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
 }
 
 func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
+	if parameter.IsItems() {
+		return g.types.ListReference(parameter.Type())
+	}
 	return g.types.NullableReference(parameter.Type())
 }
 
@@ -947,7 +862,7 @@ func (g *ServersGenerator) getterName(parameter *concepts.Parameter) string {
 }
 
 func (g *ServersGenerator) getterType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.accessorType(parameter.Type())
+	return g.accessorType(parameter)
 }
 
 func (g *ServersGenerator) setterName(parameter *concepts.Parameter) string {
@@ -957,37 +872,35 @@ func (g *ServersGenerator) setterName(parameter *concepts.Parameter) string {
 }
 
 func (g *ServersGenerator) setterType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.accessorType(parameter.Type())
+	return g.accessorType(parameter)
 }
 
-func (g *ServersGenerator) dataStruct(parameter *concepts.Parameter) string {
-	return g.types.DataReference(parameter.Type()).Name()
-}
-
-func (g *ServersGenerator) dataFieldName(parameter *concepts.Parameter) string {
+func (g *ServersGenerator) jsonFieldName(parameter *concepts.Parameter) string {
 	return g.names.Public(parameter.Name())
 }
 
-func (g *ServersGenerator) dataFieldType(parameter *concepts.Parameter) *golang.TypeReference {
-	return g.types.DataReference(parameter.Type())
+func (g *ServersGenerator) jsonFieldType(parameter *concepts.Parameter) *golang.TypeReference {
+	return g.types.JSONTypeReference(parameter.Type())
 }
 
-func (g *ServersGenerator) accessorType(typ *concepts.Type) *golang.TypeReference {
+func (g *ServersGenerator) accessorType(parameter *concepts.Parameter) *golang.TypeReference {
+	var ref *golang.TypeReference
+	typ := parameter.Type()
 	switch {
-	case typ.IsList():
-		element := typ.Element()
-		switch {
-		case element.IsStruct():
-			name := g.names.Public(names.Cat(element.Name(), nomenclator.List))
-			return g.types.Reference("", "", "", "*"+name)
-		default:
-			return g.types.NullableReference(typ)
-		}
-	case typ.IsStruct():
-		return g.types.NullableReference(typ)
-	default:
-		return g.types.ValueReference(typ)
+	case parameter.IsItems():
+		ref = g.types.ListReference(typ)
+	case typ.IsScalar():
+		ref = g.types.ValueReference(typ)
+	case typ.IsStruct() || typ.IsList() || typ.IsMap():
+		ref = g.types.NullableReference(typ)
 	}
+	if ref == nil {
+		g.reporter.Errorf(
+			"Don't know how to calculate accessor type for parameter '%s'",
+			parameter,
+		)
+	}
+	return ref
 }
 
 func (g *ServersGenerator) avoidBuiltin(name string, builtins map[string]interface{}) string {
@@ -1003,13 +916,13 @@ func (g *ServersGenerator) readerName(typ *concepts.Type) string {
 	switch typ {
 	case version.Boolean():
 		return "ParseBoolean"
-	case version.Integer():
+	case version.IntegerType():
 		return "ParseInteger"
-	case version.Float():
+	case version.FloatType():
 		return "ParseFloat"
-	case version.String():
+	case version.StringType():
 		return "ParseString"
-	case version.Date():
+	case version.DateType():
 		return "ParseDate"
 	default:
 		g.reporter.Errorf("We do not know how to handle type '%s'", typ)
@@ -1017,40 +930,47 @@ func (g *ServersGenerator) readerName(typ *concepts.Type) string {
 	}
 }
 
-func (g *ServersGenerator) allocatorName(typ *concepts.Type) string {
-	version := typ.Owner()
-	switch typ {
-	case version.Boolean():
-		return "NewBoolean"
-	case version.Integer():
-		return "NewInteger"
-	case version.Float():
-		return "NewFloat"
-	case version.String():
-		return "NewString"
-	case version.Date():
-		return "NewDate"
-	default:
-		g.reporter.Errorf("Don't know how to generate allocator name for type '%s'", typ)
-		return ""
-	}
+func (g *ServersGenerator) writeFunc(typ *concepts.Type) string {
+	name := names.Cat(nomenclator.Write, typ.Name())
+	return g.names.Private(name)
 }
 
-func (g *ServersGenerator) defaultValue(parameter *concepts.Parameter) string {
-	switch value := parameter.Default().(type) {
-	case nil:
-		return "nil"
-	case bool:
-		return strconv.FormatBool(value)
-	case int:
-		return strconv.FormatInt(int64(value), 10)
-	case string:
-		return strconv.Quote(value)
-	default:
-		g.reporter.Errorf(
-			"Don't know how to render default value '%v' for parameter '%s'",
-			value, parameter,
+func (g *ServersGenerator) readRequestFunc(method *concepts.Method) string {
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(
+			nomenclator.Read,
+			method.Name(),
+			nomenclator.Request,
 		)
-		return ""
+	} else {
+		name = names.Cat(
+			nomenclator.Read,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Request,
+		)
 	}
+	return g.names.Private(name)
+}
+
+func (g *ServersGenerator) writeResponseFunc(method *concepts.Method) string {
+	resource := method.Owner()
+	var name *names.Name
+	if resource.IsRoot() {
+		name = names.Cat(
+			nomenclator.Write,
+			method.Name(),
+			nomenclator.Response,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Write,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Response,
+		)
+	}
+	return g.names.Private(name)
 }

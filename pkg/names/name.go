@@ -106,7 +106,7 @@ func (n *Name) CapitalizedJoined(separator string) string {
 	return strings.Join(chunks, separator)
 }
 
-// String generates a string representing this name, consisting on the list of words of the name
+// StringType generates a string representing this name, consisting on the list of words of the name
 // separated by an underscore.
 func (n *Name) String() string {
 	texts := make([]string, len(n.words))

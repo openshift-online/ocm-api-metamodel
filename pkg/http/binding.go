@@ -74,7 +74,7 @@ func (b *BindingCalculatorBuilder) Build() (calculator *BindingCalculator, err e
 // RequestParameter returns the parameters of the given method that will be part of the HTTP
 // request.
 func (c *BindingCalculator) RequestParameters(method *concepts.Method) []*concepts.Parameter {
-	result := []*concepts.Parameter{}
+	var result []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
 		if parameter.In() {
 			result = append(result, parameter)
@@ -86,10 +86,12 @@ func (c *BindingCalculator) RequestParameters(method *concepts.Method) []*concep
 // RequestQueryParameters returns the parameters of the given method that should be placed in the
 // HTTP request query.
 func (c *BindingCalculator) RequestQueryParameters(method *concepts.Method) []*concepts.Parameter {
-	result := []*concepts.Parameter{}
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && parameter.Type().IsScalar() {
-			result = append(result, parameter)
+	var result []*concepts.Parameter
+	if !method.IsAction() {
+		for _, parameter := range method.Parameters() {
+			if parameter.In() && parameter.Type().IsScalar() {
+				result = append(result, parameter)
+			}
 		}
 	}
 	return result
@@ -98,10 +100,18 @@ func (c *BindingCalculator) RequestQueryParameters(method *concepts.Method) []*c
 // RequestBodyParameters returns the parameters of the given method that should be placed in the
 // HTTP request body.
 func (c *BindingCalculator) RequestBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := []*concepts.Parameter{}
-	for _, parameter := range method.Parameters() {
-		if parameter.In() && (parameter.Type().IsStruct() || parameter.Type().IsList()) {
-			result = append(result, parameter)
+	var result []*concepts.Parameter
+	if method.IsAction() {
+		for _, parameter := range method.Parameters() {
+			if parameter.In() {
+				result = append(result, parameter)
+			}
+		}
+	} else {
+		for _, parameter := range method.Parameters() {
+			if parameter.In() && !parameter.Type().IsScalar() {
+				result = append(result, parameter)
+			}
 		}
 	}
 	return result
@@ -110,7 +120,7 @@ func (c *BindingCalculator) RequestBodyParameters(method *concepts.Method) []*co
 // ResponseParameters returns the parameters of the given method that should be placed in the HTTP
 // response.
 func (c *BindingCalculator) ResponseParameters(method *concepts.Method) []*concepts.Parameter {
-	result := []*concepts.Parameter{}
+	var result []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
 		if parameter.Out() {
 			result = append(result, parameter)
@@ -122,7 +132,7 @@ func (c *BindingCalculator) ResponseParameters(method *concepts.Method) []*conce
 // ResponseBodyParameters returns the parameters of the given method that should be placed in the
 // HTTP response body.
 func (c *BindingCalculator) ResponseBodyParameters(method *concepts.Method) []*concepts.Parameter {
-	result := []*concepts.Parameter{}
+	var result []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
 		if parameter.Out() {
 			result = append(result, parameter)
@@ -135,20 +145,20 @@ func (c *BindingCalculator) ResponseBodyParameters(method *concepts.Method) []*c
 func (c *BindingCalculator) Method(method *concepts.Method) string {
 	name := method.Name()
 	switch {
-	case name.Equals(nomenclator.Post):
-		return http.MethodPost
 	case name.Equals(nomenclator.Add):
 		return http.MethodPost
-	case name.Equals(nomenclator.List):
-		return http.MethodGet
-	case name.Equals(nomenclator.Get):
-		return http.MethodGet
-	case name.Equals(nomenclator.Update):
-		return http.MethodPatch
 	case name.Equals(nomenclator.Delete):
 		return http.MethodDelete
-	default:
+	case name.Equals(nomenclator.Get):
 		return http.MethodGet
+	case name.Equals(nomenclator.List):
+		return http.MethodGet
+	case name.Equals(nomenclator.Post):
+		return http.MethodPost
+	case name.Equals(nomenclator.Update):
+		return http.MethodPatch
+	default:
+		return http.MethodPost
 	}
 }
 
@@ -170,7 +180,7 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 	return strconv.Itoa(status)
 }
 
-// AttribteName returns the field name corresponding to the given model attribute.
+// AttributeName returns the field name corresponding to the given model attribute.
 func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string {
 	return attribute.Name().Snake()
 }
@@ -189,6 +199,14 @@ func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
 // VersionSegment calculates the URL segment corresponding to the given version.
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
 	return version.Name().Snake()
+}
+
+// LocatorSegment calculates the URL segment corresponding to the given method.
+func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
+	if method.IsAction() {
+		return method.Name().Snake()
+	}
+	return ""
 }
 
 // LocatorSegment calculates the URL segment corresponding to the given locator.

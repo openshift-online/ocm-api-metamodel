@@ -16,4 +16,8 @@ limitations under the License.
 
 // Root of the tree of resources of the authorizations service.
 resource Root {
+        // Reference to the resource that is used to submit access review requests.
+        locator AccessReview {
+                target AccessReview
+        }
 }

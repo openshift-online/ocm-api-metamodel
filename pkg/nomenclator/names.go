@@ -63,6 +63,9 @@ var (
 	Items   = names.ParseUsingCase("Items")
 
 	// J:
+	JSON = names.ParseUsingCase("JSON")
+
+	// K:
 	Kind = names.ParseUsingCase("Kind")
 
 	// L:
@@ -74,6 +77,7 @@ var (
 	Map      = names.ParseUsingCase("Map")
 	Marshal  = names.ParseUsingCase("Marshal")
 	Metadata = names.ParseUsingCase("Metadata")
+	Method   = names.ParseUsingCase("Method")
 
 	// N:
 	New = names.ParseUsingCase("New")
@@ -100,6 +104,7 @@ var (
 	Set     = names.ParseUsingCase("Set")
 	Size    = names.ParseUsingCase("Size")
 	Spec    = names.ParseUsingCase("Spec")
+	Stream  = names.ParseUsingCase("Stream")
 	String  = names.ParseUsingCase("String")
 
 	// T:

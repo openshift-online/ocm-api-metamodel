@@ -36,7 +36,7 @@ const (
 	StructType
 )
 
-// String generates the string representation of a type kind.
+// StringType generates the string representation of a type kind.
 func (k TypeKind) String() string {
 	switch k {
 	case ClassType:
@@ -103,6 +103,36 @@ func (t *Type) Kind() TypeKind {
 // SetKind sets the kind of this type.
 func (t *Type) SetKind(value TypeKind) {
 	t.kind = value
+}
+
+// IsBoolean returns true iff this type is the built-in boolean type.
+func (t *Type) IsBoolean() bool {
+	return t.owner != nil && t == t.owner.Boolean()
+}
+
+// IsInteger returns true iff this type is the built-in integer type.
+func (t *Type) IsInteger() bool {
+	return t.owner != nil && t == t.owner.IntegerType()
+}
+
+// IsLong returns true iff this type is the built-in long type.
+func (t *Type) IsLong() bool {
+	return t.owner != nil && t == t.owner.LongType()
+}
+
+// IsFloat returns true iff this type is the built-in float type.
+func (t *Type) IsFloat() bool {
+	return t.owner != nil && t == t.owner.FloatType()
+}
+
+// IsString returns true iff this type is the built-in string type.
+func (t *Type) IsString() bool {
+	return t.owner != nil && t == t.owner.StringType()
+}
+
+// IsDate returns true iff this type is the built-in date type.
+func (t *Type) IsDate() bool {
+	return t.owner != nil && t == t.owner.DateType()
 }
 
 // IsClass returns true iff this type is a class type.

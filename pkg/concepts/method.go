@@ -94,20 +94,50 @@ func (m *Method) GetParameter(name *names.Name) *Parameter {
 	return nil
 }
 
+// IsAdd returns true if this is an add method.
+func (m *Method) IsAdd() bool {
+	return m.name.Equals(nomenclator.Add)
+}
+
+// IsDelete returns true if this is a delete method.
+func (m *Method) IsDelete() bool {
+	return m.name.Equals(nomenclator.Delete)
+}
+
+// IsGet returns true if this is a get method.
+func (m *Method) IsGet() bool {
+	return m.name.Equals(nomenclator.Get)
+}
+
+// IsList returns true if this is a list method.
+func (m *Method) IsList() bool {
+	return m.name.Equals(nomenclator.List)
+}
+
+// IsPost returns true if this is a post method.
+func (m *Method) IsPost() bool {
+	return m.name.Equals(nomenclator.Post)
+}
+
+// IsUpdate returns true if this is an update method.
+func (m *Method) IsUpdate() bool {
+	return m.name.Equals(nomenclator.Update)
+}
+
 // IsAction determined if this method is an action instead of a regular REST method.
 func (m *Method) IsAction() bool {
 	switch {
-	case m.name.Equals(nomenclator.Add):
+	case m.IsAdd():
 		return false
-	case m.name.Equals(nomenclator.Delete):
+	case m.IsDelete():
 		return false
-	case m.name.Equals(nomenclator.Get):
+	case m.IsGet():
 		return false
-	case m.name.Equals(nomenclator.List):
+	case m.IsList():
 		return false
-	case m.name.Equals(nomenclator.Post):
+	case m.IsPost():
 		return false
-	case m.name.Equals(nomenclator.Update):
+	case m.IsUpdate():
 		return false
 	default:
 		return true

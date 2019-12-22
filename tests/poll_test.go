@@ -108,8 +108,12 @@ var _ = Describe("Poll", func() {
 			"code": "CLUSTERS-MGMT-404",
 			"reason": "Not found"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
-		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		client := cmv1.NewClusterClient(
+			transport,
+			"/api/clusters_mgmt/v1/clusters/123",
+			"",
+		)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			Status(http.StatusNotFound).
