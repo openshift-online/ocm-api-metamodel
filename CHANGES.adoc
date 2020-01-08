@@ -3,7 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
-== 0.0.19 Dec 18 2019
+== 0.0.21 Jan 8 2020
+
+- Use JSON iterator instead of the default JSON Go package.
+
+== 0.0.20 Dec 18 2019
 
 - Fix conversion of errors to JSON so that the `kind` attribute is generated
   correctly.
