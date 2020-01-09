@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.22 Jan 9 2020
+
+- Fix generation of _OpenAPI_ paths so that all the characters are lower case.
+
 == 0.0.21 Jan 8 2020
 
 - Use JSON iterator instead of the default JSON Go package.
