@@ -671,7 +671,7 @@ func (g *OpenAPIGenerator) absolutePath(version *concepts.Version,
 		if locator.Variable() {
 			segments[i] = fmt.Sprintf("{%s_id}", g.binding.LocatorSegment(locator))
 		} else {
-			segments[i] = locator.Name().String()
+			segments[i] = g.binding.LocatorSegment(locator)
 		}
 	}
 	segments = append(prefix, segments...)
