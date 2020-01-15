@@ -24,14 +24,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/openshift-online/ocm-api-metamodel/cmd/ocm-metamodel-tool/check"
-	"github.com/openshift-online/ocm-api-metamodel/cmd/ocm-metamodel-tool/generate"
-	"github.com/openshift-online/ocm-api-metamodel/cmd/ocm-metamodel-tool/version"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/check"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/generate"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/version"
 )
 
 // Root command:
 var root = &cobra.Command{
-	Use:  "ocm-metamodel-tool",
+	Use:  "metamodel",
 	Long: "OCM metamodel tool.",
 }
 
@@ -40,7 +40,7 @@ func init() {
 	// by the 'pflag' package:
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
-	// Register the subcommands:
+	// Register the sub-commands:
 	root.AddCommand(check.Cmd)
 	root.AddCommand(generate.Cmd)
 	root.AddCommand(version.Cmd)

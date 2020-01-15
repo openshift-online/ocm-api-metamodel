@@ -26,14 +26,12 @@ export GO111MODULE=on
 
 # Version of the OpenAPI verification tool:
 openapi_generator_version:=3.3.4
-openapi_generator_url:=http://central.maven.org/maven2/org/openapitools/openapi-generator-cli/$(openapi_generator_version)/openapi-generator-cli-$(openapi_generator_version).jar
+openapi_generator_url:=https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/$(openapi_generator_version)/openapi-generator-cli-$(openapi_generator_version).jar
 openapi_generator_sum:=24cb04939110cffcdd7062d2f50c6f61159dc3e0ca3b8aecbae6ade53ad3dc8c
 
 .PHONY: cmds
 cmds: generate
-	for cmd in $$(ls cmd); do \
-		go build -o "$${cmd}" "./cmd/$${cmd}" || exit 1; \
-	done
+	go build -o metamodel ./cmd
 
 .PHONY: generate
 generate: antlr
@@ -58,43 +56,47 @@ fmt:
 .PHONY: tests
 tests:
 	$(MAKE) unit_tests
-	$(MAKE) model_tests
+	$(MAKE) go_tests
 	$(MAKE) openapi_tests
+	$(MAKE) docs_tests
 
 .PHONY: unit_tests
 unit_tests:
 	ginkgo -r pkg
 
-.PHONY: model_tests
-model_tests: cmds
-	rm -rf tests/api
-	./ocm-metamodel-tool generate \
+.PHONY: golang_tests
+go_tests: cmds
+	rm -rf tests/go/generated
+	./metamodel generate go \
 		--model=tests/model \
-		--base=github.com/openshift-online/ocm-api-metamodel/tests/api \
-		--output=tests/api \
-		--docs=tests/docs
-	ginkgo -r tests
+		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/generated \
+		--output=tests/go/generated
+	ginkgo -r tests/go
 
 .PHONY: openapi_tests
 openapi_tests: openapi_generator
-	for spec in $$(find tests/api -name openapi.json); do \
-		java \
-			-jar "$<" \
-			validate \
-			--input-spec=$${spec}; \
+	rm -rf tests/openapi/generated
+	./metamodel generate openapi --model=tests/model --output=tests/openapi/generated
+	for spec in $$(find tests/openapi -name '*.json'); do \
+		java -jar "$<" validate --input-spec=$${spec}; \
 	done
 
 openapi_generator:
 	wget --progress=dot:giga --output-document "$@" "$(openapi_generator_url)"
 	echo "$(openapi_generator_sum) $@" | sha256sum --check
 
+.PHONY: docs_tests
+docs_tests:
+	rm -rf tests/docs/generated
+	./metamodel generate docs --model=tests/model --output=tests/docs/generated
+
 .PHONY: clean
 clean:
 	rm -rf \
-		$$(ls cmd) \
 		.gobin \
 		antlr \
+		metamodel \
 		model \
 		openapi_generator \
-		tests/api \
+		tests/*/generated \
 		$(NULL)

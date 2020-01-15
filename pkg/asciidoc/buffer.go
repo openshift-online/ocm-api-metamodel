@@ -201,6 +201,9 @@ func (b *Buffer) Emit(tmpl string, args ...interface{}) {
 func (b *Buffer) Write() error {
 	var err error
 
+	// Inform that we are writing the file:
+	b.reporter.Infof("Writing file '%s'", b.file)
+
 	// Check if there were errors:
 	errors := b.reporter.Errors()
 	if errors > 0 {

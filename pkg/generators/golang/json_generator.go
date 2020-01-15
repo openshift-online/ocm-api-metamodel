@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 	"strconv"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -34,9 +33,9 @@ type JSONSupportGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 	binding  *http.BindingCalculator
 }
 
@@ -47,10 +46,10 @@ type JSONSupportGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
-	buffer   *golang.Buffer
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
+	buffer   *Buffer
 	binding  *http.BindingCalculator
 }
 
@@ -81,21 +80,19 @@ func (b *JSONSupportGeneratorBuilder) Output(value string) *JSONSupportGenerator
 
 // Package sets the object that will be used to calculate package names.
 func (b *JSONSupportGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *JSONSupportGeneratorBuilder {
+	value *PackagesCalculator) *JSONSupportGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *JSONSupportGeneratorBuilder) Names(
-	value *golang.NamesCalculator) *JSONSupportGeneratorBuilder {
+func (b *JSONSupportGeneratorBuilder) Names(value *NamesCalculator) *JSONSupportGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *JSONSupportGeneratorBuilder) Types(
-	value *golang.TypesCalculator) *JSONSupportGeneratorBuilder {
+func (b *JSONSupportGeneratorBuilder) Types(value *TypesCalculator) *JSONSupportGeneratorBuilder {
 	b.types = value
 	return b
 }
@@ -215,7 +212,7 @@ func (g *JSONSupportGenerator) generateHelpers() error {
 	fileName := g.helpersFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -425,7 +422,7 @@ func (g *JSONSupportGenerator) generateVersionMetadataSupport(version *concepts.
 	fileName := g.metadataFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -514,7 +511,7 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type) err
 	fileName := g.typeFile(typ)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -644,7 +641,7 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type) error
 	fileName := g.typeFile(typ)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -742,7 +739,7 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 	fileName := g.resourceFile(resource)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).

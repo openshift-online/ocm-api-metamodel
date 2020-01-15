@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
@@ -31,8 +30,8 @@ type HelpersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
 }
 
 // HelpersGenerator generates helper code. Don't create instances directly, use the builder instead.
@@ -41,9 +40,9 @@ type HelpersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	buffer   *golang.Buffer
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	buffer   *Buffer
 }
 
 // NewHelpersGenerator creates a new builder for helpers generators.
@@ -72,13 +71,13 @@ func (b *HelpersGeneratorBuilder) Output(value string) *HelpersGeneratorBuilder 
 
 // Packages sets the object that will be used to calculate package names.
 func (b *HelpersGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *HelpersGeneratorBuilder {
+	value *PackagesCalculator) *HelpersGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *HelpersGeneratorBuilder) Names(value *golang.NamesCalculator) *HelpersGeneratorBuilder {
+func (b *HelpersGeneratorBuilder) Names(value *NamesCalculator) *HelpersGeneratorBuilder {
 	b.names = value
 	return b
 }
@@ -129,7 +128,7 @@ func (g *HelpersGenerator) Run() error {
 	fileName := g.helpersFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).

@@ -18,6 +18,7 @@ package openapi
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -62,6 +63,14 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 	}
 
 	return
+}
+
+// FileName calculates the relative file path where the specification for the given service version
+// should be written. For example if the service identifier is `clusters_mgmt` and the version
+// identifiers is `v1` then the result will be `clusters_mgmt/v1/openapi.json`.
+func (c *NamesCalculator) FileName(version *concepts.Version) string {
+	service := version.Owner()
+	return filepath.Join(service.Name().Snake(), version.Name().Snake(), "openapi.json")
 }
 
 // SchemaName calculates the schema name for the given type.

@@ -22,33 +22,27 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
 	"github.com/json-iterator/go"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
 // BufferBuilder is used to create a new OpenAPI buffer. Don't create it directly, use the
-// NewBufferBuilder function instead.
+// NewBuffer function instead.
 type BufferBuilder struct {
 	reporter *reporter.Reporter
 	output   string
-	packages *golang.PackagesCalculator
-	pkg      string
 }
 
 // Buffer is a type that simplifies the generation of OpenAPI specifications.
 type Buffer struct {
 	reporter *reporter.Reporter
 	output   string
-	packages *golang.PackagesCalculator
-	pkg      string
 	stream   *jsoniter.Stream
 	stack    []*int
 }
 
-// NewBufferBuilder creates a builder for OpenAPI buffers.
+// NewBuffer creates a builder for OpenAPI buffers.
 func NewBufferBuilder() *BufferBuilder {
 	return &BufferBuilder{}
 }
@@ -59,22 +53,9 @@ func (b *BufferBuilder) Reporter(reporter *reporter.Reporter) *BufferBuilder {
 	return b
 }
 
-// Output sets the directory where the OpenAPI specifications will be generated.
+// Output sets the name of the file where the OpenAPI specifications will be generated.
 func (b *BufferBuilder) Output(value string) *BufferBuilder {
 	b.output = value
-	return b
-}
-
-// Packages sets the object that will be use to calculate package names.
-func (b *BufferBuilder) Packages(value *golang.PackagesCalculator) *BufferBuilder {
-	b.packages = value
-	return b
-}
-
-// Package sets the name of the package where the Go file containing the OpenAPI specification will
-// be generated.
-func (b *BufferBuilder) Package(value string) *BufferBuilder {
-	b.pkg = value
 	return b
 }
 
@@ -86,15 +67,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 		return
 	}
 	if b.output == "" {
-		err = fmt.Errorf("output directory is mandatory")
-		return
-	}
-	if b.packages == nil {
-		err = fmt.Errorf("packages calculator is mandatory")
-		return
-	}
-	if b.pkg == "" {
-		err = fmt.Errorf("package name is mandatory")
+		err = fmt.Errorf("output file is mandatory")
 		return
 	}
 
@@ -111,8 +84,6 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	buffer = &Buffer{
 		reporter: b.reporter,
 		output:   b.output,
-		packages: b.packages,
-		pkg:      b.pkg,
 		stream:   stream,
 		stack:    stack,
 	}
@@ -215,54 +186,16 @@ func (b *Buffer) Write() error {
 	}
 
 	// Make sure that the output directory exists:
-	file := filepath.Join(b.output, b.pkg, "openapi")
-	dir := filepath.Dir(file)
+	dir := filepath.Dir(b.output)
 	err = os.MkdirAll(dir, 0777)
 	if err != nil {
 		return err
 	}
 
-	// Write the JSON file:
-	jsonFile := file + ".json"
-	b.reporter.Infof("Writing file '%s'", jsonFile)
+	// Write the file:
+	b.reporter.Infof("Writing file '%s'", b.output)
 	jsonData := b.stream.Buffer()
-	err = ioutil.WriteFile(jsonFile, jsonData, 0666)
-	if err != nil {
-		return err
-	}
-
-	// Write the YAML file:
-	yamlFile := file + ".yaml"
-	b.reporter.Infof("Writing file '%s'", yamlFile)
-	yamlData, err := yaml.JSONToYAML(jsonData)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(yamlFile, yamlData, 0666)
-	if err != nil {
-		return err
-	}
-
-	// Write the Go file:
-	goBuffer, err := golang.NewBufferBuilder().
-		Reporter(b.reporter).
-		Output(b.output).
-		Packages(b.packages).
-		Package(b.pkg).
-		File(filepath.Base(file)).
-		Build()
-	if err != nil {
-		return err
-	}
-	goBuffer.Emit(`
-		// OpenAPI contains the OpenAPI specification of the service in JSON.
-		var OpenAPI = []byte{
-			{{ byteArray .Data }}
-		}
-		`,
-		"Data", jsonData,
-	)
-	err = goBuffer.Write()
+	err = ioutil.WriteFile(b.output, jsonData, 0666)
 	if err != nil {
 		return err
 	}

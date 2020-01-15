@@ -25,9 +25,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
-	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
-	"github.com/openshift-online/ocm-api-metamodel/tests/api/errors"
+	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/go/generated/errors"
 )
 
 var _ = Describe("Marshal", func() {

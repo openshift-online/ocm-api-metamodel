@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -33,9 +32,9 @@ type ClientsGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 	binding  *http.BindingCalculator
 }
 
@@ -45,11 +44,11 @@ type ClientsGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 	binding  *http.BindingCalculator
-	buffer   *golang.Buffer
+	buffer   *Buffer
 }
 
 // NewClientsGenerator creates a new builder for client generators.
@@ -78,19 +77,19 @@ func (b *ClientsGeneratorBuilder) Output(value string) *ClientsGeneratorBuilder 
 
 // Packages sets the object that will be used to calculate package names.
 func (b *ClientsGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *ClientsGeneratorBuilder {
+	value *PackagesCalculator) *ClientsGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *ClientsGeneratorBuilder) Names(value *golang.NamesCalculator) *ClientsGeneratorBuilder {
+func (b *ClientsGeneratorBuilder) Names(value *NamesCalculator) *ClientsGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *ClientsGeneratorBuilder) Types(value *golang.TypesCalculator) *ClientsGeneratorBuilder {
+func (b *ClientsGeneratorBuilder) Types(value *TypesCalculator) *ClientsGeneratorBuilder {
 	b.types = value
 	return b
 }
@@ -182,7 +181,7 @@ func (g *ClientsGenerator) generateServiceClient(service *concepts.Service) erro
 	fileName := g.names.File(nomenclator.Client)
 
 	// Create the buffer for the service:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -290,7 +289,7 @@ func (g *ClientsGenerator) generateVersionMetadataClient(version *concepts.Versi
 	fileName := g.metadataFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -432,7 +431,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 	fileName := g.resourceFile(resource)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -1041,8 +1040,8 @@ func (g *ClientsGenerator) fieldName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
-	var ref *golang.TypeReference
+func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *TypeReference {
+	var ref *TypeReference
 	typ := parameter.Type()
 	switch {
 	case parameter.IsItems():
@@ -1065,7 +1064,7 @@ func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ClientsGenerator) getterType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ClientsGenerator) getterType(parameter *concepts.Parameter) *TypeReference {
 	return g.accessorType(parameter)
 }
 
@@ -1075,12 +1074,12 @@ func (g *ClientsGenerator) setterName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ClientsGenerator) setterType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ClientsGenerator) setterType(parameter *concepts.Parameter) *TypeReference {
 	return g.accessorType(parameter)
 }
 
-func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *golang.TypeReference {
-	var ref *golang.TypeReference
+func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *TypeReference {
+	var ref *TypeReference
 	typ := parameter.Type()
 	switch {
 	case parameter.IsItems():

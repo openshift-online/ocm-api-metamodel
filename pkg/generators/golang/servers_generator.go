@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -33,9 +32,9 @@ type ServersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 	binding  *http.BindingCalculator
 }
 
@@ -46,11 +45,11 @@ type ServersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 	binding  *http.BindingCalculator
-	buffer   *golang.Buffer
+	buffer   *Buffer
 }
 
 // NewServersGenerator creates a new builder for resource generators.
@@ -79,19 +78,19 @@ func (b *ServersGeneratorBuilder) Output(value string) *ServersGeneratorBuilder 
 
 // Packages sets the object that will be used to calculate package names.
 func (b *ServersGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *ServersGeneratorBuilder {
+	value *PackagesCalculator) *ServersGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *ServersGeneratorBuilder) Names(value *golang.NamesCalculator) *ServersGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Names(value *NamesCalculator) *ServersGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *ServersGeneratorBuilder) Types(value *golang.TypesCalculator) *ServersGeneratorBuilder {
+func (b *ServersGeneratorBuilder) Types(value *TypesCalculator) *ServersGeneratorBuilder {
 	b.types = value
 	return b
 }
@@ -157,7 +156,7 @@ func (g *ServersGenerator) Run() error {
 	fileName := g.names.File(nomenclator.Server)
 
 	// Create the buffer for the model server:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -283,7 +282,7 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 	fileName := g.names.File(nomenclator.Server)
 
 	// Create the buffer for the service:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -392,7 +391,7 @@ func (g *ServersGenerator) generateResourceServer(resource *concepts.Resource) e
 	fileName := g.fileName(resource)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -848,7 +847,7 @@ func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *TypeReference {
 	if parameter.IsItems() {
 		return g.types.ListReference(parameter.Type())
 	}
@@ -861,7 +860,7 @@ func (g *ServersGenerator) getterName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ServersGenerator) getterType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ServersGenerator) getterType(parameter *concepts.Parameter) *TypeReference {
 	return g.accessorType(parameter)
 }
 
@@ -871,7 +870,7 @@ func (g *ServersGenerator) setterName(parameter *concepts.Parameter) string {
 	return name
 }
 
-func (g *ServersGenerator) setterType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ServersGenerator) setterType(parameter *concepts.Parameter) *TypeReference {
 	return g.accessorType(parameter)
 }
 
@@ -879,12 +878,12 @@ func (g *ServersGenerator) jsonFieldName(parameter *concepts.Parameter) string {
 	return g.names.Public(parameter.Name())
 }
 
-func (g *ServersGenerator) jsonFieldType(parameter *concepts.Parameter) *golang.TypeReference {
+func (g *ServersGenerator) jsonFieldType(parameter *concepts.Parameter) *TypeReference {
 	return g.types.JSONTypeReference(parameter.Type())
 }
 
-func (g *ServersGenerator) accessorType(parameter *concepts.Parameter) *golang.TypeReference {
-	var ref *golang.TypeReference
+func (g *ServersGenerator) accessorType(parameter *concepts.Parameter) *TypeReference {
+	var ref *TypeReference
 	typ := parameter.Type()
 	switch {
 	case parameter.IsItems():

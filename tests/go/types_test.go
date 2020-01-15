@@ -22,9 +22,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
-	azv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/authorizations/v1"
-	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
+	azv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/authorizations/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
 )
 
 var _ = Describe("Type", func() {

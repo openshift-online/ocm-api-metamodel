@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -32,8 +31,8 @@ type ErrorsGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
 }
 
 // ErrorsGenerator generates errors code. Don't create instances directly, use the builder instead.
@@ -42,9 +41,9 @@ type ErrorsGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	buffer   *golang.Buffer
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	buffer   *Buffer
 }
 
 // NewErrorsGenerator creates a new builder for errors generators.
@@ -72,13 +71,13 @@ func (b *ErrorsGeneratorBuilder) Output(value string) *ErrorsGeneratorBuilder {
 
 // Packages sets the object that will be used to calculate package names.
 func (b *ErrorsGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *ErrorsGeneratorBuilder {
+	value *PackagesCalculator) *ErrorsGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *ErrorsGeneratorBuilder) Names(value *golang.NamesCalculator) *ErrorsGeneratorBuilder {
+func (b *ErrorsGeneratorBuilder) Names(value *NamesCalculator) *ErrorsGeneratorBuilder {
 	b.names = value
 	return b
 }
@@ -161,7 +160,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	fileName := g.errorsFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -511,7 +510,7 @@ func (g *ErrorsGenerator) generateVersionErrors(version *concepts.Version) error
 	fileName := g.errorsFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
