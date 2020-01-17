@@ -3,9 +3,7 @@
 /.idea/
 /.vscode/
 /antlr
+/metamodel
 /model/
-/ocm-*-tool
 /openapi_generator
-/tests/api/
-/tests/docs/
-/tests/openapi/
+/tests/*/generated/

@@ -26,8 +26,8 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/ghttp"
 
-	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt/v1"
-	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
 )
 
 var _ = Describe("Client", func() {

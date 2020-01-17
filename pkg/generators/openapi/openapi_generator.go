@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package openapi
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/asciidoc"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/openapi"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
@@ -35,9 +34,8 @@ type OpenAPIGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	names    *openapi.NamesCalculator
+	names    *NamesCalculator
 	binding  *http.BindingCalculator
-	packages *golang.PackagesCalculator
 }
 
 // OpenAPIGenerator generates OpenAPI specifications for the model.
@@ -46,10 +44,9 @@ type OpenAPIGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	names    *openapi.NamesCalculator
+	names    *NamesCalculator
 	binding  *http.BindingCalculator
-	packages *golang.PackagesCalculator
-	buffer   *openapi.Buffer
+	buffer   *Buffer
 }
 
 // NewOpenAPIGenerator creates a new builder for OpenAPI specification generators.
@@ -77,7 +74,7 @@ func (b *OpenAPIGeneratorBuilder) Output(value string) *OpenAPIGeneratorBuilder 
 }
 
 // Names sets calculator that will be used to calculate names of OpenAPI things.
-func (b *OpenAPIGeneratorBuilder) Names(value *openapi.NamesCalculator) *OpenAPIGeneratorBuilder {
+func (b *OpenAPIGeneratorBuilder) Names(value *NamesCalculator) *OpenAPIGeneratorBuilder {
 	b.names = value
 	return b
 }
@@ -85,13 +82,6 @@ func (b *OpenAPIGeneratorBuilder) Names(value *openapi.NamesCalculator) *OpenAPI
 // Binding sets the object that will by used to do HTTP binding calculations.
 func (b *OpenAPIGeneratorBuilder) Binding(value *http.BindingCalculator) *OpenAPIGeneratorBuilder {
 	b.binding = value
-	return b
-}
-
-// Packages sets the object that will by used to calculate Go package names.
-func (b *OpenAPIGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *OpenAPIGeneratorBuilder {
-	b.packages = value
 	return b
 }
 
@@ -119,10 +109,6 @@ func (b *OpenAPIGeneratorBuilder) Build() (generator *OpenAPIGenerator, err erro
 		err = fmt.Errorf("binding calculator is mandatory")
 		return
 	}
-	if b.packages == nil {
-		err = fmt.Errorf("packages calculator is mandatory")
-		return
-	}
 
 	// Create the generator:
 	generator = &OpenAPIGenerator{
@@ -131,7 +117,6 @@ func (b *OpenAPIGeneratorBuilder) Build() (generator *OpenAPIGenerator, err erro
 		output:   b.output,
 		names:    b.names,
 		binding:  b.binding,
-		packages: b.packages,
 	}
 
 	return
@@ -167,15 +152,13 @@ func (g *OpenAPIGenerator) Run() error {
 func (g *OpenAPIGenerator) generateSpec(version *concepts.Version) error {
 	var err error
 
-	// Calculate the package name:
-	pkgName := g.packages.VersionPackage(version)
+	// Calculate the file name name:
+	fileName := filepath.Join(g.output, g.names.FileName(version))
 
 	// Create the buffer:
-	g.buffer, err = openapi.NewBufferBuilder().
+	g.buffer, err = NewBufferBuilder().
 		Reporter(g.reporter).
-		Output(g.output).
-		Packages(g.packages).
-		Package(pkgName).
+		Output(fileName).
 		Build()
 	if err != nil {
 		return err

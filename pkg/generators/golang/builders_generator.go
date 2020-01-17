@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -32,9 +31,9 @@ type BuildersGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 }
 
 // BuildersGenerator generates code for the builders of the model types. Don't create instances
@@ -44,10 +43,10 @@ type BuildersGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
-	buffer   *golang.Buffer
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
+	buffer   *Buffer
 }
 
 // NewBuildersGenerator creates a new builder for builders generators.
@@ -76,19 +75,19 @@ func (b *BuildersGeneratorBuilder) Output(value string) *BuildersGeneratorBuilde
 
 // Packages sets the object that will be used to calculate package names.
 func (b *BuildersGeneratorBuilder) Packages(
-	value *golang.PackagesCalculator) *BuildersGeneratorBuilder {
+	value *PackagesCalculator) *BuildersGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *BuildersGeneratorBuilder) Names(value *golang.NamesCalculator) *BuildersGeneratorBuilder {
+func (b *BuildersGeneratorBuilder) Names(value *NamesCalculator) *BuildersGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *BuildersGeneratorBuilder) Types(value *golang.TypesCalculator) *BuildersGeneratorBuilder {
+func (b *BuildersGeneratorBuilder) Types(value *TypesCalculator) *BuildersGeneratorBuilder {
 	b.types = value
 	return b
 }
@@ -177,7 +176,7 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -431,7 +430,7 @@ func (g *BuildersGenerator) generateListBuilderFile(typ *concepts.Type) error {
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -553,9 +552,9 @@ func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
 	return g.names.Private(attribute.Name())
 }
 
-func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *golang.TypeReference {
+func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
 	typ := attribute.Type()
-	var ref *golang.TypeReference
+	var ref *TypeReference
 	switch {
 	case typ.IsScalar():
 		ref = g.types.NullableReference(typ)
@@ -597,7 +596,7 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *golang.Typ
 			"Don't know how to calculate builder field type for attribute '%s'",
 			attribute,
 		)
-		ref = &golang.TypeReference{}
+		ref = &TypeReference{}
 	}
 	return ref
 }
@@ -606,9 +605,9 @@ func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
 	return g.names.Public(attribute.Name())
 }
 
-func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *golang.TypeReference {
+func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeReference {
 	typ := attribute.Type()
-	var ref *golang.TypeReference
+	var ref *TypeReference
 	switch {
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
@@ -650,11 +649,11 @@ func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *golang.Ty
 			"Don't know how to calculate builder setter type for attribute '%s'",
 			attribute,
 		)
-		ref = &golang.TypeReference{}
+		ref = &TypeReference{}
 	}
 	return ref
 }
 
-func (g *BuildersGenerator) valueType(typ *concepts.Type) *golang.TypeReference {
+func (g *BuildersGenerator) valueType(typ *concepts.Type) *TypeReference {
 	return g.types.ValueReference(typ)
 }

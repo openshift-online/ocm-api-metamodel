@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
+package golang
 
 import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -32,9 +31,9 @@ type TypesGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
 }
 
 // TypesGenerator Go types for the model types. Don't create instances directly, use the builder
@@ -44,10 +43,10 @@ type TypesGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	packages *golang.PackagesCalculator
-	names    *golang.NamesCalculator
-	types    *golang.TypesCalculator
-	buffer   *golang.Buffer
+	packages *PackagesCalculator
+	names    *NamesCalculator
+	types    *TypesCalculator
+	buffer   *Buffer
 }
 
 // NewTypesGenerator creates a new builder for types generators.
@@ -75,19 +74,19 @@ func (b *TypesGeneratorBuilder) Output(value string) *TypesGeneratorBuilder {
 }
 
 // Packages sets the object that will be used to calculate package names.
-func (b *TypesGeneratorBuilder) Packages(value *golang.PackagesCalculator) *TypesGeneratorBuilder {
+func (b *TypesGeneratorBuilder) Packages(value *PackagesCalculator) *TypesGeneratorBuilder {
 	b.packages = value
 	return b
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *TypesGeneratorBuilder) Names(value *golang.NamesCalculator) *TypesGeneratorBuilder {
+func (b *TypesGeneratorBuilder) Names(value *NamesCalculator) *TypesGeneratorBuilder {
 	b.names = value
 	return b
 }
 
 // Types sets the object that will be used to calculate types.
-func (b *TypesGeneratorBuilder) Types(value *golang.TypesCalculator) *TypesGeneratorBuilder {
+func (b *TypesGeneratorBuilder) Types(value *TypesCalculator) *TypesGeneratorBuilder {
 	b.types = value
 	return b
 }
@@ -181,7 +180,7 @@ func (g *TypesGenerator) generateVersionMetadataTypeFile(version *concepts.Versi
 	fileName := g.metadataFile()
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -235,7 +234,7 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 	fileName := g.typeFile(typ)
 
 	// Create the buffer for the generated code:
-	g.buffer, err = golang.NewBufferBuilder().
+	g.buffer, err = NewBuffer().
 		Reporter(g.reporter).
 		Output(g.output).
 		Packages(g.packages).
@@ -580,8 +579,8 @@ func (g *TypesGenerator) fieldName(attribute *concepts.Attribute) string {
 	return g.names.Private(attribute.Name())
 }
 
-func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *golang.TypeReference {
-	var ref *golang.TypeReference
+func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReference {
+	var ref *TypeReference
 	typ := attribute.Type()
 	switch {
 	case typ.IsScalar():
@@ -602,7 +601,7 @@ func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *golang.TypeR
 			"Don't know how to calculate getter type for attribute '%s'",
 			attribute,
 		)
-		ref = &golang.TypeReference{}
+		ref = &TypeReference{}
 	}
 	return ref
 }
@@ -623,8 +622,8 @@ func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
 	return g.names.Public(attribute.Name())
 }
 
-func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *golang.TypeReference {
-	var ref *golang.TypeReference
+func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
+	var ref *TypeReference
 	typ := attribute.Type()
 	switch {
 	case typ.IsScalar():
@@ -645,7 +644,7 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *golang.TypeRe
 			"Don't know how to calculate field type for attribute '%s'",
 			attribute,
 		)
-		ref = &golang.TypeReference{}
+		ref = &TypeReference{}
 	}
 	return ref
 }

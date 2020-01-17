@@ -32,7 +32,7 @@ import (
 )
 
 // BufferBuilder is used to create a new Go buffer. Don't create it directly, use the
-// NewBufferBuilder function instead.
+// NewBuffer function instead.
 type BufferBuilder struct {
 	reporter  *reporter.Reporter
 	output    string
@@ -53,8 +53,8 @@ type Buffer struct {
 	code      *bytes.Buffer
 }
 
-// NewBufferBuilder creates a builder for Golang buffers.
-func NewBufferBuilder() *BufferBuilder {
+// NewBuffer creates a builder for Golang buffers.
+func NewBuffer() *BufferBuilder {
 	return new(BufferBuilder)
 }
 

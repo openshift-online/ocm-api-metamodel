@@ -27,17 +27,17 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-online/ocm-api-metamodel/tests/api"
-	am "github.com/openshift-online/ocm-api-metamodel/tests/api/accountsmgmt"
-	az "github.com/openshift-online/ocm-api-metamodel/tests/api/authorizations"
-	cm "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt"
-	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/api/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/go/generated"
+	am "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt"
+	az "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/authorizations"
+	cm "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt"
+	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
 )
 
 var _ = Describe("Server", func() {
 	var (
 		server   *MyServer
-		adapter  *api.Adapter
+		adapter  *generated.Adapter
 		recorder *httptest.ResponseRecorder
 	)
 
@@ -54,7 +54,7 @@ var _ = Describe("Server", func() {
 		}
 
 		// Create the adapter:
-		adapter = api.NewAdapter(server)
+		adapter = generated.NewAdapter(server)
 
 		// Create the recorder:
 		recorder = httptest.NewRecorder()
@@ -569,7 +569,7 @@ type MyServer struct {
 }
 
 // Make sure that we implement the interface:
-var _ api.Server = &MyServer{}
+var _ generated.Server = &MyServer{}
 
 func (s *MyServer) AccountsMgmt() am.Server {
 	return nil

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 Red Hat, Inc.
+Copyright (c) 2020 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generate
+package golang
 
 import (
 	"os"
@@ -22,18 +22,18 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/generators"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/generators/golang"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/generators/openapi"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/language"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/openapi"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
-// Cmd is the dt definition of the command:
+// Cmd is the definition of the command:
 var Cmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate code",
-	Long:  "Generate code.",
+	Use:   "go",
+	Short: "Generate Go code",
+	Long:  "Generate Go code.",
 	Run:   run,
 }
 
@@ -42,7 +42,6 @@ var args struct {
 	paths  []string
 	base   string
 	output string
-	docs   string
 }
 
 func init() {
@@ -67,13 +66,6 @@ func init() {
 		"output",
 		"",
 		"Directory where the source code will be generated.",
-	)
-	flags.StringVar(
-		&args.docs,
-		"docs",
-		"",
-		"Output directory for documentation. If not specified then no documentation "+
-			"will be generated.",
 	)
 }
 
@@ -141,7 +133,7 @@ func run(cmd *cobra.Command, argv []string) {
 		reporter.Errorf("Can't create HTTP binding calculator: %v", err)
 		os.Exit(1)
 	}
-	openapiCalculator, err := openapi.NewNamesCalculator().
+	openapiNamesCalculator, err := openapi.NewNamesCalculator().
 		Reporter(reporter).
 		Build()
 	if err != nil {
@@ -154,7 +146,7 @@ func run(cmd *cobra.Command, argv []string) {
 	var gen generators.Generator
 
 	// Create the errors generator:
-	gen, err = generators.NewErrorsGenerator().
+	gen, err = golang.NewErrorsGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -168,7 +160,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the helpers generator:
-	gen, err = generators.NewHelpersGenerator().
+	gen, err = golang.NewHelpersGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -182,7 +174,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the types generator:
-	gen, err = generators.NewTypesGenerator().
+	gen, err = golang.NewTypesGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -197,7 +189,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the builders generator:
-	gen, err = generators.NewBuildersGenerator().
+	gen, err = golang.NewBuildersGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -212,7 +204,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the clients generator:
-	gen, err = generators.NewClientsGenerator().
+	gen, err = golang.NewClientsGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -228,7 +220,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the resource generator:
-	gen, err = generators.NewServersGenerator().
+	gen, err = golang.NewServersGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -244,7 +236,7 @@ func run(cmd *cobra.Command, argv []string) {
 	gens = append(gens, gen)
 
 	// Create the JSON readers generator:
-	gen, err = generators.NewJSONSupportGenerator().
+	gen, err = golang.NewJSONSupportGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
@@ -259,31 +251,17 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	gens = append(gens, gen)
 
-	// Create the documentation generator:
-	if args.docs != "" {
-		gen, err = generators.NewDocsGenerator().
-			Reporter(reporter).
-			Model(model).
-			Output(args.docs).
-			Build()
-		if err != nil {
-			reporter.Errorf("Can't create documentation generator: %v", err)
-			os.Exit(1)
-		}
-		gens = append(gens, gen)
-	}
-
 	// Create the OpenAPI specifications generator:
-	gen, err = generators.NewOpenAPIGenerator().
+	gen, err = golang.NewOpenAPIGenerator().
 		Reporter(reporter).
 		Model(model).
 		Output(args.output).
 		Packages(goPackagesCalculator).
-		Names(openapiCalculator).
+		Names(openapiNamesCalculator).
 		Binding(bindingCalculator).
 		Build()
 	if err != nil {
-		reporter.Errorf("Can't create OpenAPI generator: %v", err)
+		reporter.Errorf("Can't create OpenAPI specifications generator: %v", err)
 		os.Exit(1)
 	}
 	gens = append(gens, gen)

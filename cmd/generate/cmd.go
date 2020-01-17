@@ -14,6 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package golang contains the types and functions used to simplify generation of Go source code
-// from the model.
-package golang
+package generate
+
+import (
+	"github.com/spf13/cobra"
+
+	"github.com/openshift-online/ocm-api-metamodel/cmd/generate/docs"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/generate/golang"
+	"github.com/openshift-online/ocm-api-metamodel/cmd/generate/openapi"
+)
+
+// Cmd is the definition of the command:
+var Cmd = &cobra.Command{
+	Use:   "generate",
+	Short: "Generate code",
+	Long:  "Generate code.",
+}
+
+func init() {
+	// Register the sub-commands:
+	Cmd.AddCommand(docs.Cmd)
+	Cmd.AddCommand(golang.Cmd)
+	Cmd.AddCommand(openapi.Cmd)
+}
