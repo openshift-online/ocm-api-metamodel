@@ -309,6 +309,9 @@ func (g *ClientsGenerator) generateVersionMetadataClient(version *concepts.Versi
 
 func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts.Version) {
 	g.buffer.Import("context", "")
+	g.buffer.Import("errors", "goerrors")
+	g.buffer.Import("fmt", "")
+	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
@@ -377,8 +380,19 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 				header: response.Header,
 			}
 			if result.status >= 400 {
-				result.err, err = errors.UnmarshalError(response.Body)
+				bodyBytes, readErr := ioutil.ReadAll(response.Body)
+				if readErr != nil {
+					err = readErr
+					return
+				}
+				result.err, err = errors.UnmarshalError(bodyBytes)
 				if err != nil {
+					bodyStr := string(bodyBytes)
+					if bodyStr == "" {
+						err = goerrors.New("empty response")
+					} else {
+						err = goerrors.New(fmt.Sprintf("invalid json response: %s, error: %s", bodyStr, err.Error()))
+					}
 					return
 				}
 				err = result.err
@@ -768,6 +782,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("context", "")
 	g.buffer.Import("encoding/json", "")
+	g.buffer.Import("errors", "goerrors")
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
@@ -877,8 +892,19 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			result.status = response.StatusCode
 			result.header = response.Header
 			if result.status >= 400 {
-				result.err, err = errors.UnmarshalError(response.Body)
+				bodyBytes, readErr := ioutil.ReadAll(response.Body)
+				if readErr != nil {
+					err = readErr
+					return
+				}
+				result.err, err = errors.UnmarshalError(bodyBytes)
 				if err != nil {
+					bodyStr := string(bodyBytes)
+					if bodyStr == "" {
+						err = goerrors.New("empty response")
+					} else {
+						err = goerrors.New(fmt.Sprintf("invalid json response: %s, error: %s", bodyStr, err.Error()))
+					}
 					return
 				}
 				err = result.err
