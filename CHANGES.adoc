@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.23 Feb 12 2020
+
+- Fix missing _OpenAPI_ paths due to incorrect use of `append`.
+- Move code generators to separate packages: one per language.
+
 == 0.0.22 Jan 9 2020
 
 - Fix generation of _OpenAPI_ paths so that all the characters are lower case.
