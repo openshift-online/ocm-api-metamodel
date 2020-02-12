@@ -244,15 +244,18 @@ func (v *Version) Paths() [][]*Locator {
 		pending = pending[1:]
 
 		// Copy the path to the list of results:
-		result := make([]*Locator, len(current))
+		size := len(current)
+		result := make([]*Locator, size)
 		copy(result, current)
 		results = append(results, result)
 
 		// Check if the path can be extended, and if so extend it and add it to the list of
 		// pending paths:
-		last := current[len(current)-1]
+		last := current[size-1]
 		for _, locator := range last.Target().Locators() {
-			path := append(current, locator)
+			path := make([]*Locator, size+1)
+			copy(path, current)
+			path[size] = locator
 			pending = append(pending, path)
 		}
 	}
