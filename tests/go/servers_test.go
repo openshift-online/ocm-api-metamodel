@@ -75,7 +75,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodGet,
-				"/clusters_mgmt/v1/clusters",
+				"/api/clusters_mgmt/v1/clusters",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -95,7 +95,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodGet,
-				"/clusters_mgmt/v1/clusters?size=10",
+				"/api/clusters_mgmt/v1/clusters?size=10",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -115,7 +115,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodDelete,
-				"/clusters_mgmt/v1/clusters/123",
+				"/api/clusters_mgmt/v1/clusters/123",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -135,7 +135,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodDelete,
-				"/clusters_mgmt/v1/clusters/123?deprovision=false",
+				"/api/clusters_mgmt/v1/clusters/123?deprovision=false",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -155,7 +155,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodDelete,
-				"/clusters_mgmt/v1/clusters/123",
+				"/api/clusters_mgmt/v1/clusters/123",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -175,7 +175,7 @@ var _ = Describe("Server", func() {
 			// Send the request:
 			request := httptest.NewRequest(
 				http.MethodDelete,
-				"/clusters_mgmt/v1/clusters/123?reason=yourreason",
+				"/api/clusters_mgmt/v1/clusters/123?reason=yourreason",
 				nil,
 			)
 			adapter.ServeHTTP(recorder, request)
@@ -201,7 +201,11 @@ var _ = Describe("Server", func() {
 		}
 
 		// Send the request:
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters/", nil)
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/api/clusters_mgmt/v1/clusters/",
+			nil,
+		)
 		adapter.ServeHTTP(recorder, request)
 
 		// Verify the response:
@@ -239,7 +243,11 @@ var _ = Describe("Server", func() {
 		}
 
 		// Send the request:
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/clusters", nil)
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/api/clusters_mgmt/v1/clusters",
+			nil,
+		)
 		adapter.ServeHTTP(recorder, request)
 
 		// Verify the response:
@@ -289,7 +297,7 @@ var _ = Describe("Server", func() {
 		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters?page=2",
+			"/api/clusters_mgmt/v1/clusters?page=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -343,7 +351,7 @@ var _ = Describe("Server", func() {
 		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters?size=2",
+			"/api/clusters_mgmt/v1/clusters?size=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -402,7 +410,7 @@ var _ = Describe("Server", func() {
 		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters?size=2&page=2",
+			"/api/clusters_mgmt/v1/clusters?size=2&page=2",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -445,7 +453,7 @@ var _ = Describe("Server", func() {
 		// Send the request:
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters/123",
+			"/api/clusters_mgmt/v1/clusters/123",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -461,7 +469,7 @@ var _ = Describe("Server", func() {
 	It("Can get a cluster sub resource by id", func() {
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters/123/identity_providers",
+			"/api/clusters_mgmt/v1/clusters/123/identity_providers",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -481,19 +489,19 @@ var _ = Describe("Server", func() {
 	})
 
 	It("Returns 404 for an unknown service", func() {
-		request := httptest.NewRequest(http.MethodGet, "/foo_mgmt", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/foo_mgmt", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusNotFound))
 	})
 
 	It("Returns 404 for an unknown version", func() {
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v100", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/clusters_mgmt/v100", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusNotFound))
 	})
 
 	It("Returns 404 for an unknown resource", func() {
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/flusters", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/clusters_mgmt/flusters", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusNotFound))
 	})
@@ -501,7 +509,7 @@ var _ = Describe("Server", func() {
 	It("Returns 404 for an unknown sub-resource", func() {
 		request := httptest.NewRequest(
 			http.MethodGet,
-			"/clusters_mgmt/v1/clusters/123/foo",
+			"/api/clusters_mgmt/v1/clusters/123/foo",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -509,25 +517,29 @@ var _ = Describe("Server", func() {
 	})
 
 	It("Returns 404 if the server returns nil for a locator", func() {
-		request := httptest.NewRequest(http.MethodGet, "/clusters_mgmt/v1/nil", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/clusters_mgmt/v1/nil", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusNotFound))
 	})
 
 	It("Returns 405 for unsupported service method", func() {
-		request := httptest.NewRequest(http.MethodPost, "/clusters_mgmt", nil)
+		request := httptest.NewRequest(http.MethodPost, "/api/clusters_mgmt", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
 	})
 
 	It("Returns 405 for unsupported version method", func() {
-		request := httptest.NewRequest(http.MethodPost, "/clusters_mgmt/v1", nil)
+		request := httptest.NewRequest(http.MethodPost, "/api/clusters_mgmt/v1", nil)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
 	})
 
 	It("Returns 405 for unsupported resource method", func() {
-		request := httptest.NewRequest(http.MethodPut, "/clusters_mgmt/v1/clusters", nil)
+		request := httptest.NewRequest(
+			http.MethodPut,
+			"/api/clusters_mgmt/v1/clusters",
+			nil,
+		)
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusMethodNotAllowed))
 	})
@@ -535,7 +547,7 @@ var _ = Describe("Server", func() {
 	It("Returns 405 for unsupported sub-resource method", func() {
 		request := httptest.NewRequest(
 			http.MethodPut,
-			"/clusters_mgmt/v1/clusters/123",
+			"/api/clusters_mgmt/v1/clusters/123",
 			nil,
 		)
 		adapter.ServeHTTP(recorder, request)
@@ -545,7 +557,7 @@ var _ = Describe("Server", func() {
 	It("Supports non REST method", func() {
 		request := httptest.NewRequest(
 			http.MethodPost,
-			"/clusters_mgmt/v1/register_cluster",
+			"/api/clusters_mgmt/v1/register_cluster",
 			strings.NewReader(`{
 				"subscription_id": "123",
 				"external_id": "456"
