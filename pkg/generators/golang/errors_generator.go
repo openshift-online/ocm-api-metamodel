@@ -465,7 +465,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// SendMethodNotAllowed sends a generic 405 error.
 		func SendMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 			reason := fmt.Sprintf(
-				"Method '%s' isn't supported for path '%s''",
+				"Method '%s' isn't supported for path '%s'",
 				r.Method, r.URL.Path,
 			)
 			body, err := NewError().
