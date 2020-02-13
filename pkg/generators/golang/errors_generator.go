@@ -448,7 +448,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// SendNotFound sends a generic 404 error.
 		func SendNotFound(w http.ResponseWriter, r *http.Request) {
 			reason := fmt.Sprintf(
-				"Can't find resource for path '%s''",
+				"Can't find resource for path '%s'",
 				r.URL.Path,
 			)
 			body, err := NewError().
