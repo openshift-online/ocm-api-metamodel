@@ -3,6 +3,14 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.24 Feb 14 2020
+
+- Add `Content-Type` to responses sent by the generated server code.
+- Don't require developer to explicitly remove the `/api` when using the
+  server code.
+- Remove redundant quotes from error responses sent by the generated
+  server code.
+
 == 0.0.23 Feb 12 2020
 
 - Fix missing _OpenAPI_ paths due to incorrect use of `append`.
