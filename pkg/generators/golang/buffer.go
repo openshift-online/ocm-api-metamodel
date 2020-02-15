@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -365,13 +364,6 @@ func (b *Buffer) Write() error {
 	err = outputFd.Close()
 	if err != nil {
 		return fmt.Errorf("can't close output file '%s': %v", b.file, err)
-	}
-
-	// Run goimport on the file:
-	fmtCmd := exec.Command("goimports", "-w", b.file)
-	err = fmtCmd.Run()
-	if err != nil {
-		return fmt.Errorf("can't format output file '%s': %v", b.file, err)
 	}
 
 	return nil

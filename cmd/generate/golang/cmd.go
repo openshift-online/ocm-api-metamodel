@@ -18,6 +18,9 @@ package golang
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
 
 	"github.com/spf13/cobra"
 
@@ -273,6 +276,36 @@ func run(cmd *cobra.Command, argv []string) {
 			reporter.Errorf("Generation failed: %v", err)
 			os.Exit(1)
 		}
+	}
+
+	// Run the formatter:
+	reporter.Infof("Formating generated files")
+	sources := []string{}
+	err = filepath.Walk(args.output, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.Mode().IsRegular() && filepath.Ext(path) == ".go" {
+			sources = append(sources, path)
+		}
+		return nil
+	})
+	if err != nil {
+		reporter.Errorf("Can't collect generated sources: %v", err)
+		os.Exit(1)
+	}
+	sort.Strings(sources)
+	args := []string{
+		"-w",
+	}
+	args = append(args, sources...)
+	formatter := exec.Command("goimports", args...)
+	formatter.Stdout = os.Stdout
+	formatter.Stderr = os.Stderr
+	err = formatter.Run()
+	if err != nil {
+		reporter.Errorf("Can't format generated sources: %v", err)
+		os.Exit(1)
 	}
 
 	// Bye:
