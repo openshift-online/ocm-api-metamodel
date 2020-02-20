@@ -1500,7 +1500,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string, typ *concepts.Ty
 			stream.WriteObjectStart()
 			keys := make([]string, len({{ .Value }}))
 			i := 0;
-			for key, _ := range {{ .Value }} {
+			for key := range {{ .Value }} {
 				keys[i] = key
 				i++
 			}
