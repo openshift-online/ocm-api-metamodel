@@ -3,6 +3,13 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.25 Feb 20 2020
+
+- Run the `gofmt` command only once for all generated files instead of running
+  it once per each generated file.
+- Avoid generating code with constructs that would then be simplified by the
+  `-s` flag of the `gofmt` command.
+
 == 0.0.24 Feb 14 2020
 
 - Add `Content-Type` to responses sent by the generated server code.
