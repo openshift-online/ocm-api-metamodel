@@ -3,6 +3,31 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.26 Feb 26 2020
+
+- Add `operation_id` attribute to error objects and error messages.
++
+An error object like this:
++
+[source,json]
+----
+{
+  "kind": "Error",
+  "id": "401",
+  "href": "/api/clusters_mgmt/v1/errors/401",
+  "code": "CLUSTERS-MGMT-401",
+  "reason": "My reason",
+  "operation_id": "456"
+}
+----
++
+Will result in the following error string (in one single line):
++
+....
+identifier is '401', code is 'CLUSTERS-MGMT-401' and
+operation identifier is '456': My reason
+....
+
 == 0.0.25 Feb 20 2020
 
 - Run the `gofmt` command only once for all generated files instead of running
