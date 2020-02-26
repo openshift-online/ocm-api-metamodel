@@ -177,6 +177,7 @@ var _ = Describe("Marshal", func() {
 			HREF("/api/clusters_mgmt/v1/errors/401").
 			Code("CLUSTERS-MGMT-401").
 			Reason("My reason").
+			OperationID("456").
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 		buffer := new(bytes.Buffer)
@@ -187,7 +188,8 @@ var _ = Describe("Marshal", func() {
 			"id": "401",
 			"href": "/api/clusters_mgmt/v1/errors/401",
 			"code": "CLUSTERS-MGMT-401",
-			"reason": "My reason"
+			"reason": "My reason",
+			"operation_id": "456"
 		}`))
 	})
 

@@ -24,6 +24,7 @@ import (
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/go/generated/errors"
 )
 
 var _ = Describe("Builder", func() {
@@ -201,6 +202,22 @@ var _ = Describe("Builder", func() {
 			Expect(second).ToNot(BeNil())
 			Expect(second.Username()).To(Equal("youruser"))
 			Expect(second.Email()).To(Equal("yourmail"))
+		})
+
+		It("Can build an error", func() {
+			object, err := errors.NewError().
+				ID("401").
+				HREF("/api/clusters_mgmt/v1/errors/401").
+				Code("CLUSTERS-MGMT-401").
+				Reason("My reason").
+				OperationID("456").
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(object.ID()).To(Equal("401"))
+			Expect(object.HREF()).To(Equal("/api/clusters_mgmt/v1/errors/401"))
+			Expect(object.Code()).To(Equal("CLUSTERS-MGMT-401"))
+			Expect(object.Reason()).To(Equal("My reason"))
+			Expect(object.OperationID()).To(Equal("456"))
 		})
 	})
 
