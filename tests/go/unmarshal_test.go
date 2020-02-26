@@ -469,7 +469,8 @@ var _ = Describe("Unmarshal", func() {
 			"id": "401",
 			"href": "/api/clusters_mgmt/v1/errors/401",
 			"code": "CLUSTERS-MGMT-401",
-			"reason": "My reason"
+			"reason": "My reason",
+			"operation_id": "456"
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(object).ToNot(BeNil())
@@ -478,6 +479,7 @@ var _ = Describe("Unmarshal", func() {
 		Expect(object.HREF()).To(Equal("/api/clusters_mgmt/v1/errors/401"))
 		Expect(object.Code()).To(Equal("CLUSTERS-MGMT-401"))
 		Expect(object.Reason()).To(Equal("My reason"))
+		Expect(object.OperationID()).To(Equal("456"))
 	})
 
 	It("Can read mixed known and unknown attributes", func() {
