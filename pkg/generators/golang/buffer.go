@@ -466,7 +466,7 @@ func (b *Buffer) cleanPkg(name string) string {
 
 // Header that will be included in all generated files:
 const fileHeader = `/*
-Copyright (c) 2019 Red Hat, Inc.
+Copyright (c) 2020 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
