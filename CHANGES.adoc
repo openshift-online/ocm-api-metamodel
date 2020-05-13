@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.28 May 13 2020
+
+- OpenAPI: Fix expected response
+
 == 0.0.27 Apr 7 2020
 
 - Update file header year to 2020
