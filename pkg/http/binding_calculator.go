@@ -173,7 +173,7 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 	case name.Equals(nomenclator.Add):
 		status = http.StatusCreated
 	case name.Equals(nomenclator.Update):
-		status = http.StatusNoContent
+		status = http.StatusOK
 	case name.Equals(nomenclator.Delete):
 		status = http.StatusNoContent
 	}
