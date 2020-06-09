@@ -633,7 +633,7 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 			//
 			{{ lineComment .Doc }}
 			func (r *{{ $requestName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $requestName }} {
-				get.{{ $setterName }}(value)
+				r.request.{{ $setterName }}(value)
 				return r
 			}
 		{{ end }}
