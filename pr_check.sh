@@ -24,7 +24,7 @@ export GOBIN="${PWD}/.gobin"
 export PATH="${GOBIN}:${PATH}"
 
 # Install Go tools:
-go get github.com/onsi/ginkgo/ginkgo
+go get github.com/onsi/ginkgo/ginkgo@v1.10.3
 go get golang.org/x/tools/cmd/goimports
 
 # Run the tests:
