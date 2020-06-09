@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.29 Jun 9 2020
+
+- pr_check: Lock in dependency versions for test pipeline
+- Fix setter for Poll request params
+
 == 0.0.28 May 13 2020
 
 - OpenAPI: Fix expected response
