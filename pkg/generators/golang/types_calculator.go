@@ -173,6 +173,10 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 		ref = &TypeReference{}
 		ref.name = "string"
 		ref.text = "string"
+	case typ == version.InterfaceType():
+		ref = &TypeReference{}
+		ref.name = "interface{}"
+		ref.text = "interface{}"
 	case typ == version.DateType():
 		ref = &TypeReference{}
 		ref.imprt = "time"
@@ -224,7 +228,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 // the nil value.
 func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 	switch {
-	case typ.IsScalar() || typ.IsStruct():
+	case (typ.IsScalar() && !typ.IsInterface()) || typ.IsStruct():
 		ref := c.ValueReference(typ)
 		ref.text = fmt.Sprintf("*%s", ref.text)
 		return ref
@@ -347,7 +351,7 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 func (c *TypesCalculator) ZeroValue(typ *concepts.Type) string {
 	version := typ.Owner()
 	switch {
-	case typ.IsStruct() || typ.IsList() || typ.IsMap():
+	case typ.IsStruct() || typ.IsList() || typ.IsMap() || typ.IsInterface():
 		return `nil`
 	case typ.IsEnum():
 		ref := c.ValueReference(typ)
@@ -385,6 +389,8 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 	case typ == version.FloatType():
 		return
 	case typ == version.StringType():
+		return
+	case typ == version.InterfaceType():
 		return
 	case typ == version.DateType():
 		imprt = "time"

@@ -57,10 +57,11 @@ var (
 	Helpers = names.ParseUsingCase("Helpers")
 
 	// I:
-	ID      = names.ParseUsingCase("ID")
-	Index   = names.ParseUsingCase("Index")
-	Integer = names.ParseUsingCase("Integer")
-	Items   = names.ParseUsingCase("Items")
+	ID        = names.ParseUsingCase("ID")
+	Index     = names.ParseUsingCase("Index")
+	Integer   = names.ParseUsingCase("Integer")
+	Interface = names.ParseUsingCase("Interface")
+	Items     = names.ParseUsingCase("Items")
 
 	// J:
 	JSON = names.ParseUsingCase("JSON")

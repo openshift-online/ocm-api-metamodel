@@ -30,6 +30,7 @@ const (
 	UndefinedType TypeKind = iota
 	ClassType
 	EnumType
+	InterfaceType
 	ListType
 	MapType
 	ScalarType
@@ -43,6 +44,8 @@ func (k TypeKind) String() string {
 		return "class"
 	case EnumType:
 		return "enum"
+	case InterfaceType:
+		return "interface{}"
 	case ListType:
 		return "list"
 	case MapType:
@@ -145,6 +148,11 @@ func (t *Type) IsEnum() bool {
 	return t.kind == EnumType
 }
 
+// IsInterface returns true iff this type is an interface{} type.
+func (t *Type) IsInterface() bool {
+	return t.kind == InterfaceType
+}
+
 // IsList returns true iff this type is a list type.
 func (t *Type) IsList() bool {
 	return t.kind == ListType
@@ -155,9 +163,10 @@ func (t *Type) IsMap() bool {
 	return t.kind == MapType
 }
 
-// IsScalar returns true iff this type is an scalar type.
+// IsScalar returns true iff this type is an scalar type. Note that interface types are also considered
+// scalar types due to their opaque nature in the SDK.
 func (t *Type) IsScalar() bool {
-	return t.kind == ScalarType || t.kind == EnumType
+	return t.kind == ScalarType || t.kind == EnumType || t.kind == InterfaceType
 }
 
 // IsStruct returns true iff this type is an struct type. Note that class types are also considered

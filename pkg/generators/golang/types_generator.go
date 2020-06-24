@@ -411,7 +411,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) {{ $getterName }}() {{ $getterType }} {
-				{{ if or .Type.IsStruct .Type.IsList .Type.IsMap }}
+				{{ if or .Type.IsStruct .Type.IsList .Type.IsMap .Type.IsInterface }}
 					if o == nil {
 						return nil
 					}
@@ -431,7 +431,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			func (o *{{ $objectName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
 				ok = o != nil && o.{{ $fieldName }} != nil
 				if ok {
-					{{ if or .Type.IsStruct .Type.IsList .Type.IsMap }}
+					{{ if or .Type.IsStruct .Type.IsList .Type.IsMap .Type.IsInterface }}
 						value = o.{{ $fieldName }}
 					{{ else }}
 						value = *o.{{ $fieldName }}

@@ -564,6 +564,8 @@ func (g *OpenAPIGenerator) generateSchemaReference(typ *concepts.Type) {
 	case typ == version.DateType():
 		g.buffer.Field("type", "string")
 		g.buffer.Field("format", "date-time")
+	case typ == version.InterfaceType():
+		g.buffer.Field("type", "object")
 	case typ.IsEnum() || typ.IsStruct():
 		g.buffer.Field("$ref", "#/components/schemas/"+g.names.SchemaName(typ))
 	case typ.IsList():
