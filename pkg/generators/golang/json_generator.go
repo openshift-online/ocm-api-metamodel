@@ -1342,6 +1342,9 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 			{{ .Variable }} := iterator.ReadFloat64()
 		{{ else if .Type.IsString }}
 			{{ .Variable }} := iterator.ReadString()
+		{{ else if .Type.IsInterface }}
+			var {{ .Variable }} interface{}
+			iterator.ReadVal(&{{ .Variable }})
 		{{ else if .Type.IsDate }}
 			text := iterator.ReadString()
 			{{ .Variable }}, err := time.Parse(time.RFC3339, text)
@@ -1401,7 +1404,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 func (g *JSONSupportGenerator) generateWriteAttribute(field, tag string, typ *concepts.Type,
 	link bool) string {
 	var value string
-	if typ.IsScalar() {
+	if typ.IsScalar() && !typ.IsInterface() {
 		value = g.buffer.Eval(
 			`*object.{{ .Field }}`,
 			"Field", field,
@@ -1436,7 +1439,7 @@ func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
 	field := g.parameterFieldName(parameter)
 	tag := g.binding.ParameterName(parameter)
 	var value string
-	if typ.IsScalar() {
+	if typ.IsScalar() && !typ.IsInterface() {
 		value = g.buffer.Eval(
 			`*{{ .Object }}.{{ .Field }}`,
 			"Object", object,
@@ -1485,6 +1488,8 @@ func (g *JSONSupportGenerator) generateWriteValue(value string, typ *concepts.Ty
 			stream.WriteString(({{ .Value }}).Format(time.RFC3339))
 		{{ else if .Type.IsEnum }}
 			stream.WriteString(string({{ .Value }}))
+		{{ else if .Type.IsInterface }}
+			stream.WriteVal({{ .Value }})
 		{{ else if .Type.IsStruct }}
 			{{ writeTypeFunc .Type }}({{ .Value }}, stream)
 		{{ else if .Type.IsList }}

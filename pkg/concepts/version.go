@@ -57,6 +57,12 @@ func NewVersion() *Version {
 	version.addScalarType(nomenclator.String)
 	version.addScalarType(nomenclator.Date)
 
+	// Add the built-in interface{} type:
+	// We treat the built-in interface type as scalar for most purposes,
+	// but define it as a new type to differentiate in how pointers are
+	// generated.
+	version.addInterfaceType(nomenclator.Interface)
+
 	return version
 }
 
@@ -144,6 +150,11 @@ func (v *Version) FloatType() *Type {
 // DateType returns the date type.
 func (v *Version) DateType() *Type {
 	return v.FindType(nomenclator.Date)
+}
+
+// InterfaceType returns the interface{} type.
+func (v *Version) InterfaceType() *Type {
+	return v.FindType(nomenclator.Interface)
 }
 
 // Resources returns the list of resources that are part of this version.
@@ -275,6 +286,21 @@ func (v *Version) addScalarType(name *names.Name) {
 	listType.SetKind(ListType)
 	listType.SetName(names.Cat(name, nomenclator.List))
 	listType.SetElement(scalarType)
+	v.AddType(listType)
+}
+
+func (v *Version) addInterfaceType(name *names.Name) {
+	// Add the interface{} type:
+	interfaceType := NewType()
+	interfaceType.SetKind(InterfaceType)
+	interfaceType.SetName(name)
+	v.AddType(interfaceType)
+
+	// Add the list type:
+	listType := NewType()
+	listType.SetKind(ListType)
+	listType.SetName(names.Cat(name, nomenclator.List))
+	listType.SetElement(interfaceType)
 	v.AddType(listType)
 }
 
