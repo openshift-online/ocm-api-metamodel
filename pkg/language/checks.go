@@ -391,27 +391,27 @@ func (r *Reader) checkPost(method *concepts.Method) {
 }
 
 func (r *Reader) checkUpdate(method *concepts.Method) {
-	// Only scalar and struct parameters:
+	// Only scalar, struct and list parameters:
 	for _, parameter := range method.Parameters() {
-		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
+		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() && !parameter.Type().IsList() {
 			r.reporter.Errorf(
-				"Type of parameter '%s' should be scalar or struct but it is '%s'",
+				"Type of parameter '%s' should be scalar, struct or list but it is '%s'",
 				parameter, parameter.Type().Kind(),
 			)
 		}
 	}
 
 	// Exactly one struct parameter:
-	var structs []*concepts.Parameter
+	var parameters []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
-		if parameter.Type().IsStruct() {
-			structs = append(structs, parameter)
+		if parameter.Type().IsStruct() || parameter.Type().IsList() {
+			parameters = append(parameters, parameter)
 		}
 	}
-	count := len(structs)
+	count := len(parameters)
 	if count != 1 {
 		r.reporter.Errorf(
-			"Method '%s' should have exactly one struct parameter but it has %d",
+			"Method '%s' should have exactly one struct or list parameter but it has %d",
 			method, count,
 		)
 	}
@@ -428,8 +428,8 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 		}
 	}
 
-	// Struct parameters should be input and output:
-	for _, parameter := range structs {
+	// Struct and list parameters should be input and output:
+	for _, parameter := range parameters {
 		if !parameter.In() || !parameter.Out() {
 			r.reporter.Errorf(
 				"Direction of parameter '%s' should be 'in out'",
@@ -438,8 +438,8 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 		}
 	}
 
-	// Struct parameters should be named `body`:
-	for _, parameter := range structs {
+	// Struct and list parameters should be named `body`:
+	for _, parameter := range parameters {
 		if !nomenclator.Body.Equals(parameter.Name()) {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be be '%s'",
