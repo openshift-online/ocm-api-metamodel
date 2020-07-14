@@ -391,11 +391,12 @@ func (r *Reader) checkPost(method *concepts.Method) {
 }
 
 func (r *Reader) checkUpdate(method *concepts.Method) {
-	// Only scalar and struct parameters:
+	// Only scalar, struct and list parameters:
 	for _, parameter := range method.Parameters() {
-		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
+		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() &&
+			!parameter.Type().IsList(){
 			r.reporter.Errorf(
-				"Type of parameter '%s' should be scalar or struct but it is '%s'",
+				"Type of parameter '%s' should be scalar, struct or list but it is '%s'",
 				parameter, parameter.Type().Kind(),
 			)
 		}
