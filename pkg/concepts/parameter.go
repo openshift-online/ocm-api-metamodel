@@ -107,17 +107,17 @@ func (p *Parameter) SetDefault(value interface{}) {
 	p.dflt = value
 }
 
-// IsItems returns true if this is the items parameter of a list method.
+// IsItems returns true if this is the items parameter of a list or search method.
 func (p *Parameter) IsItems() bool {
-	return p.owner != nil && p.owner.IsList() && p.name.Equals(nomenclator.Items)
+	return p.owner != nil && (p.owner.IsList() || p.owner.IsSearch()) && p.name.Equals(nomenclator.Items)
 }
 
-// IsBody returns true if this is the body parameter of an add, get or update method.
+// IsBody returns true if this is the body parameter of an add, get, search, or update method.
 func (p *Parameter) IsBody() bool {
 	if p.owner == nil {
 		return false
 	}
-	isRest := p.owner.IsAdd() || p.owner.IsGet() || p.owner.IsUpdate()
+	isRest := p.owner.IsAdd() || p.owner.IsGet() || p.owner.IsSearch() || p.owner.IsUpdate()
 	if isRest && p.name.Equals(nomenclator.Body) {
 		return true
 	}

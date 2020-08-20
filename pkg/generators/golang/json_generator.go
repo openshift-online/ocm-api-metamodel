@@ -797,6 +797,8 @@ func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method) {
 		g.generateListMethodSource(method)
 	case method.IsPost():
 		g.generatePostMethodSource(method)
+	case method.IsSearch():
+		g.generateSearchMethodSource(method)
 	case method.IsUpdate():
 		g.generateUpdateMethodSource(method)
 	case method.IsAction():
@@ -1107,6 +1109,155 @@ func (g *JSONSupportGenerator) generatePostMethodSource(method *concepts.Method)
 		"Method", method,
 		"Request", request,
 		"Response", response,
+	)
+}
+
+func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Method) {
+	// For list methods we want to put first the paging parameters and last the items, so we
+	// need to classify the parameters.
+	var page *concepts.Parameter
+	var size *concepts.Parameter
+	var total *concepts.Parameter
+	var body *concepts.Parameter
+	var items *concepts.Parameter
+	var other []*concepts.Parameter
+	for _, parameter := range method.Parameters() {
+		switch {
+		case parameter.Name().Equals(nomenclator.Page):
+			page = parameter
+		case parameter.Name().Equals(nomenclator.Size):
+			size = parameter
+		case parameter.Name().Equals(nomenclator.Total):
+			total = parameter
+		case parameter.Name().Equals(nomenclator.Body):
+			body = parameter
+		case parameter.Name().Equals(nomenclator.Items):
+			items = parameter
+		default:
+			other = append(other, parameter)
+		}
+	}
+
+	// Generate the code:
+	g.buffer.Import("net/http", "")
+	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Emit(`
+		{{ $requestQueryParameters := requestQueryParameters .Method }}
+
+		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
+			var err error
+			{{ if $requestQueryParameters }}
+				query := r.URL.Query()
+				{{ if .Page }}
+					{{ generateReadQueryParameter .Page }}
+				{{ end }}
+				{{ if .Size }}
+					{{ generateReadQueryParameter .Size }}
+				{{ end }}
+				{{ range .Other }}
+					{{ if .Out }}
+						{{ generateReadQueryParameter . }}
+					{{ end }}
+				{{ end }}
+			{{ end }}
+			{{ if .Body }}
+				request.{{ parameterFieldName .Body }}, err = {{ unmarshalTypeFunc .Body.Type }}(r)
+				if err != nil {
+					return err
+				}
+			{{ end }}
+			return nil
+		}
+
+		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
+			{{ if .Body }}
+				return {{ marshalTypeFunc .Body.Type }}(request.{{ parameterFieldName .Body }}, writer)
+			{{ else }}
+				return nil
+			{{ end }}
+		}
+
+		func {{ readResponseFunc .Method }}(response *{{ clientResponseName .Method }}, reader io.Reader) error {
+			iterator, err := helpers.NewIterator(reader)
+			if err != nil {
+				return err
+			}
+			for {
+				field := iterator.ReadObject()
+				if field == "" {
+					break
+				}
+				switch field {
+				{{ if .Page }}
+					{{ generateReadBodyParameter "response" .Page }}
+				{{ end }}
+				{{ if .Size }}
+					{{ generateReadBodyParameter "response" .Size }}
+				{{ end }}
+				{{ if .Total }}
+					{{ generateReadBodyParameter "response" .Total }}
+				{{ end }}
+				{{ range .Other }}
+					{{ if .Out }}
+						{{ generateReadBodyParameter "response" . }}
+					{{ end }}
+				{{ end }}
+				case "items":
+					{{ generateReadValue "items" .Items.Type false }}
+					response.items = &{{ structName .Items.Type }}{
+						items: items,
+					}
+				default:
+					iterator.ReadAny()
+				}
+			}
+			return iterator.Error
+		}
+
+		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(response.status)
+			stream := helpers.NewStream(w)
+			stream.WriteObjectStart()
+			stream.WriteObjectField("kind")
+			count := 1
+			stream.WriteString({{ structName .Items.Type }}Kind)
+			if response.items != nil && response.items.href != nil {
+				stream.WriteMore()
+				stream.WriteObjectField("href")
+				stream.WriteString(*response.items.href)
+				count++
+			}
+			{{ if .Page }}
+				{{ generateWriteBodyParameter "response" .Page }}
+			{{ end }}
+			{{ if .Size }}
+				{{ generateWriteBodyParameter "response" .Size }}
+			{{ end }}
+			{{ if .Total }}
+				{{ generateWriteBodyParameter "response" .Total }}
+			{{ end }}
+			{{ range .Other }}
+				{{ if .Out }}
+					{{ generateWriteBodyParameter "response" . }}
+				{{ end }}
+			{{ end }}
+			if response.items != nil {
+				{{ generateWriteBodyParameter "response.items" .Items }}
+			}
+			stream.WriteObjectEnd()
+			stream.Flush()
+			return stream.Error
+		}
+		`,
+		"Version", method.Owner().Owner(),
+		"Method", method,
+		"Page", page,
+		"Size", size,
+		"Total", total,
+		"Body", body,
+		"Items", items,
+		"Other", other,
 	)
 }
 

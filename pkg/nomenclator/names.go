@@ -99,6 +99,7 @@ var (
 	Root     = names.ParseUsingCase("Root")
 
 	// S:
+	Search  = names.ParseUsingCase("Search")
 	Server  = names.ParseUsingCase("Server")
 	Servers = names.ParseUsingCase("Servers")
 	Service = names.ParseUsingCase("Service")
