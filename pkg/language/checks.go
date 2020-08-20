@@ -20,6 +20,7 @@ package language
 
 import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
@@ -234,87 +235,9 @@ func (r *Reader) checkList(method *concepts.Method) {
 		)
 	}
 
-	// Get the reference to the resource and to the version:
-	resource := method.Owner()
-	version := resource.Owner()
-
-	// Check the `page` parameter:
-	page := method.GetParameter(nomenclator.Page)
-	if page == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Page,
-		)
-	} else {
-		if page.Type() != version.IntegerType() {
-			r.reporter.Errorf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				page, page.Type(),
-			)
-		}
-		if !page.In() || !page.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				page,
-			)
-		}
-		if page.Default() != 1 {
-			r.reporter.Errorf(
-				"Default value of parameter `%s` should be 1",
-				page,
-			)
-		}
-	}
-
-	// Check the `size` parameter:
-	size := method.GetParameter(nomenclator.Size)
-	if size == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Size,
-		)
-	} else {
-		if size.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				size, size.Type(),
-			)
-		}
-		if !size.In() || !size.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				size,
-			)
-		}
-		if size.Default() == nil {
-			r.reporter.Errorf(
-				"Parameter `%s` should have a default value",
-				size,
-			)
-		}
-	}
-
-	// Check the `total` parameter:
-	total := method.GetParameter(nomenclator.Total)
-	if total == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Total,
-		)
-	} else {
-		if total.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				total, total.Type(),
-			)
-		}
-		if total.In() || !total.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'out'",
-				total,
-			)
-		}
-	}
+	r.checkRequestParameter(method, nomenclator.Page, 1)
+	r.checkRequestParameter(method, nomenclator.Size, 100)
+	r.checkResponseParameter(method, nomenclator.Total)
 
 	// Check the `items` parameter:
 	items := method.GetParameter(nomenclator.Items)
@@ -440,87 +363,9 @@ func (r *Reader) checkSearch(method *concepts.Method) {
 		)
 	}
 
-	// Get the reference to the resource and to the version:
-	resource := method.Owner()
-	version := resource.Owner()
-
-	// Check the `page` parameter:
-	page := method.GetParameter(nomenclator.Page)
-	if page == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Page,
-		)
-	} else {
-		if page.Type() != version.IntegerType() {
-			r.reporter.Errorf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				page, page.Type(),
-			)
-		}
-		if !page.In() || !page.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				page,
-			)
-		}
-		if page.Default() != 1 {
-			r.reporter.Errorf(
-				"Default value of parameter `%s` should be 1",
-				page,
-			)
-		}
-	}
-
-	// Check the `size` parameter:
-	size := method.GetParameter(nomenclator.Size)
-	if size == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Size,
-		)
-	} else {
-		if size.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				size, size.Type(),
-			)
-		}
-		if !size.In() || !size.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				size,
-			)
-		}
-		if size.Default() == nil {
-			r.reporter.Errorf(
-				"Parameter `%s` should have a default value",
-				size,
-			)
-		}
-	}
-
-	// Check the `total` parameter:
-	total := method.GetParameter(nomenclator.Total)
-	if total == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Total,
-		)
-	} else {
-		if total.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				total, total.Type(),
-			)
-		}
-		if total.In() || !total.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'out'",
-				total,
-			)
-		}
-	}
+	r.checkRequestParameter(method, nomenclator.Page, 1)
+	r.checkRequestParameter(method, nomenclator.Size, 100)
+	r.checkResponseParameter(method, nomenclator.Total)
 
 	// Check the `items` parameter:
 	items := method.GetParameter(nomenclator.Items)
@@ -674,6 +519,68 @@ func (r *Reader) checkParameter(parameter *concepts.Parameter) {
 			r.reporter.Errorf(
 				"Type of default value of parameter '%s' should be '%s'",
 				parameter, parameter.Type(),
+			)
+		}
+	}
+}
+
+func (r *Reader) checkRequestParameter(method *concepts.Method, name *names.Name, dflt int) {
+	// Get the reference to the resource and to the version:
+	resource := method.Owner()
+	version := resource.Owner()
+
+	// Check the parameter:
+	param := method.GetParameter(name)
+	if param == nil {
+		r.reporter.Warnf(
+			"Method '%s' doesn't have a '%s' parameter",
+			method, name,
+		)
+	} else {
+		if param.Type() != version.IntegerType() {
+			r.reporter.Errorf(
+				"Type of parameter '%s' should be integer but it is '%s'",
+				param, param.Type(),
+			)
+		}
+		if !param.In() || !param.Out() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'in out'",
+				param,
+			)
+		}
+		if param.Default() != dflt {
+			r.reporter.Errorf(
+				"Default value of parameter `%s` should be %d",
+				param, dflt,
+			)
+		}
+	}
+}
+
+func (r *Reader) checkResponseParameter(method *concepts.Method, name *names.Name) {
+	// Get the reference to the resource and to the version:
+	resource := method.Owner()
+	version := resource.Owner()
+
+	// Check the parameter:
+	param := method.GetParameter(name)
+	if param == nil {
+		r.reporter.Warnf(
+			"Method '%s' doesn't have a '%s' parameter",
+			method, name,
+		)
+	} else {
+		if param.Type() != version.IntegerType() {
+			r.reporter.Errorf(
+				"Type of parameter '%s' should be integer but it is '%s'",
+				param, param.Type(),
+			)
+		}
+		if param.In() || !param.Out() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'out'",
+				param,
 			)
 		}
 	}
