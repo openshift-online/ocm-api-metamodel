@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.33 Aug 23 2020
+
+- Add search method
+
 == 0.0.31 Jul 30 2020
 
 - Adding List type to checkUpdate validator
