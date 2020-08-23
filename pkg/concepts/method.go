@@ -119,6 +119,11 @@ func (m *Method) IsPost() bool {
 	return m.name.Equals(nomenclator.Post)
 }
 
+// IsSearch returns true if this is a search method.
+func (m *Method) IsSearch() bool {
+	return m.name.Equals(nomenclator.Search)
+}
+
 // IsUpdate returns true if this is an update method.
 func (m *Method) IsUpdate() bool {
 	return m.name.Equals(nomenclator.Update)
@@ -136,6 +141,8 @@ func (m *Method) IsAction() bool {
 	case m.IsList():
 		return false
 	case m.IsPost():
+		return false
+	case m.IsSearch():
 		return false
 	case m.IsUpdate():
 		return false

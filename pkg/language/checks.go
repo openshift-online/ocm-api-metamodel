@@ -20,6 +20,7 @@ package language
 
 import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
@@ -66,6 +67,8 @@ func (r *Reader) checkMethod(method *concepts.Method) {
 		r.checkList(method)
 	case method.IsPost():
 		r.checkPost(method)
+	case method.IsSearch():
+		r.checkSearch(method)
 	case method.IsUpdate():
 		r.checkUpdate(method)
 	case method.IsAction():
@@ -207,15 +210,11 @@ func (r *Reader) checkGet(method *concepts.Method) {
 }
 
 func (r *Reader) checkList(method *concepts.Method) {
-	// Get the reference to the and to the version:
-	resource := method.Owner()
-	version := resource.Owner()
-
 	// Only scalar and list parameters:
 	for _, parameter := range method.Parameters() {
 		if !parameter.Type().IsScalar() && !parameter.Type().IsList() {
 			r.reporter.Errorf(
-				"Type of parameter '%s' should be scalar or struct but it is '%s'",
+				"Type of parameter '%s' should be scalar or list but it is '%s'",
 				parameter, parameter.Type().Kind(),
 			)
 		}
@@ -236,83 +235,9 @@ func (r *Reader) checkList(method *concepts.Method) {
 		)
 	}
 
-	// Check the `page` parameter:
-	page := method.GetParameter(nomenclator.Page)
-	if page == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Page,
-		)
-	} else {
-		if page.Type() != version.IntegerType() {
-			r.reporter.Errorf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				page, page.Type(),
-			)
-		}
-		if !page.In() || !page.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				page,
-			)
-		}
-		if page.Default() != 1 {
-			r.reporter.Errorf(
-				"Default value of parameter `%s` should be 1",
-				page,
-			)
-		}
-	}
-
-	// Check the `size` parameter:
-	size := method.GetParameter(nomenclator.Size)
-	if size == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Size,
-		)
-	} else {
-		if size.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				size, size.Type(),
-			)
-		}
-		if !size.In() || !size.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'in out'",
-				size,
-			)
-		}
-		if size.Default() == nil {
-			r.reporter.Errorf(
-				"Parameter `%s` should have a default value",
-				size,
-			)
-		}
-	}
-
-	// Check the `total` parameter:
-	total := method.GetParameter(nomenclator.Total)
-	if total == nil {
-		r.reporter.Warnf(
-			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Total,
-		)
-	} else {
-		if total.Type() != version.IntegerType() {
-			r.reporter.Warnf(
-				"Type of parameter '%s' should be integer but it is '%s'",
-				total, total.Type(),
-			)
-		}
-		if total.In() || !total.Out() {
-			r.reporter.Errorf(
-				"Direction of parameter '%s' should be 'out'",
-				total,
-			)
-		}
-	}
+	r.checkRequestParameter(method, nomenclator.Page, 1)
+	r.checkRequestParameter(method, nomenclator.Size, 100)
+	r.checkResponseParameter(method, nomenclator.Total)
 
 	// Check the `items` parameter:
 	items := method.GetParameter(nomenclator.Items)
@@ -385,6 +310,121 @@ func (r *Reader) checkPost(method *concepts.Method) {
 			r.reporter.Errorf(
 				"Parameter '%s' should be a struct but it is %s",
 				parameter, parameter.Type().Kind(),
+			)
+		}
+	}
+}
+
+func (r *Reader) checkSearch(method *concepts.Method) {
+	// Get the input and output parameters:
+	var in []*concepts.Parameter
+	var out []*concepts.Parameter
+	for _, parameter := range method.Parameters() {
+		if parameter.In() {
+			in = append(in, parameter)
+		}
+		if parameter.Out() {
+			out = append(out, parameter)
+		}
+	}
+
+	// Only scalar or list parameters:
+	for _, parameter := range out {
+		if !parameter.Type().IsScalar() && !parameter.Type().IsList() {
+			r.reporter.Errorf(
+				"Parameter '%s' should be scalar or list but it is %s",
+				parameter, parameter.Type().Kind(),
+			)
+		}
+	}
+
+	// Only scalar or struct parameters:
+	for _, parameter := range in {
+		if !parameter.Type().IsScalar() && !parameter.Type().IsStruct() {
+			r.reporter.Errorf(
+				"Parameter '%s' should be scalar or struct but it is '%s'",
+				parameter, parameter.Type().Kind(),
+			)
+		}
+	}
+
+	// Exactly one list parameter:
+	var lists []*concepts.Parameter
+	for _, parameter := range method.Parameters() {
+		if parameter.Type().IsList() {
+			lists = append(lists, parameter)
+		}
+	}
+	count := len(lists)
+	if count != 1 {
+		r.reporter.Errorf(
+			"Method '%s' should have exactly one list parameter but it has %d",
+			method, count,
+		)
+	}
+
+	r.checkRequestParameter(method, nomenclator.Page, 1)
+	r.checkRequestParameter(method, nomenclator.Size, 100)
+	r.checkResponseParameter(method, nomenclator.Total)
+
+	// Check the `items` parameter:
+	items := method.GetParameter(nomenclator.Items)
+	if items == nil {
+		r.reporter.Errorf(
+			"Method '%s' doesn't have a '%s' parameter",
+			method, nomenclator.Items,
+		)
+	}
+
+	// List parameters should be output only:
+	for _, parameter := range lists {
+		if parameter.In() || !parameter.Out() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'out'",
+				parameter,
+			)
+		}
+	}
+
+	// List parameters should be named `items`:
+	for _, parameter := range lists {
+		if !nomenclator.Items.Equals(parameter.Name()) {
+			r.reporter.Errorf(
+				"Name of parameter '%s' should be '%s'",
+				parameter, nomenclator.Items,
+			)
+		}
+	}
+
+	// Exactly one body parameter:
+	var bodies []*concepts.Parameter
+	for _, parameter := range method.Parameters() {
+		if parameter.Type().IsStruct() && parameter.In() {
+			bodies = append(bodies, parameter)
+		}
+	}
+	count = len(bodies)
+	if count != 1 {
+		r.reporter.Errorf(
+			"Method '%s' should have exactly one body parameter but it has %d",
+			method, count,
+		)
+	}
+
+	for _, parameter := range bodies {
+		// Struct parameters should be input only:
+		if parameter.Out() || !parameter.In() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'in'",
+				parameter,
+			)
+		}
+
+		// Struct parameter should be named `body`:
+		if !nomenclator.Body.Equals(parameter.Name()) {
+			r.reporter.Errorf(
+				"Name of parameter '%s' should be be '%s'",
+				parameter, nomenclator.Body,
 			)
 		}
 	}
@@ -479,6 +519,68 @@ func (r *Reader) checkParameter(parameter *concepts.Parameter) {
 			r.reporter.Errorf(
 				"Type of default value of parameter '%s' should be '%s'",
 				parameter, parameter.Type(),
+			)
+		}
+	}
+}
+
+func (r *Reader) checkRequestParameter(method *concepts.Method, name *names.Name, dflt int) {
+	// Get the reference to the resource and to the version:
+	resource := method.Owner()
+	version := resource.Owner()
+
+	// Check the parameter:
+	param := method.GetParameter(name)
+	if param == nil {
+		r.reporter.Warnf(
+			"Method '%s' doesn't have a '%s' parameter",
+			method, name,
+		)
+	} else {
+		if param.Type() != version.IntegerType() {
+			r.reporter.Errorf(
+				"Type of parameter '%s' should be integer but it is '%s'",
+				param, param.Type(),
+			)
+		}
+		if !param.In() || !param.Out() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'in out'",
+				param,
+			)
+		}
+		if param.Default() != dflt {
+			r.reporter.Errorf(
+				"Default value of parameter `%s` should be %d",
+				param, dflt,
+			)
+		}
+	}
+}
+
+func (r *Reader) checkResponseParameter(method *concepts.Method, name *names.Name) {
+	// Get the reference to the resource and to the version:
+	resource := method.Owner()
+	version := resource.Owner()
+
+	// Check the parameter:
+	param := method.GetParameter(name)
+	if param == nil {
+		r.reporter.Warnf(
+			"Method '%s' doesn't have a '%s' parameter",
+			method, name,
+		)
+	} else {
+		if param.Type() != version.IntegerType() {
+			r.reporter.Errorf(
+				"Type of parameter '%s' should be integer but it is '%s'",
+				param, param.Type(),
+			)
+		}
+		if param.In() || !param.Out() {
+			r.reporter.Errorf(
+				"Direction of parameter '%s' should be 'out'",
+				param,
 			)
 		}
 	}
