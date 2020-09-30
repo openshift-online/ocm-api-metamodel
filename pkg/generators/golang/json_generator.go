@@ -545,6 +545,7 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type) err
 func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
+	g.buffer.Import("net/http", "")
 	g.buffer.Import("time", "")
 	g.buffer.Import("github.com/json-iterator/go", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
@@ -590,6 +591,9 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 		// {{ $unmarshalTypeFunc }} reads a value of the '{{ .Type.Name }}' type from the given
 		// source, which can be an slice of bytes, a string or a reader.
 		func {{ $unmarshalTypeFunc }}(source interface{}) (object *{{ $structName }}, err error) {
+			if source == http.NoBody {
+				return
+			}
 			iterator, err := helpers.NewIterator(source)
 			if err != nil {
 				return
