@@ -3,7 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
-== 0.0.33 Aug 23 2020
+== 0.0.33 Sep 30 2020
+
+- json: Support NoContent on POST responses
+
+== 0.0.32 Aug 23 2020
 
 - Add search method
 
