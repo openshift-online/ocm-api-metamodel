@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.34 Oct 5 2020
+
+- names: Support numeric initialisms
+
 == 0.0.33 Sep 30 2020
 
 - json: Support NoContent on POST responses
