@@ -50,5 +50,6 @@ var _ = Describe("Parser", func() {
 		Entry("Three chars initialism plural", "CPUs", "CPUs"),
 		Entry("Three chars initialism plural after word", "ClusterCPUs", "cluster_CPUs"),
 		Entry("Three chars initialism plural before word", "CPUsList", "CPUs_list"),
+		Entry("Words with numbers", "ClientX509CertURL", "client_X509_cert_URL"),
 	)
 })

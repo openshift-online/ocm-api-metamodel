@@ -32,10 +32,10 @@ func isLower(s string) bool {
 	return true
 }
 
-// isUpper checks if all the runes of the given string are upper case.
+// isUpper checks if all the runes of the given string are upper case or digits.
 func isUpper(s string) bool {
 	for _, r := range s {
-		if !unicode.IsUpper(r) {
+		if !unicode.IsUpper(r) && !unicode.IsDigit(r) {
 			return false
 		}
 	}
