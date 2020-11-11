@@ -219,13 +219,13 @@ func (b *Buffer) Write() error {
 	outputDir := filepath.Dir(b.file)
 	err = os.MkdirAll(outputDir, 0777)
 	if err != nil {
-		return fmt.Errorf("can't create output directory '%s': %v", outputDir, err)
+		return fmt.Errorf("can't create output directory '%s': %w", outputDir, err)
 	}
 
 	// Open the file:
 	outputFd, err := os.OpenFile(b.file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	if err != nil {
-		return fmt.Errorf("can't open output file '%s': %v", b.file, err)
+		return fmt.Errorf("can't open output file '%s': %w", b.file, err)
 	}
 
 	// Remove the leading tabs:
@@ -243,7 +243,7 @@ func (b *Buffer) Write() error {
 	// Close the file:
 	err = outputFd.Close()
 	if err != nil {
-		return fmt.Errorf("can't close output file '%s': %v", b.file, err)
+		return fmt.Errorf("can't close output file '%s': %w", b.file, err)
 	}
 
 	return nil
