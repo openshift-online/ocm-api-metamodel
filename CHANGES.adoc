@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.35 Nov 17 2020
+
+- Update to version 4.8 of Antlr
+- Wrap errors
+
 == 0.0.34 Oct 5 2020
 
 - names: Support numeric initialisms
