@@ -430,9 +430,7 @@ func (g *JSONSupportGenerator) generateVersionMetadataSupport(version *concepts.
 		File(fileName).
 		Function("enumName", g.types.EnumName).
 		Function("structName", g.types.StructName).
-		Function("generateReadAttribute", g.generateReadAttribute).
 		Function("generateReadValue", g.generateReadValue).
-		Function("generateWriteAttribute", g.generateWriteAttribute).
 		Function("generateWriteValue", g.generateWriteValue).
 		Function("readTypeFunc", g.readTypeFunc).
 		Function("writeTypeFunc", g.writeTypeFunc).
@@ -465,9 +463,11 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 		}
 
 		func writeMetadata(object *Metadata, stream *jsoniter.Stream) {
-			count := 0
 			stream.WriteObjectStart()
-			{{ generateWriteAttribute "serverVersion" "server_version" .Version.StringType false }}
+			if object.bitmap_&1 != 0 {
+				stream.WriteObjectField("server_version")
+				stream.WriteString(object.serverVersion)
+			}
 			stream.WriteObjectEnd()
 		}
 
@@ -491,7 +491,9 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 					break
 				}
 				switch field {
-				{{ generateReadAttribute "serverVersion" "server_version" .Version.StringType false }}
+				case "server_version":
+					object.serverVersion = iterator.ReadString()
+					object.bitmap_ |= 1
 				default:
 					iterator.ReadAny()
 				}
@@ -517,12 +519,11 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type) err
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
-		Function("attributeFieldName", g.attributeFieldName).
-		Function("attributeFieldTag", g.binding.AttributeName).
+		Function("bitMask", g.types.BitMask).
 		Function("enumName", g.types.EnumName).
-		Function("generateReadAttribute", g.generateReadAttribute).
+		Function("fieldName", g.fieldName).
+		Function("fieldTag", g.binding.AttributeName).
 		Function("generateReadValue", g.generateReadValue).
-		Function("generateWriteAttribute", g.generateWriteAttribute).
 		Function("generateWriteValue", g.generateWriteValue).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("readTypeFunc", g.readTypeFunc).
@@ -569,21 +570,50 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 			count := 0
 			stream.WriteObjectStart()
 			{{ if .Type.IsClass }}
-				if count > 0 {
-					stream.WriteMore()
-				}
 				stream.WriteObjectField("kind")
-				if object.link {
+				if object.bitmap_&1 != 0 {
 					stream.WriteString({{ $structName }}LinkKind)
 				} else {
 					stream.WriteString({{ $structName }}Kind)
 				}
 				count++
-				{{ generateWriteAttribute "id" "id" .Type.Owner.StringType false }}
-				{{ generateWriteAttribute "href" "href" .Type.Owner.StringType false }}
+				if object.bitmap_&2 != 0 {
+					if count > 0 {
+						stream.WriteMore()
+					}
+					stream.WriteObjectField("id")
+					stream.WriteString(object.id)
+					count++
+				}
+				if object.bitmap_&4 != 0 {
+					if count > 0 {
+						stream.WriteMore()
+					}
+					stream.WriteObjectField("href")
+					stream.WriteString(object.href)
+					count++
+				}
 			{{ end }}
-			{{ range .Type.Attributes }}
-				{{ generateWriteAttribute (attributeFieldName .) (attributeFieldTag .) .Type .Link }}
+			{{ if .Type.Attributes }}
+				var present_ bool
+				{{ range .Type.Attributes }}
+					{{ $fieldName := fieldName . }}
+					{{ $fieldTag := fieldTag . }}
+					{{ $fieldMask := bitMask . }}
+					{{ if .Type.IsScalar }}
+						present_ = object.bitmap_&{{ $fieldMask }} != 0
+					{{ else }}
+						present_ = object.bitmap_&{{ $fieldMask }} != 0 && object.{{ $fieldName }} != nil
+					{{ end }}
+					if present_ {
+						if count > 0 {
+							stream.WriteMore()
+						}
+						stream.WriteObjectField("{{ $fieldTag }}")
+						{{ generateWriteValue (print "object." $fieldName) .Type .Link }}
+						count++
+					}
+				{{ end }}
 			{{ end }}
 			stream.WriteObjectEnd()
 		}
@@ -615,16 +645,24 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 				{{ if .Type.IsClass }}
 					case "kind":
 						value := iterator.ReadString()
-						object.link = value == {{ $structName }}LinkKind
+						if value == {{ $structName }}LinkKind {
+							object.bitmap_ |= 1
+						}
 					case "id":
-						value := iterator.ReadString()
-						object.id = &value
+						object.id = iterator.ReadString()
+						object.bitmap_ |= 2
 					case "href":
-						value := iterator.ReadString()
-						object.href = &value
+						object.href = iterator.ReadString()
+						object.bitmap_ |= 4
 				{{ end }}
 				{{ range .Type.Attributes }}
-					{{ generateReadAttribute (attributeFieldName .) (attributeFieldTag .) .Type .Link }}
+					{{ $fieldName := fieldName . }}
+					{{ $fieldTag := fieldTag . }}
+					{{ $fieldMask := bitMask . }}
+					case "{{ $fieldTag }}":
+						{{ generateReadValue "value" .Type .Link }}
+						object.{{ $fieldName }} = value
+						object.bitmap_ |= {{ $fieldMask }}
 				{{ end }}
 				default:
 					iterator.ReadAny()
@@ -652,9 +690,7 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type) error
 		Package(pkgName).
 		File(fileName).
 		Function("enumName", g.types.EnumName).
-		Function("generateReadAttribute", g.generateReadAttribute).
 		Function("generateReadValue", g.generateReadValue).
-		Function("generateWriteAttribute", g.generateWriteAttribute).
 		Function("generateWriteValue", g.generateWriteValue).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("readTypeFunc", g.readTypeFunc).
@@ -1018,10 +1054,10 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 			stream.WriteObjectField("kind")
 			count := 1
 			stream.WriteString({{ structName .Items.Type }}Kind)
-			if response.items != nil && response.items.href != nil {
+			if response.items != nil && response.items.href != "" {
 				stream.WriteMore()
 				stream.WriteObjectField("href")
-				stream.WriteString(*response.items.href)
+				stream.WriteString(response.items.href)
 				count++
 			}
 			{{ if .Page }}
@@ -1226,10 +1262,10 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 			stream.WriteObjectField("kind")
 			count := 1
 			stream.WriteString({{ structName .Items.Type }}Kind)
-			if response.items != nil && response.items.href != nil {
+			if response.items != nil && response.items.href != "" {
 				stream.WriteMore()
 				stream.WriteObjectField("href")
-				stream.WriteString(*response.items.href)
+				stream.WriteString(response.items.href)
 				count++
 			}
 			{{ if .Page }}
@@ -1445,24 +1481,6 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 	)
 }
 
-func (g *JSONSupportGenerator) generateReadAttribute(field, tag string, typ *concepts.Type,
-	link bool) string {
-	return g.buffer.Eval(`
-		case "{{ .Tag }}":
-			{{ generateReadValue "value" .Type .Link }}
-			{{ if .Type.IsScalar }}
-				object.{{ .Field }} = &value
-			{{ else }}
-				object.{{ .Field }} = value
-			{{ end }}
-		`,
-		"Field", field,
-		"Tag", tag,
-		"Type", typ,
-		"Link", link,
-	)
-}
-
 func (g *JSONSupportGenerator) generateReadBodyParameter(object string, parameter *concepts.
 	Parameter) string {
 	field := g.parameterFieldName(parameter)
@@ -1525,8 +1543,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 						text := iterator.ReadString()
 						{{ .Variable }}.link = text == {{ $structName }}LinkKind
 					case "href":
-						text := iterator.ReadString()
-						{{ .Variable }}.href = &text
+						{{ .Variable }}.href = iterator.ReadString()
 					case "items":
 						{{ .Variable }}.items = {{ readTypeFunc .Type }}(iterator)
 					default:
@@ -1551,38 +1568,6 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 		{{ end }}
 		`,
 		"Variable", variable,
-		"Type", typ,
-		"Link", link,
-	)
-}
-
-func (g *JSONSupportGenerator) generateWriteAttribute(field, tag string, typ *concepts.Type,
-	link bool) string {
-	var value string
-	if typ.IsScalar() && !typ.IsInterface() {
-		value = g.buffer.Eval(
-			`*object.{{ .Field }}`,
-			"Field", field,
-		)
-	} else {
-		value = g.buffer.Eval(
-			`object.{{ .Field }}`,
-			"Field", field,
-		)
-	}
-	return g.buffer.Eval(`
-		if object.{{ .Field }} != nil {
-			if count > 0 {
-				stream.WriteMore()
-			}
-			stream.WriteObjectField("{{ .Tag }}")
-			{{ generateWriteValue .Value .Type .Link }}
-			count++
-		}
-		`,
-		"Field", field,
-		"Tag", tag,
-		"Value", value,
 		"Type", typ,
 		"Link", link,
 	)
@@ -1657,23 +1642,27 @@ func (g *JSONSupportGenerator) generateWriteValue(value string, typ *concepts.Ty
 				{{ writeTypeFunc .Type }}({{ .Value }}, stream)
 			{{ end }}
 		{{ else if .Type.IsMap }}
-			stream.WriteObjectStart()
-			keys := make([]string, len({{ .Value }}))
-			i := 0;
-			for key := range {{ .Value }} {
-				keys[i] = key
-				i++
-			}
-			sort.Strings(keys)
-			for i, key := range keys {
-				if i > 0 {
-					stream.WriteMore()
+			if {{ .Value }} != nil {
+				stream.WriteObjectStart()
+				keys := make([]string, len({{ .Value }}))
+				i := 0;
+				for key := range {{ .Value }} {
+					keys[i] = key
+					i++
 				}
-				item := {{ .Value }}[key]
-				stream.WriteObjectField(key)
-				{{ generateWriteValue "item" .Type.Element false }}
+				sort.Strings(keys)
+				for i, key := range keys {
+					if i > 0 {
+						stream.WriteMore()
+					}
+					item := {{ .Value }}[key]
+					stream.WriteObjectField(key)
+					{{ generateWriteValue "item" .Type.Element false }}
+				}
+				stream.WriteObjectEnd()
+			} else {
+				stream.WriteNil()
 			}
-			stream.WriteObjectEnd()
 		{{ end }}
 		`,
 		"Value", value,
@@ -1718,7 +1707,7 @@ func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type) string {
 	return g.names.Private(name)
 }
 
-func (g *JSONSupportGenerator) attributeFieldName(attribute *concepts.Attribute) string {
+func (g *JSONSupportGenerator) fieldName(attribute *concepts.Attribute) string {
 	return g.names.Private(attribute.Name())
 }
 
