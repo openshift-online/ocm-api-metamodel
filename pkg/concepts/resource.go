@@ -24,9 +24,10 @@ import (
 
 // Resource represents an API resource.
 type Resource struct {
+	documentedSupport
+	namedSupport
+
 	owner    *Version
-	doc      string
-	name     *names.Name
 	methods  MethodSlice
 	locators LocatorSlice
 }
@@ -44,26 +45,6 @@ func (r *Resource) Owner() *Version {
 // SetOwner sets the version that owns the resource.
 func (r *Resource) SetOwner(value *Version) {
 	r.owner = value
-}
-
-// Doc returns the documentation of this resource.
-func (r *Resource) Doc() string {
-	return r.doc
-}
-
-// SetDoc sets the documentation of this resource.
-func (r *Resource) SetDoc(value string) {
-	r.doc = value
-}
-
-// Name returns the name of the resource.
-func (r *Resource) Name() *names.Name {
-	return r.name
-}
-
-// SetName sets the name of the resource.
-func (r *Resource) SetName(value *names.Name) {
-	r.name = value
 }
 
 // Methods returns the methods of the resource.

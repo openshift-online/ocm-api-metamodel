@@ -25,11 +25,11 @@ import (
 
 // Version is the representation of a version of a service.
 type Version struct {
+	documentedSupport
+	namedSupport
+
 	// Service that owns this version:
 	owner *Service
-
-	// Name of the version:
-	name *names.Name
 
 	// All the types of the version, indexed by name:
 	types map[string]*Type
@@ -74,16 +74,6 @@ func (v *Version) Owner() *Service {
 // SetOwner sets the service that owns this version.
 func (v *Version) SetOwner(value *Service) {
 	v.owner = value
-}
-
-// Name returns the name of this version.
-func (v *Version) Name() *names.Name {
-	return v.name
-}
-
-// SetName sets the name of this version.
-func (v *Version) SetName(value *names.Name) {
-	v.name = value
 }
 
 // Types returns the list of types that are part of this version.

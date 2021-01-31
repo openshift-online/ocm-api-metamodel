@@ -68,10 +68,11 @@ func NewType() *Type {
 
 // Type specifies the data type of attributes of structs and method parameters.
 type Type struct {
+	documentedSupport
+	namedSupport
+
 	owner      *Version
-	doc        string
 	kind       TypeKind
-	name       *names.Name
 	attributes AttributeSlice
 	values     EnumValueSlice
 	element    *Type
@@ -86,16 +87,6 @@ func (t *Type) Owner() *Version {
 // SetOwner sets the version that owns this type.
 func (t *Type) SetOwner(value *Version) {
 	t.owner = value
-}
-
-// Doc returns the documentation of this type.
-func (t *Type) Doc() string {
-	return t.doc
-}
-
-// SetDoc sets the documentation of this type.
-func (t *Type) SetDoc(value string) {
-	t.doc = value
 }
 
 // Kind returns the kind of this type.
@@ -175,16 +166,6 @@ func (t *Type) IsStruct() bool {
 	return t.kind == ClassType || t.kind == StructType
 }
 
-// Name returns the name of this type.
-func (t *Type) Name() *names.Name {
-	return t.name
-}
-
-// SetName sets the name of this type.
-func (t *Type) SetName(value *names.Name) {
-	t.name = value
-}
-
 // Attributes returns the list of attributes of an struct type. If called for any other kind of type
 // it will return nil.
 func (t *Type) Attributes() AttributeSlice {
@@ -254,9 +235,10 @@ func (s TypeSlice) Swap(i, j int) {
 
 // EnumValue represents each of the values of an enum type.
 type EnumValue struct {
-	typ  *Type
-	doc  string
-	name *names.Name
+	documentedSupport
+	namedSupport
+
+	typ *Type
 }
 
 // NewEnumValue creates a new enumerated type value.
@@ -272,26 +254,6 @@ func (v *EnumValue) Type() *Type {
 // SetType sets the enum type that owns this value.
 func (v *EnumValue) SetType(value *Type) {
 	v.typ = value
-}
-
-// Doc returns the documentation of this value.
-func (v *EnumValue) Doc() string {
-	return v.doc
-}
-
-// SetDoc sets the documentation of this value.
-func (v *EnumValue) SetDoc(value string) {
-	v.doc = value
-}
-
-// Name return the name of this enum value.
-func (v *EnumValue) Name() *names.Name {
-	return v.name
-}
-
-// SetName sets the name of this enum value.
-func (v *EnumValue) SetName(value *names.Name) {
-	v.name = value
 }
 
 // EnumValueSlice is used to simplify sorting of slices of enum values by name.

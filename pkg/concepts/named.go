@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 Red Hat, Inc.
+Copyright (c) 2021 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,28 +16,21 @@ limitations under the License.
 
 package concepts
 
-// Documented is implemented by concepts that have documentation.
-type Documented interface {
-	// Doc returns the documentation attached to the object.
-	Doc() string
+import "github.com/openshift-online/ocm-api-metamodel/pkg/names"
 
-	// SetDoc sets the documentation attached to the object.
-	SetDoc(doc string)
-}
-
-// documentedSupport is an implementation of the Documented interface intended to be embedded in
+// namedSupport is an implementation of the names.Named interface intended to be embeded in other
 // types that need to implement that interface.
-type documentedSupport struct {
-	doc string
+type namedSupport struct {
+	name *names.Name
 }
 
 // Make sure we implement the interface:
-var _ Documented = &documentedSupport{}
+var _ names.Named = &namedSupport{}
 
-func (s *documentedSupport) Doc() string {
-	return s.doc
+func (s *namedSupport) Name() *names.Name {
+	return s.name
 }
 
-func (s *documentedSupport) SetDoc(doc string) {
-	s.doc = doc
+func (s *namedSupport) SetName(value *names.Name) {
+	s.name = value
 }

@@ -25,9 +25,10 @@ import (
 
 // Method represents a method of a resource.
 type Method struct {
+	documentedSupport
+	namedSupport
+
 	owner      *Resource
-	doc        string
-	name       *names.Name
 	parameters ParameterSlice
 }
 
@@ -46,26 +47,6 @@ func (m *Method) SetOwner(value *Resource) {
 	m.owner = value
 }
 
-// Doc returns the documentation of this method.
-func (m *Method) Doc() string {
-	return m.doc
-}
-
-// SetDoc sets the documentation of this type.
-func (m *Method) SetDoc(value string) {
-	m.doc = value
-}
-
-// Name returns the name of the method.
-func (m *Method) Name() *names.Name {
-	return m.name
-}
-
-// SetName sets the name of the method.
-func (m *Method) SetName(value *names.Name) {
-	m.name = value
-}
-
 // Parameters returns the parameters of the method.
 func (m *Method) Parameters() ParameterSlice {
 	return m.parameters
@@ -80,8 +61,8 @@ func (m *Method) AddParameter(parameter *Parameter) {
 	}
 }
 
-// Get parameter returns the parameter with the given name, or nil if there is no parameter with
-// that name.
+// GetParameter returns the parameter with the given name, or nil if there is no parameter with that
+// name.
 func (m *Method) GetParameter(name *names.Name) *Parameter {
 	if name == nil {
 		return nil

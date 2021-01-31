@@ -22,9 +22,10 @@ import (
 
 // Locator represents a resource locator, the reference from a resource to another resource.
 type Locator struct {
+	documentedSupport
+	namedSupport
+
 	owner    *Resource
-	doc      string
-	name     *names.Name
 	variable bool
 	target   *Resource
 }
@@ -44,26 +45,6 @@ func (l *Locator) SetOwner(value *Resource) {
 	l.owner = value
 }
 
-// Doc returns the documentation of this locator.
-func (l *Locator) Doc() string {
-	return l.doc
-}
-
-// SetDoc sets the documentation of this locator.
-func (l *Locator) SetDoc(value string) {
-	l.doc = value
-}
-
-// Name returns the name of the locator.
-func (l *Locator) Name() *names.Name {
-	return l.name
-}
-
-// SetName sets the name of the locator.
-func (l *Locator) SetName(value *names.Name) {
-	l.name = value
-}
-
 // Variable returns the flag that indicates if the name of the referenced resource is a variable
 // instead of a fixed URL segment. For example, in the reference from the clusters resource to the
 // cluster resource the name is a variable, which contains the identifier of the cluster.
@@ -71,7 +52,7 @@ func (l *Locator) Variable() bool {
 	return l.variable
 }
 
-// Variable sets the flag that indicates if the name of the referenced resource is a variable
+// SetVariable sets the flag that indicates if the name of the referenced resource is a variable
 // instead of a fixed URL segment.
 func (l *Locator) SetVariable(value bool) {
 	l.variable = true
