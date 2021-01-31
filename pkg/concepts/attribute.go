@@ -24,10 +24,10 @@ import (
 type Attribute struct {
 	documentedSupport
 	namedSupport
+	typedSupport
 
 	owner *Type
 	link  bool
-	typ   *Type
 }
 
 // NewAttribute creates a new attribute.
@@ -53,16 +53,6 @@ func (a *Attribute) Link() bool {
 // SetLink sets the flag that indicates if this attribute is a link.
 func (a *Attribute) SetLink(value bool) {
 	a.link = value
-}
-
-// Type returns the type of the attribute.
-func (a *Attribute) Type() *Type {
-	return a.typ
-}
-
-// SetType sets the type of the attribute.
-func (a *Attribute) SetType(value *Type) {
-	a.typ = value
 }
 
 // AttributeSlice is used to simplify sorting of slices of attributes by name.
