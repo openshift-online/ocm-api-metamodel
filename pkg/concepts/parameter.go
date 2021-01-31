@@ -23,9 +23,10 @@ import (
 
 // Parameter represents a parameter of a method.
 type Parameter struct {
+	documentedSupport
+	namedSupport
+
 	owner *Method
-	doc   string
-	name  *names.Name
 	typ   *Type
 	in    bool
 	out   bool
@@ -45,26 +46,6 @@ func (p *Parameter) Owner() *Method {
 // SetOwner sets the method that owns this parameter.
 func (p *Parameter) SetOwner(value *Method) {
 	p.owner = value
-}
-
-// Doc returns the documentation of this parameter.
-func (p *Parameter) Doc() string {
-	return p.doc
-}
-
-// SetDoc sets the documentation of this parameter.
-func (p *Parameter) SetDoc(value string) {
-	p.doc = value
-}
-
-// Name returns the name of the parameter.
-func (p *Parameter) Name() *names.Name {
-	return p.name
-}
-
-// SetName sets the name of the parameter.
-func (p *Parameter) SetName(value *names.Name) {
-	p.name = value
 }
 
 // Type returns the type of the parameter.

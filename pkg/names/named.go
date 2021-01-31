@@ -20,3 +20,17 @@ package names
 type Named interface {
 	Name() *Name
 }
+
+// namedSupport is an implementation of the Named interface intended to be embeded in other types
+// that need to implement that interface.
+type namedSupport struct {
+	name *Name
+}
+
+func (s *namedSupport) Name() *Name {
+	return s.name
+}
+
+func (s *namedSupport) SetName(value *Name) {
+	s.name = value
+}

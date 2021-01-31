@@ -22,9 +22,10 @@ import (
 
 // Attribute is the representation of an attribute of an structured type.
 type Attribute struct {
+	documentedSupport
+	namedSupport
+
 	owner *Type
-	doc   string
-	name  *names.Name
 	link  bool
 	typ   *Type
 }
@@ -42,26 +43,6 @@ func (a *Attribute) Owner() *Type {
 // SetOwner sets the type that owns this attribute.
 func (a *Attribute) SetOwner(value *Type) {
 	a.owner = value
-}
-
-// Doc returns the documentation of this attribute.
-func (a *Attribute) Doc() string {
-	return a.doc
-}
-
-// SetDoc sets the documentation of this attribute.
-func (a *Attribute) SetDoc(value string) {
-	a.doc = value
-}
-
-// Name returns the name of the attribute.
-func (a *Attribute) Name() *names.Name {
-	return a.name
-}
-
-// SetName sets the name of the attribute.
-func (a *Attribute) SetName(value *names.Name) {
-	a.name = value
 }
 
 // Link returns true if the attribute is a link, false otherwise.

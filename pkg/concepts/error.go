@@ -22,8 +22,10 @@ import (
 
 // Error is the representation of a catagery of errors.
 type Error struct {
+	documentedSupport
+	namedSupport
+
 	owner *Version
-	doc   string
 	name  *names.Name
 	code  int
 }
@@ -41,26 +43,6 @@ func (e *Error) Owner() *Version {
 // SetOwner sets the version that owns this error.
 func (e *Error) SetOwner(version *Version) {
 	e.owner = version
-}
-
-// Doc returns the documentation of this error.
-func (e *Error) Doc() string {
-	return e.doc
-}
-
-// SetDoc sets the documentation of this error.
-func (e *Error) SetDoc(value string) {
-	e.doc = value
-}
-
-// Name returns the name of this error.
-func (e *Error) Name() *names.Name {
-	return e.name
-}
-
-// SetName sets the name of this error.
-func (e *Error) SetName(value *names.Name) {
-	e.name = value
 }
 
 // Code returns the numeric code of this error.

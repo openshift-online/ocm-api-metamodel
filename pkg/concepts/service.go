@@ -25,41 +25,31 @@ import (
 // Service is the representation of service, containing potentiall mutiple versions, for example the
 // clusters management service.
 type Service struct {
+	documentedSupport
+	namedSupport
+
 	// Model that owns this service:
 	owner *Model
-
-	// Name of the service:
-	name *names.Name
 
 	// All the versions of the service, indexed by name:
 	versions map[string]*Version
 }
 
-// NewVersion creates a new empty service.
+// NewService creates a new empty service.
 func NewService() *Service {
 	service := new(Service)
 	service.versions = make(map[string]*Version)
 	return service
 }
 
-// Onwer returns the model that owns this service.
+// Owner returns the model that owns this service.
 func (s *Service) Owner() *Model {
 	return s.owner
 }
 
-// SetOnwer sets the model that owns this service.
+// SetOwner sets the model that owns this service.
 func (s *Service) SetOwner(value *Model) {
 	s.owner = value
-}
-
-// Name returns the name of this service.
-func (s *Service) Name() *names.Name {
-	return s.name
-}
-
-// SetName sets the name of this service.
-func (s *Service) SetName(value *names.Name) {
-	s.name = value
 }
 
 // Versions returns the list of versions of the service.
