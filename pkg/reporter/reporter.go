@@ -19,6 +19,7 @@ package reporter
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -26,28 +27,68 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
+// Builder contains the data and logic needed to create a new reporter. Don't create instances of
+// this type directly, use the New function instead.
+type Builder struct {
+	out io.Writer
+	err io.Writer
+}
+
 // Reporter is the reported used by the metamodel tools. It prints the messages to the standard
-// output stream. Don't create instances directly, use the NewReporter function instead.
+// output stream. Don't create instances directly, use the New function instead.
 type Reporter struct {
+	out    io.Writer
+	err    io.Writer
 	errors int
 }
 
-// NewReporter createsa a new reporter.
-func NewReporter() *Reporter {
-	reporter := new(Reporter)
-	return reporter
+// New creates a builder that can then be used to configurer and create a reporter.
+func New() *Builder {
+	return &Builder{
+		out: os.Stdout,
+		err: os.Stderr,
+	}
+}
+
+// Streams sets the streams that the reporter will use to write messages. If not specified it will
+// use os.Stdout for information messages and os.Stderr for error messages.
+func (b *Builder) Streams(out, err io.Writer) *Builder {
+	b.out = out
+	b.err = err
+	return b
+}
+
+// Build uses the configuration stored in the builder to create a new reporter.
+func (b *Builder) Build() (result *Reporter, err error) {
+	// Check the parameters:
+	if b.out == nil {
+		err = fmt.Errorf("output stream is mandatory")
+		return
+	}
+	if b.err == nil {
+		err = fmt.Errorf("error stream is mandatory")
+		return
+	}
+
+	// Create and populate the object:
+	result = &Reporter{
+		out: b.out,
+		err: b.err,
+	}
+
+	return
 }
 
 // Infof prints an informative message with the given format and arguments.
 func (r *Reporter) Infof(format string, args ...interface{}) {
 	message := r.printf(format, args)
-	fmt.Fprintf(os.Stdout, "%s%s\n", infoPrefix, message)
+	fmt.Fprintf(r.out, "%s%s\n", infoPrefix, message)
 }
 
 // Warnf prints an warning message with the given format and arguments.
 func (r *Reporter) Warnf(format string, args ...interface{}) {
 	message := r.printf(format, args)
-	fmt.Fprintf(os.Stdout, "%s%s\n", warnPrefix, message)
+	fmt.Fprintf(r.out, "%s%s\n", warnPrefix, message)
 }
 
 // Errorf prints an error message with the given format and arguments. It also return an error
@@ -55,7 +96,7 @@ func (r *Reporter) Warnf(format string, args ...interface{}) {
 // report the error and also return it.
 func (r *Reporter) Errorf(format string, args ...interface{}) error {
 	message := r.printf(format, args)
-	fmt.Fprintf(os.Stdout, "%s%s\n", errorPrefix, message)
+	fmt.Fprintf(r.err, "%s%s\n", errorPrefix, message)
 	r.errors++
 	return errors.New(message)
 }
