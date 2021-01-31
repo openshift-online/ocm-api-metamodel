@@ -26,6 +26,7 @@ import (
 // Method represents a method of a resource.
 type Method struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	owner      *Resource

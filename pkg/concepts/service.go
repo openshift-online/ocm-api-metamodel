@@ -26,6 +26,7 @@ import (
 // clusters management service.
 type Service struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	// Model that owns this service:

@@ -23,6 +23,7 @@ import (
 // Attribute is the representation of an attribute of an structured type.
 type Attribute struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 	typedSupport
 

@@ -88,6 +88,15 @@ type ModelParserListener interface {
 	// EnterErrorCodeDecl is called when entering the errorCodeDecl production.
 	EnterErrorCodeDecl(c *ErrorCodeDeclContext)
 
+	// EnterAnnotation is called when entering the annotation production.
+	EnterAnnotation(c *AnnotationContext)
+
+	// EnterAnnotationParameters is called when entering the annotationParameters production.
+	EnterAnnotationParameters(c *AnnotationParametersContext)
+
+	// EnterAnnotationParameter is called when entering the annotationParameter production.
+	EnterAnnotationParameter(c *AnnotationParameterContext)
+
 	// EnterLiteral is called when entering the literal production.
 	EnterLiteral(c *LiteralContext)
 
@@ -183,6 +192,15 @@ type ModelParserListener interface {
 
 	// ExitErrorCodeDecl is called when exiting the errorCodeDecl production.
 	ExitErrorCodeDecl(c *ErrorCodeDeclContext)
+
+	// ExitAnnotation is called when exiting the annotation production.
+	ExitAnnotation(c *AnnotationContext)
+
+	// ExitAnnotationParameters is called when exiting the annotationParameters production.
+	ExitAnnotationParameters(c *AnnotationParametersContext)
+
+	// ExitAnnotationParameter is called when exiting the annotationParameter production.
+	ExitAnnotationParameter(c *AnnotationParameterContext)
 
 	// ExitLiteral is called when exiting the literal production.
 	ExitLiteral(c *LiteralContext)

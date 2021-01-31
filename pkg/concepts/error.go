@@ -23,6 +23,7 @@ import (
 // Error is the representation of a catagery of errors.
 type Error struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	owner *Version

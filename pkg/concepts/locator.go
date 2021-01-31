@@ -23,6 +23,7 @@ import (
 // Locator represents a resource locator, the reference from a resource to another resource.
 type Locator struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	owner    *Resource
