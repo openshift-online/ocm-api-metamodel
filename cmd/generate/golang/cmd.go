@@ -17,6 +17,7 @@ limitations under the License.
 package golang
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,7 +75,11 @@ func init() {
 
 func run(cmd *cobra.Command, argv []string) {
 	// Create the reporter:
-	reporter := reporter.NewReporter()
+	reporter, err := reporter.New().Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't build reporter: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Check command line options:
 	ok := true

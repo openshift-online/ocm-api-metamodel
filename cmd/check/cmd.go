@@ -17,6 +17,7 @@ limitations under the License.
 package check
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -53,7 +54,11 @@ func init() {
 
 func run(cmd *cobra.Command, argv []string) {
 	// Create the reporter:
-	reporter := reporter.NewReporter()
+	reporter, err := reporter.New().Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't build reporter: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Check command line options:
 	ok := true
@@ -66,7 +71,7 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 
 	// Read the model:
-	_, err := language.NewReader().
+	_, err = language.NewReader().
 		Reporter(reporter).
 		Inputs(args.paths).
 		Read()
