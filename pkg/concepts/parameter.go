@@ -25,9 +25,9 @@ import (
 type Parameter struct {
 	documentedSupport
 	namedSupport
+	typedSupport
 
 	owner *Method
-	typ   *Type
 	in    bool
 	out   bool
 	dflt  interface{}
@@ -46,16 +46,6 @@ func (p *Parameter) Owner() *Method {
 // SetOwner sets the method that owns this parameter.
 func (p *Parameter) SetOwner(value *Method) {
 	p.owner = value
-}
-
-// Type returns the type of the parameter.
-func (p *Parameter) Type() *Type {
-	return p.typ
-}
-
-// SetType sets the type of the parameter.
-func (p *Parameter) SetType(value *Type) {
-	p.typ = value
 }
 
 // In returns true if this is an input parameter.
