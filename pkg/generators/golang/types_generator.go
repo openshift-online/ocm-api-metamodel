@@ -202,13 +202,14 @@ func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Ver
 	g.buffer.Emit(`
 		// Metadata contains the version metadata.
 		type Metadata struct {
-			serverVersion *string
+			bitmap_       uint32
+			serverVersion string
 		}
 
 		// ServerVersion returns the version of the server.
 		func (m *Metadata) ServerVersion() string {
-			if m != nil && m.serverVersion != nil {
-				return *m.serverVersion
+			if m != nil && m.bitmap_&1 != 0 {
+				return m.serverVersion
 			}
 			return ""
 		}
@@ -216,9 +217,9 @@ func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Ver
 		// GetServerVersion returns the value of the server version and a flag indicating if
 		// the attribute has a value.
 		func (m *Metadata) GetServerVersion() (value string, ok bool) {
-			ok = m != nil && m.serverVersion != nil
+			ok = m != nil && m.bitmap_&1 != 0
 			if ok {
-				value = *m.serverVersion
+				value = m.serverVersion
 			}
 			return
 		}
@@ -240,6 +241,8 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
+		Function("bitMask", g.types.BitMask).
+		Function("bitmapType", g.types.BitmapType).
 		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
@@ -313,13 +316,20 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $objectName }} struct {
+			bitmap_ {{ bitmapType .Type }}
 			{{ if .Type.IsClass }}
-				id   *string
-				href *string
-				link bool
+				id   string
+				href string
 			{{ end }}
 			{{ range .Type.Attributes }}
-				{{ fieldName . }} {{ fieldType . }}
+				{{ if not .Type.IsBoolean }}
+					{{ fieldName . }} {{ fieldType . }}
+				{{ end }}
+			{{ end }}
+			{{ range .Type.Attributes }}
+				{{ if .Type.IsBoolean }}
+					{{ fieldName . }} {{ fieldType . }}
+				{{ end }}
 			{{ end }}
 		}
 
@@ -329,16 +339,21 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 				if o == nil {
 					return {{ $objectName }}NilKind
 				}
-				if o.link {
+				if o.bitmap_&1 != 0 {
 					return {{ $objectName }}LinkKind
 				}
 				return {{ $objectName }}Kind
 			}
 
+			// Link returns true iif this is a link.
+			func (o *{{ $objectName }}) Link() bool {
+				return o != nil && o.bitmap_&1 != 0
+			}
+
 			// ID returns the identifier of the object.
 			func (o *{{ $objectName }}) ID() string {
-				if o != nil && o.id != nil {
-					return *o.id
+				if o != nil && o.bitmap_&2 != 0 {
+					return o.id
 				}
 				return ""
 			}
@@ -346,22 +361,17 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetID returns the identifier of the object and a flag indicating if the
 			// identifier has a value.
 			func (o *{{ $objectName }}) GetID() (value string, ok bool) {
-				ok = o != nil && o.id != nil
+				ok = o != nil && o.bitmap_&2 != 0
 				if ok {
-					value = *o.id
+					value = o.id
 				}
 				return
 			}
 
-			// Link returns true iif this is a link.
-			func (o *{{ $objectName }}) Link() bool {
-				return o != nil && o.link
-			}
-
 			// HREF returns the link to the object.
 			func (o *{{ $objectName }}) HREF() string {
-				if o != nil && o.href != nil {
-					return *o.href
+				if o != nil && o.bitmap_&4 != 0 {
+					return o.href
 				}
 				return ""
 			}
@@ -369,9 +379,9 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetHREF returns the link of the object and a flag indicating if the
 			// link has a value.
 			func (o *{{ $objectName }}) GetHREF() (value string, ok bool) {
-				ok = o != nil && o.href != nil
+				ok = o != nil && o.bitmap_&4 != 0
 				if ok {
-					value = *o.href
+					value = o.href
 				}
 				return
 			}
@@ -379,30 +389,17 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// Empty returns true if the object is empty, i.e. no attribute has a value.
 		func (o *{{ $objectName }}) Empty() bool {
-			return o == nil || (
-				{{ if .Type.IsClass }}
-					o.id == nil &&
-				{{ end }}
-				{{ range .Type.Attributes }}
-					{{ $fieldName := fieldName . }}
-					{{ if .Type.IsScalar }}
-						o.{{ $fieldName }} == nil &&
-					{{ else if .Type.IsList }}
-						{{ if .Link }}
-							o.{{ $fieldName }}.Len()  == 0 &&
-						{{ else }}
-							len(o.{{ $fieldName }}) == 0 &&
-						{{ end }}
-					{{ else if .Type.IsMap }}
-						len(o.{{ $fieldName }}) == 0 &&
-					{{ end }}
-				{{ end }}
-				true);
+			{{ if .Type.IsClass }}
+				return o == nil || o.bitmap_&^1 == 0
+			{{ else }}
+				return o == nil || o.bitmap_ == 0
+			{{ end }}
 		}
 
 		{{ range .Type.Attributes }}
 			{{ $attributeType := .Type.Name.String }}
 			{{ $fieldName := fieldName . }}
+			{{ $fieldMask := bitMask . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
 
@@ -411,17 +408,10 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) {{ $getterName }}() {{ $getterType }} {
-				{{ if or .Type.IsStruct .Type.IsList .Type.IsMap .Type.IsInterface }}
-					if o == nil {
-						return nil
-					}
+				if o != nil && o.bitmap_&{{ $fieldMask }} != 0 {
 					return o.{{ $fieldName }}
-				{{ else }}
-					if o != nil && o.{{ $fieldName }} != nil {
-						return *o.{{ $fieldName }}
-					}
-					return {{ zeroValue .Type }}
-				{{ end }}
+				}
+				return {{ zeroValue .Type }}
 			}
 
 			// Get{{ $getterName }} returns the value of the '{{ .Name }}' attribute and
@@ -429,13 +419,9 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
-				ok = o != nil && o.{{ $fieldName }} != nil
+				ok = o != nil && o.bitmap_&{{ $fieldMask }} != 0
 				if ok {
-					{{ if or .Type.IsStruct .Type.IsList .Type.IsMap .Type.IsInterface }}
-						value = o.{{ $fieldName }}
-					{{ else }}
-						value = *o.{{ $fieldName }}
-					{{ end }}
+					value = o.{{ $fieldName }}
 				}
 				return
 			}
@@ -455,7 +441,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// {{ $listName }} is a list of values of the '{{ .Type.Name }}' type.
 		type {{ $listName }} struct {
-			href  *string
+			href  string
 			link  bool
 			items []*{{ $objectName }}
 		}
@@ -479,8 +465,8 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 			// HREF returns the link to the list.
 			func (l *{{ $listName }}) HREF() string {
-				if l != nil && l.href != nil {
-					return *l.href
+				if l != nil {
+					return l.href
 				}
 				return ""
 			}
@@ -488,9 +474,9 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetHREF returns the link of the list and a flag indicating if the
 			// link has a value.
 			func (l *{{ $listName }}) GetHREF() (value string, ok bool) {
-				ok = l != nil && l.href != nil
+				ok = l != nil && l.href != ""
 				if ok {
-					value = *l.href
+					value = l.href
 				}
 				return
 			}
@@ -627,7 +613,7 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference
 	typ := attribute.Type()
 	switch {
 	case typ.IsScalar():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.ValueReference(typ)
 	case typ.IsStruct():
 		ref = g.types.NullableReference(typ)
 	case typ.IsList():

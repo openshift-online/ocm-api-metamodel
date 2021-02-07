@@ -3,7 +3,7 @@ module github.com/openshift-online/ocm-api-metamodel
 go 1.15
 
 require (
-	github.com/antlr/antlr4 v0.0.0-20210126174035-365a56f10f86
+	github.com/antlr/antlr4 v0.0.0-20210127121638-62a0b02bf460
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/json-iterator/go v1.1.10
 	github.com/onsi/ginkgo v1.14.2

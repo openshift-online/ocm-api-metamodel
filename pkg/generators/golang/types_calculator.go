@@ -409,6 +409,82 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 	}
 }
 
+// BitMask calculates the bit mask used to check presence of the given attribute.
+func (c *TypesCalculator) BitMask(attribute *concepts.Attribute) string {
+	// Calculate the index taking into account that the the builtin `link`, `id` and `href`
+	// fields of class types:
+	var index int
+	typ := attribute.Owner()
+	if typ.IsClass() {
+		index += 3
+	}
+	for _, current := range attribute.Owner().Attributes() {
+		if current == attribute {
+			break
+		}
+		index++
+	}
+
+	// Calculate the mask:
+	mask := 1 << index
+	return fmt.Sprintf("%d", mask)
+}
+
+// BitmapType calculates the reference for the type that will be used to implement the attribute
+// presence bitset for the given struct type.
+func (c *TypesCalculator) BitmapType(typ *concepts.Type) *TypeReference {
+	ref := &TypeReference{}
+
+	// Check that the given type is a struct:
+	if !typ.IsStruct() {
+		c.reporter.Errorf(
+			"Don't know how to make package name for type '%s' of kind '%s'",
+			typ.Name(), typ.Kind(),
+		)
+		return ref
+	}
+
+	// Check that there are no more than the maximum number of attributes that can fit in the
+	// bitmap:
+	max := 64
+	if typ.IsClass() {
+		max -= 3
+	}
+	count := len(typ.Attributes())
+	if count > max {
+		c.reporter.Errorf(
+			"Struct type '%s' has more %d attributes, but at most %d attributes "+
+				"are supported",
+			typ, count, max,
+		)
+		return ref
+	}
+
+	// Select the smaller usigned integer tha thas room for all the attributes:
+	size := c.bitmapSize(typ)
+	name := fmt.Sprintf("uint%d", size)
+	ref.name = name
+	ref.text = name
+	return ref
+}
+
+// bitmapSize calculates the number of bits used for the presence bitmap of the given type, rounded
+// up to a multiple of eight.
+func (c *TypesCalculator) bitmapSize(typ *concepts.Type) int {
+	// For classes the first bit is reserved to indicate if the object is a link, and the second
+	// and third bits are used for the built-in `id` and `href` attributes:
+	count := len(typ.Attributes())
+	if typ.IsClass() {
+		count += 3
+	}
+
+	// Use a normal unsigned integer if possible, or a long one if more than 32 bits are needed:
+	if count <= 32 {
+		return 32
+	}
+	return 64
+}
+
 // TypeReference represents a reference to a Go type.
 type TypeReference struct {
 	imprt    string

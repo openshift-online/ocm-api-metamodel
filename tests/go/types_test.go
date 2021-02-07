@@ -237,12 +237,12 @@ var _ = Describe("Type", func() {
 			Expect(list.Empty()).To(BeFalse())
 		})
 
-		It("Returns `true` for empty map of strings", func() {
+		It("Returns `false` for empty map of strings", func() {
 			list, err := cmv1.NewCluster().
 				Properties(map[string]string{}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(list.Empty()).To(BeTrue())
+			Expect(list.Empty()).To(BeFalse())
 		})
 
 		It("Returns `false` for map of strings with one value", func() {
@@ -266,12 +266,12 @@ var _ = Describe("Type", func() {
 			Expect(list.Empty()).To(BeFalse())
 		})
 
-		It("Returns `true` for empty map of objects", func() {
+		It("Returns `false` for empty map of objects", func() {
 			list, err := amv1.NewRegistryAuths().
 				Map(map[string]*amv1.RegistryAuthBuilder{}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(list.Empty()).To(BeTrue())
+			Expect(list.Empty()).To(BeFalse())
 		})
 
 		It("Returns `false` for map of objects with one value", func() {
@@ -293,6 +293,14 @@ var _ = Describe("Type", func() {
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `true` empty link", func() {
+			object, err := cmv1.NewCluster().
+				Link(true).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(object.Empty()).To(BeTrue())
 		})
 	})
 
