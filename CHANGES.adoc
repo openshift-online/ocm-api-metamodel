@@ -3,6 +3,14 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.36 Feb 8 2021
+
+- Use Go 1.15
+- Add `documentedSupport` and `namedSupport`
+- Add `typedSupport`
+- Make reporter streams configurable
+- Add presence bitmap
+
 == 0.0.35 Nov 17 2020
 
 - Update to version 4.8 of Antlr
