@@ -44,7 +44,7 @@ var _ = Describe("Poll", func() {
 	})
 
 	It("Refuses to start without a timeout or deadline", func() {
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx := context.Background()
 		_, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -53,7 +53,7 @@ var _ = Describe("Poll", func() {
 	})
 
 	It("Refuses to start without an interval", func() {
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			StartContext(ctx)
@@ -61,7 +61,7 @@ var _ = Describe("Poll", func() {
 	})
 
 	It("Refuses to start without zero interval", func() {
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(0).
@@ -70,7 +70,7 @@ var _ = Describe("Poll", func() {
 	})
 
 	It("Refuses to start without negative interval", func() {
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(-1 * time.Millisecond).
@@ -85,7 +85,7 @@ var _ = Describe("Poll", func() {
 			"href": "/api/clusters_mgmt/v1/clusters/123",
 			"name": "mycluster"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -108,11 +108,7 @@ var _ = Describe("Poll", func() {
 			"code": "CLUSTERS-MGMT-404",
 			"reason": "Not found"
 		}`))
-		client := cmv1.NewClusterClient(
-			transport,
-			"/api/clusters_mgmt/v1/clusters/123",
-			"",
-		)
+		client := cmv1.NewClusterClient(transport, "/api/clusters_mgmt/v1/clusters/123")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -142,7 +138,7 @@ var _ = Describe("Poll", func() {
 			"href": "/api/clusters_mgmt/v1/clusters/123",
 			"name": "mycluster"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -170,7 +166,7 @@ var _ = Describe("Poll", func() {
 			"href": "/api/clusters_mgmt/v1/clusters/123",
 			"name": "mycluster"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -196,7 +192,7 @@ var _ = Describe("Poll", func() {
 				"name": "mycluster"
 			}`),
 		)
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -214,7 +210,7 @@ var _ = Describe("Poll", func() {
 			"name": "mycluster",
 			"state": "ready"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
@@ -247,7 +243,7 @@ var _ = Describe("Poll", func() {
 			"name": "mycluster",
 			"state": "ready"
 		}`))
-		client := cmv1.NewClusterClient(transport, "", "")
+		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).

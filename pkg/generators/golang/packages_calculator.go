@@ -107,7 +107,7 @@ func (g *PackagesCalculator) VersionImport(version *concepts.Version) string {
 	return path.Join(g.base, g.VersionPackage(version))
 }
 
-// ServiceSelector returns the selector of the package for the given service.
+// VersionSelector returns the selector of the package for the given service.
 func (g *PackagesCalculator) VersionSelector(version *concepts.Version) string {
 	return path.Base(g.VersionPackage(version))
 }
@@ -119,6 +119,16 @@ func (g *PackagesCalculator) HelpersPackage() string {
 
 // HelpersImport returns complete import path of the helpers package.
 func (g *PackagesCalculator) HelpersImport() string {
+	return path.Join(g.base, g.HelpersPackage())
+}
+
+// MetricsPackage returns the name of the metrics package.
+func (g *PackagesCalculator) MetricsPackage() string {
+	return nomenclator.Metrics.LowerJoined("")
+}
+
+// MetricsImport returns complete import path of the metrics package.
+func (g *PackagesCalculator) MetricsImport() string {
 	return path.Join(g.base, g.HelpersPackage())
 }
 

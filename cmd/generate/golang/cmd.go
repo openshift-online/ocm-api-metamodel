@@ -243,7 +243,7 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	gens = append(gens, gen)
 
-	// Create the JSON readers generator:
+	// Create the JSON support generator:
 	gen, err = golang.NewJSONSupportGenerator().
 		Reporter(reporter).
 		Model(model).
@@ -254,7 +254,22 @@ func run(cmd *cobra.Command, argv []string) {
 		Binding(bindingCalculator).
 		Build()
 	if err != nil {
-		reporter.Errorf("Can't create JSON readers generator: %v", err)
+		reporter.Errorf("Can't create JSON support generator: %v", err)
+		os.Exit(1)
+	}
+	gens = append(gens, gen)
+
+	// Create the metrics support generator:
+	gen, err = golang.NewMetricsSupportGenerator().
+		Reporter(reporter).
+		Model(model).
+		Output(args.output).
+		Packages(goPackagesCalculator).
+		Names(goNamesCalculator).
+		Binding(bindingCalculator).
+		Build()
+	if err != nil {
+		reporter.Errorf("Can't create metrics support generator: %v", err)
 		os.Exit(1)
 	}
 	gens = append(gens, gen)

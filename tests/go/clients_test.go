@@ -47,7 +47,7 @@ var _ = Describe("Client", func() {
 		server.AppendHandlers(RespondWith(http.StatusOK, `{
 			"auths": {}
 		}`))
-		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1", "")
+		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1")
 		response, err := client.AccessToken().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -64,7 +64,7 @@ var _ = Describe("Client", func() {
 				}
 			}
 		}`))
-		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1", "")
+		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1")
 		response, err := client.AccessToken().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -89,7 +89,7 @@ var _ = Describe("Client", func() {
 				}
 			}
 		}`))
-		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1", "")
+		client := amv1.NewClient(transport, "/api/accounts_mgmt/v1")
 		response, err := client.AccessToken().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -109,7 +109,7 @@ var _ = Describe("Client", func() {
 		server.AppendHandlers(RespondWith(http.StatusOK, `{
 			"server_version": "123"
 		}`))
-		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1", "")
+		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.Get().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -155,7 +155,7 @@ var _ = Describe("Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// Send the request:
-		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1", "")
+		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.RegisterDisconnected().
 			Cluster(cluster).
 			Send()
@@ -196,7 +196,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1", "")
+		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.RegisterCluster().
 			SubscriptionID("123").
 			ExternalID("456").
@@ -225,7 +225,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -253,7 +253,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -287,7 +287,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -332,7 +332,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -369,7 +369,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().
 			Page(123).
 			Size(456).
@@ -399,7 +399,7 @@ var _ = Describe("Client", func() {
 		)
 
 		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters", "")
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
@@ -422,7 +422,7 @@ var _ = Describe("Client", func() {
 			)
 
 			// Send the request:
-			client := cmv1.NewClusterClient(transport, "", "")
+			client := cmv1.NewClusterClient(transport, "")
 			_, err := client.Get().Parameter("my", value).Send()
 			Expect(err).ToNot(HaveOccurred())
 		},
