@@ -79,6 +79,7 @@ var (
 	Marshal  = names.ParseUsingCase("Marshal")
 	Metadata = names.ParseUsingCase("Metadata")
 	Method   = names.ParseUsingCase("Method")
+	Metrics  = names.ParseUsingCase("Metrics")
 
 	// N:
 	New = names.ParseUsingCase("New")
@@ -86,8 +87,9 @@ var (
 	// P:
 	Page  = names.ParseUsingCase("Page")
 	Parse = names.ParseUsingCase("Parse")
-	Post  = names.ParseUsingCase("Post")
+	Path  = names.ParseUsingCase("Path")
 	Poll  = names.ParseUsingCase("Poll")
+	Post  = names.ParseUsingCase("Post")
 
 	// R:
 	Read     = names.ParseUsingCase("Read")
@@ -111,6 +113,7 @@ var (
 
 	// T:
 	Total = names.ParseUsingCase("Total")
+	Tree  = names.ParseUsingCase("Tree")
 	Type  = names.ParseUsingCase("Type")
 
 	// U:

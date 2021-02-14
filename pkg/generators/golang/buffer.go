@@ -126,6 +126,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	buffer.functions = make(map[string]interface{})
 	buffer.functions["lineComment"] = buffer.lineComment
 	buffer.functions["byteArray"] = buffer.byteArray
+	buffer.functions["backtick"] = buffer.backtick
 	for name, function := range b.functions {
 		buffer.functions[name] = function
 	}
@@ -462,6 +463,20 @@ func (b *Buffer) cleanPkg(name string) string {
 		name = name[index+1:]
 	}
 	return name
+}
+
+// backtick generates the ` character. This is intended for templats tht need to include this
+// character, but that are already using it to define the template itself. For example:
+//
+//	// Generate a multi-line string using the backtick syntax:
+//	g.buffer.Emit(`
+//		var myString = {{ backtick }}
+//			First line
+//			Second line
+//		{{ backtick }}
+//		`,
+func (b *Buffer) backtick() string {
+	return "`"
 }
 
 // Header that will be included in all generated files:

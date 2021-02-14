@@ -177,14 +177,12 @@ func (g *HelpersGenerator) Run() error {
 			header.Add(name, fmt.Sprintf("%v", value))
 		}
 
-		// SetHeader creates a copy of the given set of headers, and adds the header
-		// containing the given metrics path.
-		func SetHeader(header http.Header, metric string) http.Header {
+		// CopyHeader creates a copy of the given set of headers.
+		func CopyHeader(header http.Header) http.Header {
 			result := make(http.Header)
 			for name, values := range header {
 				result[name] = CopyValues(values)
 			}
-			result.Set(metricHeader, metric)
 			return result
 		}
 
@@ -291,9 +289,6 @@ func (g *HelpersGenerator) Run() error {
 			}
 			return true
 		}
-
-		// Name of the header used to contain the metrics path:
-		const metricHeader = "X-Metric"
         `)
 
 	// Write the generated code:

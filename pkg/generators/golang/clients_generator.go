@@ -228,16 +228,14 @@ func (g *ClientsGenerator) generateServiceClientSource(service *concepts.Service
 		type Client struct {
 			transport http.RoundTripper
 			path string
-			metric string
 		}
 
 		// NewClient creates a new client for the service '{{ .Service.Name }}' using the
 		// given transport to send the requests and receive the responses.
-		func NewClient(transport http.RoundTripper, path string, metric string) *Client {
+		func NewClient(transport http.RoundTripper, path string) *Client {
 			client := new(Client)
 			client.transport = transport
 			client.path = path
-			client.metric = metric
 			return client
 		}
 
@@ -252,7 +250,6 @@ func (g *ClientsGenerator) generateServiceClientSource(service *concepts.Service
 				return {{ $versionSelector }}.New{{ $rootName }}(
 					c.transport,
 					path.Join(c.path, "{{ $versionSegment }}"),
-					path.Join(c.metric, "{{ $versionSegment }}"),
 				)
 			}
 		{{ end }}
@@ -318,7 +315,6 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 		type MetadataRequest struct {
 			transport http.RoundTripper
 			path      string
-			metric    string
 			query     url.Values
 			header    http.Header
 		}
@@ -354,7 +350,7 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 		// SendContext sends the metadata request, waits for the response, and returns it.
 		func (r *MetadataRequest) SendContext(ctx context.Context) (result *MetadataResponse, err error) {
 			query := helpers.CopyQuery(r.query)
-			header := helpers.SetHeader(r.header, r.metric)
+			header := helpers.CopyHeader(r.header)
 			uri := &url.URL{
 				Path: r.path,
 				RawQuery: query.Encode(),
@@ -492,17 +488,15 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 		type {{ $clientName }} struct {
 			transport http.RoundTripper
 			path string
-			metric string
 		}
 
 		// New{{ $clientName }} creates a new client for the '{{ .Resource.Name }}'
 		// resource using the given transport to send the requests and receive the
 		// responses.
-		func New{{ $clientName }}(transport http.RoundTripper, path string, metric string) *{{ $clientName }} {
+		func New{{ $clientName }}(transport http.RoundTripper, path string) *{{ $clientName }} {
 			return &{{ $clientName }}{
 				transport: transport,
 				path:      path,
-				metric:    metric,
 			}
 		}
 
@@ -518,11 +512,9 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 				return &{{ $requestName }}{
 					transport: c.transport,
 					{{ if $methodSegment }}
-						path:   path.Join(c.path, "{{ $methodSegment }}"),
-						metric: path.Join(c. metric, "{{ $methodSegment }}"),
+						path: path.Join(c.path, "{{ $methodSegment }}"),
 					{{ else }}
-						path:   c.path,
-						metric: c.metric,
+						path: c.path,
 					{{ end }}
 				}
 			}
@@ -534,7 +526,6 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 				return &MetadataRequest{
 					transport: c.transport,
 					path:      c.path,
-					metric:    c.metric,
 				}
 			}
 		{{ end }}
@@ -552,7 +543,6 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 					return New{{ $targetName }}(
 						c.transport,
 						path.Join(c.path, id),
-						path.Join(c.metric, "-"),
 					)
 				}
 			{{ else }}
@@ -563,7 +553,6 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 					return New{{ $targetName }}(
 						c.transport,
 						path.Join(c.path, "{{ $locatorSegment }}"),
-						path.Join(c.metric, "{{ $locatorSegment }}"),
 					)
 				}
 			{{ end }}
@@ -789,7 +778,6 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 		type {{ $requestName }} struct {
 			transport http.RoundTripper
 			path      string
-			metric    string
 			query     url.Values
 			header    http.Header
 			{{ range $requestParameters }}
@@ -845,7 +833,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 					helpers.AddValue(&query, "{{ $parameterName }}", *r.{{ $fieldName }})
 				}
 			{{ end }}
-			header := helpers.SetHeader(r.header, r.metric)
+			header := helpers.CopyHeader(r.header)
 			{{ if $requestBodyParameters }}
 				buffer := &bytes.Buffer{}
 				err = {{ writeRequestFunc .Method }}(r, buffer)
