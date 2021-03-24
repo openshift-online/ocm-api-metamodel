@@ -193,6 +193,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			code        string
 			reason      string
 			operationID string
+			details     []interface{}
 		}
 
 		// Error represents errors.
@@ -203,6 +204,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			code        string
 			reason      string
 			operationID string
+			details     []interface{}
 		}
 
 		// NewError creates a new builder that can then be used to create error objects.
@@ -245,6 +247,13 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return b
 		}
 
+		// Details sets additional details included in the error.
+		func (b *ErrorBuilder) Details(value []interface{}) *ErrorBuilder {
+			b.details = value
+			b.bitmap_ |= 32
+			return b
+		}
+
 		// Build uses the information stored in the builder to create a new error object.
 		func (b *ErrorBuilder) Build() (result *Error,  err error) {
 			result = &Error{
@@ -253,7 +262,8 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				code:        b.code,
 				reason:      b.reason,
 				operationID: b.operationID,
-				bitmap_:   b.bitmap_,
+				details:     b.details,
+				bitmap_:     b.bitmap_,
 			}
 			return
 		}
@@ -356,6 +366,24 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return
 		}
 
+		// Details returns the additional details included in the error.
+		func (e *Error) Details() []interface{} {
+			if e != nil && e.bitmap_&32 != 0 {
+				return e.details
+			}
+			return nil
+		}
+
+		// GetDetails returns the additional details included in the error and
+		// a flag indicating if the details have a value.
+		func (e *Error) GetDetails() (value []interface{}, ok bool) {
+			ok = e != nil && e.bitmap_&32 != 0
+			if ok {
+				value = e.details
+			}
+			return
+		}
+
 		// Error is the implementation of the error interface.
 		func (e *Error) Error() string {
 			chunks := make([]string, 0, 3)
@@ -427,6 +455,14 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				case "operation_id":
 					object.operationID = iterator.ReadString()
 					object.bitmap_ |= 16
+				case "details":
+					details := []interface{}{}
+					for iterator.ReadArray() {
+						detail := iterator.Read()
+						details = append(details, detail)
+					}
+					object.details = details
+					object.bitmap_ |= 32
 				default:
 					iterator.ReadAny()
 				}
@@ -470,6 +506,14 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				stream.WriteMore()
 				stream.WriteObjectField("operation_id")
 				stream.WriteString(e.operationID)
+			}
+			if e.bitmap_&32 != 0 {
+				details, err := jsoniter.Marshal(e.details)
+				if err != nil {
+					stream.WriteMore()
+					stream.WriteObjectField("details")
+					stream.Write(details)
+				}
 			}
 			stream.WriteObjectEnd()
 		}
