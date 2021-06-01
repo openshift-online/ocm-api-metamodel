@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
@@ -327,6 +328,7 @@ func (b *Buffer) Write() error {
 	}
 
 	// Write the header:
+	fileHeader := fmt.Sprintf(fileHeaderTemplate, time.Now().Year())
 	fmt.Fprintf(outputFd, "%s\n", fileHeader)
 	fmt.Fprintf(outputFd, "\n")
 
@@ -480,8 +482,8 @@ func (b *Buffer) backtick() string {
 }
 
 // Header that will be included in all generated files:
-const fileHeader = `/*
-Copyright (c) 2020 Red Hat, Inc.
+const fileHeaderTemplate = `/*
+Copyright (c) %d Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
