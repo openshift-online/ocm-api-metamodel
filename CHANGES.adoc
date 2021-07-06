@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.38 Jul 6 2021
+
+- Explicitly import `github.com/golang/glog` to avoid conflicts with
+  `github.com/istio/glog`.
+
 == 0.0.37 Feb 15 2021
 
 - Add metrics support generator, and remove `X-Metric` header.
