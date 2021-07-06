@@ -495,6 +495,7 @@ func (g *ServersGenerator) generateResourceServerSource(resource *concepts.Resou
 func (g *ServersGenerator) generateResourceDispatcherSource(resource *concepts.Resource) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
+	g.buffer.Import("github.com/golang/glog", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
