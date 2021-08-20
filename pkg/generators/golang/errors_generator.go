@@ -192,6 +192,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			href        string
 			code        string
 			reason      string
+			details     interface{}
 			operationID string
 		}
 
@@ -202,6 +203,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			href        string
 			code        string
 			reason      string
+			details     interface{}
 			operationID string
 		}
 
@@ -245,6 +247,13 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return b
 		}
 
+		// Details sets additional details of the error.
+		func (b *ErrorBuilder) Details(value interface{}) *ErrorBuilder {
+			b.details = value
+			b.bitmap_ |= 32
+			return b
+		}
+
 		// Build uses the information stored in the builder to create a new error object.
 		func (b *ErrorBuilder) Build() (result *Error,  err error) {
 			result = &Error{
@@ -252,6 +261,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				href:        b.href,
 				code:        b.code,
 				reason:      b.reason,
+				details:     b.details,
 				operationID: b.operationID,
 				bitmap_:   b.bitmap_,
 			}
@@ -356,6 +366,24 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return
 		}
 
+		// Details returns the details of the error
+		func (e *Error) Details() interface{} {
+			if e != nil && e.bitmap_&32 != 0 {
+				return e.details
+			}
+			return nil
+		}
+
+		// GetDetails returns the details of the error and a flag 
+		// indicating if the details have a value.
+		func (e *Error) GetDetails() (value interface{}, ok bool) {
+			ok = e != nil && e.bitmap_&32 != 0
+			if ok {
+				value = e.details
+			}
+			return
+		}
+
 		// Error is the implementation of the error interface.
 		func (e *Error) Error() string {
 			chunks := make([]string, 0, 3)
@@ -427,6 +455,9 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				case "operation_id":
 					object.operationID = iterator.ReadString()
 					object.bitmap_ |= 16
+				case "details":
+					object.details = iterator.ReadAny().GetInterface()
+					object.bitmap_ |= 32
 				default:
 					iterator.ReadAny()
 				}
@@ -470,6 +501,11 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				stream.WriteMore()
 				stream.WriteObjectField("operation_id")
 				stream.WriteString(e.operationID)
+			}
+			if e.bitmap_&32 != 0 {
+				stream.WriteMore()
+				stream.WriteObjectField("details")
+				stream.WriteVal(e.details)
 			}
 			stream.WriteObjectEnd()
 		}

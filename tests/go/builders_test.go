@@ -211,6 +211,8 @@ var _ = Describe("Builder", func() {
 				Code("CLUSTERS-MGMT-401").
 				Reason("My reason").
 				OperationID("456").
+				Details(map[string]interface{}{
+					"kind": "cluster error"}).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(object.ID()).To(Equal("401"))
@@ -218,6 +220,8 @@ var _ = Describe("Builder", func() {
 			Expect(object.Code()).To(Equal("CLUSTERS-MGMT-401"))
 			Expect(object.Reason()).To(Equal("My reason"))
 			Expect(object.OperationID()).To(Equal("456"))
+			Expect(object.Details()).To(Equal(map[string]interface{}{
+				"kind": "cluster error"}))
 		})
 	})
 
