@@ -15,17 +15,7 @@
 # limitations under the License.
 #
 
-# This script is executed by a Jenkins job for each change request. If it
-# doesn't succeed the change won't be merged.
-
-# Set the `GOBIN` environment variable so that dependencies will be installed
-# always in the same place, regardless of the value of `GOPATH`:
-export GOBIN="${PWD}/.gobin"
-export PATH="${GOBIN}:${PATH}"
-
-# Install Go tools:
-go get github.com/onsi/ginkgo/ginkgo@v1.10.3
-go get golang.org/x/tools/cmd/goimports@v0.0.0-20200518194103-259583f2d8a9
-
-# Run the tests:
-make tests
+# This script is executed by a Jenkins job for each change request. It used to
+# run tests, but has now been replaced by GitHub actions and will be removed
+# soon.
+exit 0
