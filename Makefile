@@ -53,8 +53,8 @@ fmt:
 		./tests \
 		$(NULL)
 
-.PHONY: tests
-tests:
+.PHONY: test tests
+test tests:
 	$(MAKE) unit_tests
 	$(MAKE) go_tests
 	$(MAKE) openapi_tests
@@ -71,7 +71,7 @@ go_tests: cmds
 		--model=tests/model \
 		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/generated \
 		--output=tests/go/generated
-	ginkgo -r tests/go
+	cd tests/go && ginkgo -r
 
 .PHONY: openapi_tests
 openapi_tests: openapi_generator
