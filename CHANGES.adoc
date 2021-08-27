@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.40 Aug 27 2021
+
+This release doesn't contain any functional changes, it only contains changes
+in the build process intended to automatically publish the release binaries so
+that other projects can use them without having to build the project.
+
 == 0.0.39 Aug 23 2021
 
 - Add `details` attribute to errors.
