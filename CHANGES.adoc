@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.41 Sep 24 2021
+
+The only change in this release is that the _GitHub_ action that publishes
+releases has been fixed so that it publishes correct binaries. There are no
+changes in functionality.
+
 == 0.0.40 Aug 27 2021
 
 This release doesn't contain any functional changes, it only contains changes
