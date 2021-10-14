@@ -232,7 +232,7 @@ func (g *JSONSupportGenerator) generateHelpers() error {
 	g.buffer.Import("github.com/json-iterator/go", "")
 	g.buffer.Emit(`
 		// NewIterator creates a new JSON iterator that will read to the given source, which
-		// can be a slice of bytes, a string or a reader.
+		// can be a slice of bytes, a string, a reader or an existing iterator.
 		func NewIterator(source interface{}) (iterator *jsoniter.Iterator, err error) {
 			config := jsoniter.Config{}
 			api := config.Froze()
@@ -243,9 +243,11 @@ func (g *JSONSupportGenerator) generateHelpers() error {
 				iterator = jsoniter.ParseString(api, typed)
 			case io.Reader:
 				iterator = jsoniter.Parse(api, typed, 4096)
+			case *jsoniter.Iterator:
+				iterator = typed
 			default:
 				err = fmt.Errorf(
-					"expected slice of bytes, string or reader but got '%T'",
+					"expected slice of bytes, string, reader or iterator but got '%T'",
 					source,
 				)
 			}
