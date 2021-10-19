@@ -150,17 +150,6 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 	// Run checks:
 	r.checkModel()
 
-	// Check methods:
-	for _, service := range r.model.Services() {
-		for _, version := range service.Versions() {
-			for _, resource := range version.Resources() {
-				for _, method := range resource.Methods() {
-					r.checkMethod(method)
-				}
-			}
-		}
-	}
-
 	// Check if there are errors:
 	errors := r.reporter.Errors()
 	if errors > 0 {
