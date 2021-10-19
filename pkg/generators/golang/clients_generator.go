@@ -880,19 +880,6 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			{{ end }}
 			return
 		}
-
-		{{ if $requestBodyParameters }}
-			// marshall is the method used internally to marshal requests for the
-			// '{{ .Method.Name }}' method.
-			func (r *{{ $requestName }}) marshal(writer io.Writer) error {
-				stream := helpers.NewStream(writer)
-				r.stream(stream)
-				return stream.Error
-			}
-
-			func (r *{{ $requestName }}) stream(stream *jsoniter.Stream) {
-			}
-		{{ end }}
 		`,
 		"Method", method,
 		"Main", main,
@@ -1000,10 +987,6 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 		"Main", main,
 		"Others", others,
 	)
-}
-
-func (g *ClientsGenerator) clientsFile() string {
-	return g.names.File(nomenclator.Clients)
 }
 
 func (g *ClientsGenerator) versionName(version *concepts.Version) string {
