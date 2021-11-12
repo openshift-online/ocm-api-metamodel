@@ -28,6 +28,7 @@ import (
 
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
+	"github.com/openshift-online/ocm-api-metamodel/tests/go/generated/errors"
 )
 
 var _ = Describe("Client", func() {
@@ -443,4 +444,37 @@ var _ = Describe("Client", func() {
 		Entry("String with leading space", " myvalue", " myvalue"),
 		Entry("String with trailing space", "myvalue ", "myvalue "),
 	)
+
+	It("Returns error with HTTP status code", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyRequest(
+					http.MethodDelete,
+					"/api/clusters_mgmt/v1/clusters/123",
+				),
+				RespondWith(
+					http.StatusNotFound,
+					`{
+						"kind": "Error",
+						"id": "404",
+						"href": "/api/clusters_mgmt/v1/errors/404",
+						"code": "CLUSTERS-MGMT-404",
+						"reason": "Cluster '123' doesn't exist"
+					}`,
+				),
+			),
+		)
+
+		// Send the request:
+		client := cmv1.NewClusterClient(transport, "/api/clusters_mgmt/v1/clusters/123")
+		_, err := client.Delete().Send()
+		Expect(err).To(HaveOccurred())
+
+		// Verify the error:
+		var sdkErr *errors.Error
+		Expect(err).To(BeAssignableToTypeOf(sdkErr))
+		sdkErr = err.(*errors.Error)
+		Expect(sdkErr.Status()).To(Equal(http.StatusNotFound))
+	})
 })

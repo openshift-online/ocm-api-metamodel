@@ -188,6 +188,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// ErrorBuilder is a builder for the error type.
 		type ErrorBuilder struct{
 			bitmap_     uint32
+			status      int
 			id          string
 			href        string
 			code        string
@@ -199,6 +200,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// Error represents errors.
 		type Error struct {
 			bitmap_     uint32
+			status      int
 			id          string
 			href        string
 			code        string
@@ -212,58 +214,83 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return &ErrorBuilder{}
 		}
 
+		// Status sets the HTTP status code.
+		func (b *ErrorBuilder) Status(value int) *ErrorBuilder {
+			b.status = value
+			b.bitmap_ |= 1
+			return b
+		}
+
 		// ID sets the identifier of the error.
 		func (b *ErrorBuilder) ID(value string) *ErrorBuilder {
 			b.id = value
-			b.bitmap_ |= 1
+			b.bitmap_ |= 2
 			return b
 		}
 
 		// HREF sets the link of the error.
 		func (b *ErrorBuilder) HREF(value string) *ErrorBuilder {
 			b.href = value
-			b.bitmap_ |= 2
+			b.bitmap_ |= 4
 			return b
 		}
 
 		// Code sets the code of the error.
 		func (b *ErrorBuilder) Code(value string) *ErrorBuilder {
 			b.code = value
-			b.bitmap_ |= 4
+			b.bitmap_ |= 8
 			return b
 		}
 
 		// Reason sets the reason of the error.
 		func (b *ErrorBuilder) Reason(value string) *ErrorBuilder {
 			b.reason = value
-			b.bitmap_ |= 8
+			b.bitmap_ |= 16
 			return b
 		}
 
 		// OperationID sets the identifier of the operation that caused the error.
 		func (b *ErrorBuilder) OperationID(value string) *ErrorBuilder {
 			b.operationID = value
-			b.bitmap_ |= 16
+			b.bitmap_ |= 32
 			return b
 		}
 
 		// Details sets additional details of the error.
 		func (b *ErrorBuilder) Details(value interface{}) *ErrorBuilder {
 			b.details = value
-			b.bitmap_ |= 32
+			b.bitmap_ |= 64
+			return b
+		}
+
+		// Copy copies the attributes of the given error into this
+		// builder, discarding any previous values.
+		func (b *ErrorBuilder) Copy(object *Error) *ErrorBuilder {
+			if object == nil {
+				return b
+			}
+			b.bitmap_ = object.bitmap_
+			b.status = object.status
+			b.id = object.id
+			b.href = object.href
+			b.code = object.code
+			b.reason = object.reason
+			b.details = object.details
+			b.operationID = object.operationID
 			return b
 		}
 
 		// Build uses the information stored in the builder to create a new error object.
-		func (b *ErrorBuilder) Build() (result *Error,  err error) {
+		func (b *ErrorBuilder) Build() (result *Error, err error) {
 			result = &Error{
+				status:      b.status,
 				id:          b.id,
 				href:        b.href,
 				code:        b.code,
 				reason:      b.reason,
 				details:     b.details,
 				operationID: b.operationID,
-				bitmap_:   b.bitmap_,
+				bitmap_:     b.bitmap_,
 			}
 			return
 		}
@@ -276,9 +303,27 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return ErrorKind
 		}
 
+		// Status returns the HTTP status code.
+		func (e *Error) Status() int {
+			if e != nil && e.bitmap_&1 != 0 {
+				return e.status
+			}
+			return 0
+		}
+
+		// GetStatus returns the HTTP status code of the error and a flag indicating
+		// if the status has a value.
+		func (e *Error) GetStatus() (value int, ok bool) {
+			ok = e != nil && e.bitmap_&1 != 0
+			if ok {
+				value = e.status
+			}
+			return
+		}
+
 		// ID returns the identifier of the error.
 		func (e *Error) ID() string {
-			if e != nil && e.bitmap_&1 != 0 {
+			if e != nil && e.bitmap_&2 != 0 {
 				return e.id
 			}
 			return ""
@@ -287,7 +332,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetID returns the identifier of the error and a flag indicating if the
 		// identifier has a value.
 		func (e *Error) GetID() (value string, ok bool) {
-			ok = e != nil && e.bitmap_&1 != 0
+			ok = e != nil && e.bitmap_&2 != 0
 			if ok {
 				value = e.id
 			}
@@ -296,7 +341,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 		// HREF returns the link to the error.
 		func (e *Error) HREF() string {
-			if e != nil && e.bitmap_&2 != 0 {
+			if e != nil && e.bitmap_&4 != 0 {
 				return e.href
 			}
 			return ""
@@ -305,7 +350,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetHREF returns the link of the error and a flag indicating if the
 		// link has a value.
 		func (e *Error) GetHREF() (value string, ok bool) {
-			ok = e != nil && e.bitmap_&2 != 0
+			ok = e != nil && e.bitmap_&4 != 0
 			if ok {
 				value = e.href
 			}
@@ -314,7 +359,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 		// Code returns the code of the error.
 		func (e *Error) Code() string {
-			if e != nil && e.bitmap_&4 != 0 {
+			if e != nil && e.bitmap_&8 != 0 {
 				return e.code
 			}
 			return ""
@@ -323,7 +368,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetCode returns the link of the error and a flag indicating if the
 		// code has a value.
 		func (e *Error) GetCode() (value string, ok bool) {
-			ok = e != nil && e.bitmap_&4 != 0
+			ok = e != nil && e.bitmap_&8 != 0
 			if ok {
 				value = e.code
 			}
@@ -332,7 +377,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 		// Reason returns the reason of the error.
 		func (e *Error) Reason() string {
-			if e != nil && e.bitmap_&8 != 0 {
+			if e != nil && e.bitmap_&16 != 0 {
 				return e.reason
 			}
 			return ""
@@ -341,7 +386,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetReason returns the link of the error and a flag indicating if the
 		// reason has a value.
 		func (e *Error) GetReason() (value string, ok bool) {
-			ok = e != nil && e.bitmap_&8 != 0
+			ok = e != nil && e.bitmap_&16 != 0
 			if ok {
 				value = e.reason
 			}
@@ -350,7 +395,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 		// OperationID returns the identifier of the operation that caused the error.
 		func (e *Error) OperationID() string {
-			if e != nil && e.bitmap_&16 != 0 {
+			if e != nil && e.bitmap_&32 != 0 {
 				return e.operationID
 			}
 			return ""
@@ -359,7 +404,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetOperationID returns the identifier of the operation that caused the error and
 		// a flag indicating if that identifier does have a value.
 		func (e *Error) GetOperationID() (value string, ok bool) {
-			ok = e != nil && e.bitmap_&16 != 0
+			ok = e != nil && e.bitmap_&32 != 0
 			if ok {
 				value = e.operationID
 			}
@@ -368,7 +413,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 
 		// Details returns the details of the error
 		func (e *Error) Details() interface{} {
-			if e != nil && e.bitmap_&32 != 0 {
+			if e != nil && e.bitmap_&64 != 0 {
 				return e.details
 			}
 			return nil
@@ -377,7 +422,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// GetDetails returns the details of the error and a flag 
 		// indicating if the details have a value.
 		func (e *Error) GetDetails() (value interface{}, ok bool) {
-			ok = e != nil && e.bitmap_&32 != 0
+			ok = e != nil && e.bitmap_&64 != 0
 			if ok {
 				value = e.details
 			}
@@ -387,13 +432,16 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		// Error is the implementation of the error interface.
 		func (e *Error) Error() string {
 			chunks := make([]string, 0, 3)
-			if e.id != "" {
+			if e.bitmap_&1 != 0 {
+				chunks = append(chunks, fmt.Sprintf("status is %d", e.status))
+			}
+			if e.bitmap_&2 != 0 {
 				chunks = append(chunks, fmt.Sprintf("identifier is '%s'", e.id))
 			}
-			if e.code != "" {
+			if e.bitmap_&8 != 0 {
 				chunks = append(chunks, fmt.Sprintf("code is '%s'", e.code))
 			}
-			if e.operationID != "" {
+			if e.bitmap_&32 != 0 {
 				chunks = append(chunks, fmt.Sprintf("operation identifier is '%s'", e.operationID))
 			}
 			var result string
@@ -403,7 +451,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			} else if size > 1 {
 				result = strings.Join(chunks[0:size-1], ", ") + " and " + chunks[size-1]
 			}
-			if e.reason != "" {
+			if e.bitmap_&16 != 0 {
 				if result != "" {
 					result = result + ": "
 				}
@@ -432,6 +480,18 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return
 		}
 
+		// UnmarshalErrorStatus reads an error from the given source and sets
+		// the given status code.
+		func UnmarshalErrorStatus(source interface{}, status int) (object *Error, err error) {
+			object, err = UnmarshalError(source)
+			if err != nil {
+				return
+			}
+			object.status = status
+			object.bitmap_ |= 1
+			return
+		}
+
 		func readError(iterator *jsoniter.Iterator) *Error {
 			object := &Error{}
 			for {
@@ -440,24 +500,27 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 					break
 				}
 				switch field {
+				case "status":
+					object.status = iterator.ReadInt()
+					object.bitmap_ |= 1
 				case "id":
 					object.id = iterator.ReadString()
-					object.bitmap_ |= 1
+					object.bitmap_ |= 2
 				case "href":
 					object.href = iterator.ReadString()
-					object.bitmap_ |= 2
+					object.bitmap_ |= 4
 				case "code":
 					object.code = iterator.ReadString()
-					object.bitmap_ |= 4
+					object.bitmap_ |= 8
 				case "reason":
 					object.reason = iterator.ReadString()
-					object.bitmap_ |= 8
+					object.bitmap_ |= 16
 				case "operation_id":
 					object.operationID = iterator.ReadString()
-					object.bitmap_ |= 16
+					object.bitmap_ |= 32
 				case "details":
 					object.details = iterator.ReadAny().GetInterface()
-					object.bitmap_ |= 32
+					object.bitmap_ |= 64
 				default:
 					iterator.ReadAny()
 				}
@@ -479,30 +542,35 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			stream.WriteString(ErrorKind)
 			if e.bitmap_&1 != 0 {
 				stream.WriteMore()
+				stream.WriteObjectField("status")
+				stream.WriteInt(e.status)
+			}
+			if e.bitmap_&2 != 0 {
+				stream.WriteMore()
 				stream.WriteObjectField("id")
 				stream.WriteString(e.id)
 			}
-			if e.bitmap_&2 != 0 {
+			if e.bitmap_&4 != 0 {
 				stream.WriteMore()
 				stream.WriteObjectField("href")
 				stream.WriteString(e.href)
 			}
-			if e.bitmap_&4 != 0 {
+			if e.bitmap_&8 != 0 {
 				stream.WriteMore()
 				stream.WriteObjectField("code")
 				stream.WriteString(e.code)
 			}
-			if e.bitmap_&8 != 0 {
+			if e.bitmap_&16 != 0 {
 				stream.WriteMore()
 				stream.WriteObjectField("reason")
 				stream.WriteString(e.reason)
 			}
-			if e.bitmap_&16 != 0 {
+			if e.bitmap_&32 != 0 {
 				stream.WriteMore()
 				stream.WriteObjectField("operation_id")
 				stream.WriteString(e.operationID)
 			}
-			if e.bitmap_&32 != 0 {
+			if e.bitmap_&64 != 0 {
 				stream.WriteMore()
 				stream.WriteObjectField("details")
 				stream.WriteVal(e.details)

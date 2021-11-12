@@ -104,5 +104,17 @@ var _ = Describe("Errors", func() {
 			"identifier is '401', code is 'CLUSTERS-MGMT-401' and operation "+
 				"identifier is '456': My reason",
 		),
+		Entry(
+			"Status, identifier, code, operation identifier and reason",
+			`{
+				"id": "401",
+				"status": 401,
+				"code": "CLUSTERS-MGMT-401",
+				"reason": "My reason",
+				"operation_id": "456"
+			}`,
+			"status is 401, identifier is '401', code is 'CLUSTERS-MGMT-401' and "+
+				"operation identifier is '456': My reason",
+		),
 	)
 })
