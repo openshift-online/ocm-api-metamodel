@@ -46,6 +46,9 @@ func (r *Reader) checkVersion(version *concepts.Version) {
 	for _, resource := range version.Resources() {
 		r.checkResource(resource)
 	}
+
+	// Check that there are no loops in the tree of locators:
+	r.checkLocatorLoops(version)
 }
 
 func (r *Reader) checkResource(resource *concepts.Resource) {
@@ -583,5 +586,72 @@ func (r *Reader) checkResponseParameter(method *concepts.Method, name *names.Nam
 				param,
 			)
 		}
+	}
+}
+
+func (r *Reader) checkLocatorLoops(version *concepts.Version) {
+	for _, locator := range version.Root().Locators() {
+		path := []*concepts.Locator{locator}
+		r.checkLocatorPathLoops(path)
+	}
+}
+
+func (r *Reader) checkLocatorPathLoops(path []*concepts.Locator) {
+	// Try to find a previous locator that is defined in the same resource that is the target of
+	// the last locator. If there is such locator then there is a loop and we should not
+	// continue checking this path.
+	last := len(path) - 1
+	first := -1
+	for i := last; i >= 0; i-- {
+		if path[i].Owner() == path[last].Target() {
+			first = i
+			break
+		}
+	}
+	if first >= 0 {
+		r.reportLocatorPathLoop(path[first:])
+		return
+	}
+
+	// If we are here then there is no loop in this path, so we can continue recusively:
+	for _, next := range path[last].Target().Locators() {
+		r.checkLocatorPathLoops(append(path, next))
+	}
+}
+
+func (r *Reader) reportLocatorPathLoop(path []*concepts.Locator) {
+	if len(path) == 1 {
+		locator := path[0]
+		r.reporter.Errorf(
+			"Locator '%s' introduces a loop, it is defined in resource '%s' and "+
+				"targets that same resource",
+			locator.Name(), locator.Owner(),
+		)
+	} else {
+		first := path[0]
+		last := path[len(path)-1]
+		r.reporter.Errorf(
+			"Locator '%s' defined in resource '%s' introduces a loop, see the "+
+				"details below",
+			last.Name(), last.Owner(),
+		)
+		r.reporter.Infof(
+			"First locator of the loop is '%s' defined in resource '%s' and "+
+				"targeting resource '%s'",
+			first.Name(), first.Owner(), first.Target(),
+		)
+		for i := 1; i < len(path)-1; i++ {
+			next := path[i]
+			r.reporter.Infof(
+				"Next locator of the loop is '%s' defined in resource '%s' and "+
+					"targeting resource '%s'",
+				next.Name(), next.Owner(), next.Target(),
+			)
+		}
+		r.reporter.Infof(
+			"Last locator of the loop is '%s' defined in resource '%s' and "+
+				"targeting resource '%s'",
+			last.Name(), last.Owner(), last.Target(),
+		)
 	}
 }
