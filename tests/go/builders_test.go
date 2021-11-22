@@ -365,4 +365,107 @@ var _ = Describe("Builder", func() {
 			Expect(second.Email()).To(Equal("yourmail"))
 		})
 	})
+
+	Describe("Empty", func() {
+		It("Returns `true` for nil builder ", func() {
+			var builder *cmv1.ClusterBuilder
+			Expect(builder.Empty()).To(BeTrue())
+		})
+
+		It("Returns `true` for an empty builder", func() {
+			builder := cmv1.NewCluster()
+			Expect(builder.Empty()).To(BeTrue())
+		})
+
+		It("Returns `false` for an builder with identifier", func() {
+			builder := cmv1.NewCluster().
+				ID("123")
+			Expect(builder.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for an builder with an string attribute", func() {
+			builder := cmv1.NewCluster().
+				Name("mycluster")
+			Expect(builder.Empty()).To(BeFalse())
+		})
+
+		It("Returns `true` for nil list ", func() {
+			var list *cmv1.ClusterListBuilder
+			Expect(list.Empty()).To(BeTrue())
+		})
+
+		It("Returns `true` for empty list ", func() {
+			list := cmv1.NewClusterList()
+			Expect(list.Empty()).To(BeTrue())
+		})
+
+		It("Returns `false` for list with one element", func() {
+			list := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().ID("123"),
+				)
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for list with two elements", func() {
+			list := cmv1.NewClusterList().
+				Items(
+					cmv1.NewCluster().ID("123"),
+					cmv1.NewCluster().ID("456"),
+				)
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for empty map of strings", func() {
+			list := cmv1.NewCluster().
+				Properties(map[string]string{})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of strings with one value", func() {
+			list := cmv1.NewCluster().
+				Properties(map[string]string{
+					"mykey": "myvalue",
+				})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of strings with two values", func() {
+			list := cmv1.NewCluster().
+				Properties(map[string]string{
+					"mykey":   "myvalue",
+					"yourkey": "yourvalue",
+				})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for empty map of builders", func() {
+			list := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of builders with one value", func() {
+			list := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com": amv1.NewRegistryAuth().Username("myuser"),
+				})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `false` for map of builders with one value", func() {
+			list := amv1.NewRegistryAuths().
+				Map(map[string]*amv1.RegistryAuthBuilder{
+					"my.com":   amv1.NewRegistryAuth().Username("myuser"),
+					"your.com": amv1.NewRegistryAuth().Username("youruser"),
+				})
+			Expect(list.Empty()).To(BeFalse())
+		})
+
+		It("Returns `true` empty link", func() {
+			builder := cmv1.NewCluster().
+				Link(true)
+			Expect(builder.Empty()).To(BeTrue())
+		})
+	})
 })
