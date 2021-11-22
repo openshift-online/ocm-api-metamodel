@@ -259,6 +259,15 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			}
 		{{ end }}
 
+		// Empty returns true if the builder is empty, i.e. no attribute has a value.
+		func (b *{{ $builderName }}) Empty() bool {
+			{{ if .Type.IsClass }}
+				return b == nil || b.bitmap_&^1 == 0
+			{{ else }}
+				return b == nil || b.bitmap_ == 0
+			{{ end }}
+		}
+
 		{{ range .Type.Attributes }}
 			{{ $fieldName := fieldName . }}
 			{{ $setterName := setterName . }}
@@ -502,6 +511,11 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
                         b.items = make([]*{{ $elementBuilderName }}, len(values))
                         copy(b.items, values)
 			return b
+		}
+
+		// Empty returns true if the list is empty.
+		func (b *{{ $builderName }}) Empty() bool {
+			return b == nil || len(b.items) == 0
 		}
 
 		// Copy copies the items of the given list into this builder, discarding any previous items.
