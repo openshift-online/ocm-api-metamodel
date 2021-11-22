@@ -299,7 +299,7 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 
 	// Run the formatter:
-	reporter.Infof("Formating generated files")
+	reporter.Infof("Formatting generated files")
 	sources := []string{}
 	err = filepath.Walk(args.output, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
