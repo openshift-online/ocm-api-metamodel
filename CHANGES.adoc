@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+== 0.0.44 Nov 22 2021
+
+- Check loops in locator paths.
+- Add `Empty` method to builders.
+
 == 0.0.43 Nov 15 2021
 
 - Add `status` attribute to errors.
