@@ -129,7 +129,7 @@ struct LDAPIdentityProvider {
 	// Certificate bundle to use to validate server certificates for the configured URL.
 	CA String
 
-	// An https://tools.ietf.org/html/rfc2255[RFC 2255] URL which specifies the LDAP host and
+	// An [RFC 2255](https://tools.ietf.org/html/rfc2255) URL which specifies the LDAP host and
 	// search parameters to use.
 	URL String
 

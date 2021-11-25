@@ -77,7 +77,7 @@ jobs:
         {
           "tag_name": "v${version}",
           "name": "Release ${version}",
-          "body": "See the CHANGES.adoc file for details."
+          "body": "See the CHANGES.md file for details."
         }
         .
         curl \

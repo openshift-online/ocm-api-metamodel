@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package asciidoc
+package markdown
 
 import (
 	"fmt"
@@ -24,19 +24,19 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
-// NamesCalculatorBuilder is an object used to configure and build the Asciidoc names calculators.
+// NamesCalculatorBuilder is an object used to configure and build the Markdown names calculators.
 // Don't create instances directly, use the NewNamesCalculator function instead.
 type NamesCalculatorBuilder struct {
 	reporter *reporter.Reporter
 }
 
-// NamesCalculator is an object used to calculate Asciidoc names. Don't create instances directly,
+// NamesCalculator is an object used to calculate Markdown names. Don't create instances directly,
 // use the builder instead.
 type NamesCalculator struct {
 	reporter *reporter.Reporter
 }
 
-// NewNamesCalculator creates an Asciidoc names calculator builder.
+// NewNamesCalculator creates an Markdown names calculator builder.
 func NewNamesCalculator() *NamesCalculatorBuilder {
 	builder := new(NamesCalculatorBuilder)
 	return builder
@@ -76,7 +76,7 @@ func (c *NamesCalculator) Display(name *names.Name) string {
 	return strings.Join(chunks, "")
 }
 
-// File converts the given name into an string, following the rules for Asciidoc files.
+// File converts the given name into an string, following the rules for Markdown files.
 func (c *NamesCalculator) File(name *names.Name) string {
 	words := name.Words()
 	chunks := make([]string, len(words))
