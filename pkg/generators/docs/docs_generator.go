@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/asciidoc"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/markdown"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -33,7 +33,7 @@ type DocsGeneratorBuilder struct {
 	reporter *reporter.Reporter
 	model    *concepts.Model
 	output   string
-	names    *asciidoc.NamesCalculator
+	names    *markdown.NamesCalculator
 }
 
 // DocsGenerator generates code for the builders of the model types. Don't create instances
@@ -43,8 +43,8 @@ type DocsGenerator struct {
 	errors   int
 	model    *concepts.Model
 	output   string
-	names    *asciidoc.NamesCalculator
-	buffer   *asciidoc.Buffer
+	names    *markdown.NamesCalculator
+	buffer   *markdown.Buffer
 }
 
 // NewDocsGenerator creates a new builder for builders generators.
@@ -72,7 +72,7 @@ func (b *DocsGeneratorBuilder) Output(value string) *DocsGeneratorBuilder {
 }
 
 // Names sets the object that will be used to calculate names.
-func (b *DocsGeneratorBuilder) Names(value *asciidoc.NamesCalculator) *DocsGeneratorBuilder {
+func (b *DocsGeneratorBuilder) Names(value *markdown.NamesCalculator) *DocsGeneratorBuilder {
 	b.names = value
 	return b
 }
@@ -157,7 +157,7 @@ func (g *DocsGenerator) generateIndex() error {
 	fileName := g.names.File(nomenclator.Index)
 
 	// Create the buffer for the generated documentation:
-	g.buffer, err = asciidoc.NewBufferBuilder().
+	g.buffer, err = markdown.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
 		File(fileName).
@@ -177,30 +177,24 @@ func (g *DocsGenerator) generateIndex() error {
 
 func (g *DocsGenerator) documentIndex() {
 	g.buffer.Emit(`
-		= Model
-		:toc: right
-		:sectnums: true
-		:seclinks: true
-		:sectanchors: true
-		:source-highlighter: highlightjs
-		:icons: font
+		# Model
 
-		== Resources
+		## Resources
 
 		{{ range .Model.Services }}
 			{{ range .Versions }}
 				{{ range .Resources }}
-					link:{{ resourceFile . }}.html[{{ displayName . }}]
+					[{{ displayName . }}]({{ resourceFile . }}.md)
 				{{ end }}
 			{{ end }}
 		{{ end }}
 
-		== Types
+		## Types
 
 		{{ range .Model.Services }}
 			{{ range .Versions }}
 				{{ range .Types }}
-					link:{{ resourceFile . }}.html[{{ displayName . }}]
+					[{{ displayName . }}]({{ resourceFile . }}.md)
 				{{ end }}
 			{{ end }}
 		{{ end }}
@@ -216,7 +210,7 @@ func (g *DocsGenerator) generateResource(resource *concepts.Resource) error {
 	fileName := g.fileName(resource)
 
 	// Create the buffer for the generated documentation:
-	g.buffer, err = asciidoc.NewBufferBuilder().
+	g.buffer, err = markdown.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
 		File(fileName).
@@ -239,49 +233,33 @@ func (g *DocsGenerator) generateResource(resource *concepts.Resource) error {
 
 func (g *DocsGenerator) documentResource(resource *concepts.Resource) {
 	g.buffer.Emit(`
-		= {{ displayName .Resource }}
-		:toc: right
-		:sectnums: true
-		:seclinks: true
-		:sectanchors: true
-		:source-highlighter: highlightjs
-		:icons: font
+		# {{ displayName .Resource }}
 
 		{{ docDetail .Resource }}
 
 		{{ if .Resource.Methods }}
-			.Methods summary
-			[cols="20,80"]
-			|===
-			|Name | Summary
-			{{ range .Resource.Methods }}
-				|{{ displayName . }}
-				|{{ docSummary . }}
-			{{ end }}
-			|===
+			| Name | Summary |
+			| ---- | ------- |
+			{{ range .Resource.Methods -}}
+				| {{ displayName . }} | {{ docSummary . }} |
+			{{ end -}}
 		{{ end }}
 
 		{{ range .Resource.Methods }}
-			== {{ displayName . }} [small]#{{ httpMethod . }}#
+			## {{ displayName . }} - {{ httpMethod . }}
 
 			{{ docDetail . }}
 
 			{{ if .Parameters }}
-				.Parameters summary
-				[cols="15,15,20,50"]
-				|===
-				|Name |Type |Direction |Summary
-				{{ range .Parameters }}
-					|{{ tagName . }}
-					|-
-					|-
-					|{{ docSummary . }}
-				{{ end }}
-				|===
+				| Name | Type | Direction | Summary |
+				| ---- | ---- | --------- | ------- |
+				{{ range .Parameters -}}
+					| {{ tagName . }} | - | - | {{ docSummary . }} |
+				{{ end -}}
 			{{ end }}
 
 			{{ range .Parameters }}
-				=== {{ displayName . }}
+				### {{ displayName . }}
 
 				{{ docDetail . }}
 			{{ end }}
@@ -298,7 +276,7 @@ func (g *DocsGenerator) generateType(typ *concepts.Type) error {
 	fileName := g.fileName(typ)
 
 	// Create the buffer for the generated documentation:
-	g.buffer, err = asciidoc.NewBufferBuilder().
+	g.buffer, err = markdown.NewBufferBuilder().
 		Reporter(g.reporter).
 		Output(g.output).
 		File(fileName).
@@ -329,30 +307,20 @@ func (g *DocsGenerator) documentType(typ *concepts.Type) {
 
 func (g *DocsGenerator) documentEnum(typ *concepts.Type) {
 	g.buffer.Emit(`
-		= {{ displayName .Type }} [small]#enum#
-		:toc: right
-		:sectnums: true
-		:seclinks: true
-		:sectanchors: true
-		:source-highlighter: highlightjs
-		:icons: font
+		# {{ displayName .Type }}
 
 		{{ docDetail .Type }}
 
 		{{ if .Type.Values }}
-			.Values summary
-			[cols="20,80"]
-			|===
-			|Name | Summary
-			{{ range .Type.Values }}
-				|{{ tagName . }}
-				|{{ docSummary . }}
-			{{ end }}
-			|===
+			| Name | Summary |
+			| ---- | ------- |
+			{{ range .Type.Values -}}
+				| {{ tagName . }} | {{ docSummary . }} |
+			{{ end -}}
 		{{ end }}
 
 		{{ range .Type.Values }}
-			== {{ tagName . }}
+			### {{ tagName . }}
 
 			{{ docDetail . }}
 		{{ end }}
@@ -363,44 +331,25 @@ func (g *DocsGenerator) documentEnum(typ *concepts.Type) {
 
 func (g *DocsGenerator) documentStruct(typ *concepts.Type) {
 	g.buffer.Emit(`
-		= {{ displayName .Type }} [small]#{{ .Type.Kind }}#
-		:toc: right
-		:sectnums: true
-		:seclinks: true
-		:sectanchors: true
-		:source-highlighter: highlightjs
-		:icons: font
+		# {{ displayName .Type }}
 
 		{{ docDetail .Type }}
 
 		{{ if .Type.Attributes }}
-			.Attributes summary
-			[cols="20,20,60"]
-			|===
-			|Name |Type |Summary
-			{{ if .Type.IsClass }}
-				|{{ backTicks "kind" }}
-				|String
-				|Name of the type of the object.
-
-				|{{ backTicks "id" }}
-				|String
-				|Unique identifier of the object.
-
-				|{{ backTicks "href" }}
-				|String
-				|Link to the object.
-			{{ end }}
-			{{ range .Type.Attributes }}
-				|{{ tagName . }}
-				|-
-				|{{ docSummary . }}
-			{{ end }}
-			|===
+			| Name | Type | Summary |
+			| ---- | ---- | ------- |
+			{{ if .Type.IsClass -}}
+				| {{ backTicks "kind" }} | String | Name of the type of the object. |
+				| {{ backTicks "id" }} | String | Unique identifier of the object. |
+				| {{ backTicks "href" }} | String | Link to the object. |
+			{{ end -}}
+			{{ range .Type.Attributes -}}
+				| {{ tagName . }} | - | {{ docSummary . }} |
+			{{ end -}}
 		{{ end }}
 
 		{{ range .Type.Attributes }}
-			== {{ tagName . }}
+			## {{ tagName . }}
 
 			{{ docDetail . }}
 		{{ end }}
@@ -455,11 +404,13 @@ func (g *DocsGenerator) docSummary(object concepts.Documented) string {
 	if doc == "" {
 		return ""
 	}
+
 	// The summary is the first sentence of the documentation, or the complete documentation if
 	// there is no dot to end the first sentence.
 	index := strings.IndexRune(doc, '.')
 	if index != -1 {
 		doc = doc[0 : index+1]
+		doc = strings.ReplaceAll(doc, "\n", "")
 	}
 
 	return doc

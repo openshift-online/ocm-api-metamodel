@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package asciidoc
+package markdown
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
-// BufferBuilder is used to create a new Asciidoc buffer. Don't create it directly, use the
+// BufferBuilder is used to create a new Markdown buffer. Don't create it directly, use the
 // NewBuffer function instead.
 type BufferBuilder struct {
 	reporter  *reporter.Reporter
@@ -38,7 +38,7 @@ type BufferBuilder struct {
 	functions map[string]interface{}
 }
 
-// Buffer is a type that simplifies the generation of Asciidoc code.
+// Buffer is a type that simplifies the generation of Markdown code.
 type Buffer struct {
 	reporter  *reporter.Reporter
 	output    string
@@ -49,7 +49,7 @@ type Buffer struct {
 	code      *bytes.Buffer
 }
 
-// NewBuffer creates a builder for Asciidoc buffers.
+// NewBuffer creates a builder for Markdown buffers.
 func NewBufferBuilder() *BufferBuilder {
 	return new(BufferBuilder)
 }
@@ -66,7 +66,7 @@ func (b *BufferBuilder) Output(value string) *BufferBuilder {
 	return b
 }
 
-// File sets the name of the file, without the .adoc extension.
+// File sets the name of the file, without the .md extension.
 func (b *BufferBuilder) File(value string) *BufferBuilder {
 	b.file = value
 	return b
@@ -100,7 +100,7 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	// Allocate and populate the buffer:
 	buffer = new(Buffer)
 	buffer.reporter = b.reporter
-	buffer.file = filepath.Join(b.output, b.file+".adoc")
+	buffer.file = filepath.Join(b.output, b.file+".md")
 	buffer.functions = make(map[string]interface{})
 	buffer.functions["backTicks"] = buffer.backTicks
 	for name, function := range b.functions {
