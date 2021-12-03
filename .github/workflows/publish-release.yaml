@@ -93,6 +93,19 @@ jobs:
                 args = ["sha256sum", asset]
                 subprocess.run(check=True, cwd=assets, stdout=stream, args=args)
 
+        # Get the list of changes:
+        body = ""
+        with open("CHANGES.md", "r") as stream:
+            while True:
+                line = stream.readline()
+                if line == "" or line.startswith("## " + version):
+                    break
+            while True:
+                line = stream.readline()
+                if line == "" or line.startswith("## "):
+                    break
+                body += line
+
         # Send the request to create the release:
         response = requests.post(
             headers={
@@ -103,7 +116,7 @@ jobs:
             json={
                 "tag_name": f"v{version}",
                 "name": f"Release {version}",
-                "body": f"See the CHANGES.md file for details.",
+                "body": body,
             },
             url=(
                 "https://api.github.com"
