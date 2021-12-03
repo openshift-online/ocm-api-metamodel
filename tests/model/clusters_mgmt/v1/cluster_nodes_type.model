@@ -19,7 +19,7 @@ struct ClusterNodes {
 	// Total number of nodes of the cluster.
 	Total Integer
 
-	// Number of master nodes of the cluster.
+	// Number of controller nodes of the cluster.
 	Master Integer
 
 	// Number of infrastructure nodes of the cluster.
