@@ -3,6 +3,31 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.45 Dec 3 2021
+
+The only functional change in this version is the change from _Markdown_ to
+_AsciiDoc_. That is not really relevant because the generated documentation
+isn't currently published.
+
+In addition to that there also some changes to the development and build
+workflows:
+
+- Rename `master` branch to `main`.
+
+  To adapt your local repository to the new branch name run the following
+  commands:
+
+  ```shell
+  git branch -m master main
+  git fetch origin
+  git branch -u origin/main main
+  git remote set-head origin -a
+  ```
+
+- Rewrite the publish release action in _Python_.
+
+- Automatically add changes from `CHANGES.md` to release descriptions.
+
 ## 0.0.44 Nov 22 2021
 
 - Check loops in locator paths.
