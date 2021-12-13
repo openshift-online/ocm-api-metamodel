@@ -580,7 +580,6 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 	body := g.binding.ResponseBodyParameters(method)[0]
 
 	// Generate the code:
-	g.buffer.Import("fmt", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("time", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
@@ -756,12 +755,9 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("context", "")
-	g.buffer.Import("encoding/json", "")
-	g.buffer.Import("fmt", "")
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
-	g.buffer.Import("gitub.com/json-iterator/go", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
