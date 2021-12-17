@@ -127,6 +127,9 @@ func (b *BufferBuilder) Build() (buffer *Buffer, err error) {
 	buffer.functions["lineComment"] = buffer.lineComment
 	buffer.functions["byteArray"] = buffer.byteArray
 	buffer.functions["backtick"] = buffer.backtick
+	buffer.functions["sub"] = func(x, y int) int {
+		return x - y
+	}
 	for name, function := range b.functions {
 		buffer.functions[name] = function
 	}
