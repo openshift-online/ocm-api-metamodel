@@ -460,7 +460,10 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 		func MarshalMetadata(object *Metadata, writer io.Writer) error {
 			stream := helpers.NewStream(writer)
 			writeMetadata(object, stream)
-			stream.Flush()
+			err := stream.Flush()
+			if err != nil {
+				return err
+			}
 			return stream.Error
 		}
 
@@ -563,7 +566,10 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 		func {{ $marshalTypeFunc }}(object *{{ $structName }}, writer io.Writer) error {
 			stream := helpers.NewStream(writer)
 			{{ $writeTypeFunc }}(object, stream)
-			stream.Flush()
+			err := stream.Flush()
+			if err != nil {
+				return err
+			}
 			return stream.Error
 		}
 
@@ -729,7 +735,10 @@ func (g *JSONSupportGenerator) generateListTypeSource(typ *concepts.Type) {
 		func {{ $marshalTypeFunc }}(list {{ $sliceType }}, writer io.Writer) error {
 			stream := helpers.NewStream(writer)
 			{{ $writeTypeFunc }}(list, stream)
-			stream.Flush()
+			err := stream.Flush()
+			if err != nil {
+				return err
+			}
 			return stream.Error
 		}
 
@@ -1080,7 +1089,10 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 				{{ generateWriteBodyParameter "response.items" .Items }}
 			}
 			stream.WriteObjectEnd()
-			stream.Flush()
+			err := stream.Flush()
+			if err != nil {
+				return err
+			}
 			return stream.Error
 		}
 		`,
@@ -1288,7 +1300,10 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 				{{ generateWriteBodyParameter "response.items" .Items }}
 			}
 			stream.WriteObjectEnd()
-			stream.Flush()
+			err := stream.Flush()
+			if err != nil {
+				return err
+			}
 			return stream.Error
 		}
 		`,
@@ -1397,7 +1412,10 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 					{{ generateWriteBodyParameter "request" . }}
 				{{ end }}
 				stream.WriteObjectEnd()
-				stream.Flush()
+				err := stream.Flush()
+				if err != nil {
+					return err
+				}
 				return stream.Error
 			{{ else }}
 				return nil
@@ -1438,7 +1456,10 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 					{{ generateWriteBodyParameter "response" . }}
 				{{ end }}
 				stream.WriteObjectEnd()
-				stream.Flush()
+				err := stream.Flush()
+				if err != nil {
+					return err
+				}
 				return stream.Error
 			{{ else }}
 				return nil
