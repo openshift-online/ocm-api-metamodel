@@ -599,15 +599,18 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					}
 					stream.WriteObjectField("href")
 					stream.WriteString(object.href)
-					count++
+					{{ if .Type.Attributes }}
+						count++
+					{{ end }}
 				}
 			{{ end }}
 			{{ if .Type.Attributes }}
 				var present_ bool
-				{{ range .Type.Attributes }}
-					{{ $fieldName := fieldName . }}
-					{{ $fieldTag := fieldTag . }}
-					{{ $fieldMask := bitMask . }}
+				{{ $n := len .Type.Attributes }}
+				{{ range $i, $v := .Type.Attributes }}
+					{{ $fieldName := fieldName $v }}
+					{{ $fieldTag := fieldTag $v }}
+					{{ $fieldMask := bitMask $v }}
 					{{ if .Type.IsScalar }}
 						present_ = object.bitmap_&{{ $fieldMask }} != 0
 					{{ else }}
@@ -618,8 +621,10 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 							stream.WriteMore()
 						}
 						stream.WriteObjectField("{{ $fieldTag }}")
-						{{ generateWriteValue (print "object." $fieldName) .Type .Link }}
-						count++
+						{{ generateWriteValue (print "object." $fieldName) $v.Type $v.Link }}
+						{{ if lt $i (sub $n 1) }}
+							count++
+						{{ end }}
 					}
 				{{ end }}
 			{{ end }}
