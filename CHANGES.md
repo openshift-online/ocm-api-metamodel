@@ -3,6 +3,14 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.46 Dec 20 2021
+
+- Remove unused imports.
+- Check result of `Flush` method.
+- Cancel poll context.
+- Avoid some ineffectual assigments.
+- Explicitly use `jsoniter` package selector.
+
 ## 0.0.45 Dec 3 2021
 
 The only functional change in this version is the change from _Markdown_ to
