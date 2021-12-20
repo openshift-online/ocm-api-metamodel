@@ -229,7 +229,7 @@ func (g *JSONSupportGenerator) generateHelpers() error {
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import("strconv", "")
-	g.buffer.Import("github.com/json-iterator/go", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		// NewIterator creates a new JSON iterator that will read to the given source, which
 		// can be a slice of bytes, a string, a reader or an existing iterator.
@@ -453,7 +453,7 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
-	g.buffer.Import("github.com/json-iterator/go", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		// MarshalMetadata writes a value of the metadata type to the given target, which
 		// can be a writer or a JSON encoder.
@@ -553,7 +553,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("time", "")
-	g.buffer.Import("github.com/json-iterator/go", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $structName := structName .Type }}
@@ -726,7 +726,7 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type) error
 func (g *JSONSupportGenerator) generateListTypeSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
-	g.buffer.Import("github.com/json-iterator/go", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		{{ $structName := structName .Type }}
 		{{ $sliceType := valueReference .Type }}

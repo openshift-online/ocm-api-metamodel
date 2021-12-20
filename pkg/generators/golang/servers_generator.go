@@ -699,7 +699,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 
 	// Generate the code:
 	g.buffer.Import(g.packages.HelpersImport(), "")
-	g.buffer.Import("github.com/json-iterator/go", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		{{ $responseName := responseName .Method }}
 		{{ $responseParameters := responseParameters .Method }}
