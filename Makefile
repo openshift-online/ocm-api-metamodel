@@ -15,9 +15,9 @@
 #
 
 # Details of the version of 'antlr' to use:
-antlr_version:=4.8
+antlr_version:=4.9.3
 antlr_url:=https://www.antlr.org/download/antlr-$(antlr_version)-complete.jar
-antlr_sum:=73a49d6810d903aa4827ee32126937b85d3bebec0a8e679b0dd963cbcc49ba5a
+antlr_sum:=afcd40946d3de4d81e28d7c88d467289e0587285d27adb172aecc5494a17df36
 
 # Explicitly enable Go modules so that compilation will work correctly even when
 # the project directory is inside the directory indicated by the 'GOPATH'
