@@ -74,7 +74,7 @@ jobs:
             env["GOARCH"] = goarch
 
             # Build the binary:
-            args = ["make", "cmds"]
+            args = ["make", "binary"]
             subprocess.run(check=True, env=env, args=args)
 
             # Copy the generated binary to the assets directory:
