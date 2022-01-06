@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.48 Jan 6 2022
+
+This release doesn't include any change in functionality, it only fixes the
+script that releases Windows artifacts.
+
 ## 0.0.47 Jan 6 2022
 
 - Update to Go 1.17.
