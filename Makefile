@@ -14,24 +14,22 @@
 # limitations under the License.
 #
 
+# Disable CGO so that we always generate static binaries:
+export CGO_ENABLED=0
+
 # Details of the version of 'antlr' to use:
 antlr_version:=4.9.3
 antlr_url:=https://www.antlr.org/download/antlr-$(antlr_version)-complete.jar
 antlr_sum:=afcd40946d3de4d81e28d7c88d467289e0587285d27adb172aecc5494a17df36
-
-# Explicitly enable Go modules so that compilation will work correctly even when
-# the project directory is inside the directory indicated by the 'GOPATH'
-# environment variable:
-export GO111MODULE=on
 
 # Version of the OpenAPI verification tool:
 openapi_generator_version:=3.3.4
 openapi_generator_url:=https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/$(openapi_generator_version)/openapi-generator-cli-$(openapi_generator_version).jar
 openapi_generator_sum:=24cb04939110cffcdd7062d2f50c6f61159dc3e0ca3b8aecbae6ade53ad3dc8c
 
-.PHONY: cmds
-cmds: generate
-	go build -o metamodel ./cmd
+.PHONY: binary
+binary: generate
+	go build ./cmd/metamodel
 
 .PHONY: generate
 generate: antlr
@@ -65,7 +63,7 @@ unit_tests:
 	ginkgo -r pkg
 
 .PHONY: golang_tests
-go_tests: cmds
+go_tests: binary
 	rm -rf tests/go/generated
 	./metamodel generate go \
 		--model=tests/model \
