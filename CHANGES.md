@@ -3,6 +3,23 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.47 Jan 6 2022
+
+- Update to Go 1.17.
+
+- Update to Ginkgo 2.
+
+- Update to ANTLR 4.9.3.
+
+- Update Go dependencies.
+
+- Simplify installation with `go install` so that it will be possible to
+  install the `metamodel` tool with a command like this:
+
+  ```
+  go install github.com/openshift-online/ocm-api-metamodel/cmd/metamodel@v0.0.47
+  ```
+
 ## 0.0.46 Dec 20 2021
 
 - Remove unused imports.
