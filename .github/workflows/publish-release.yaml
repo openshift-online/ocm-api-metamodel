@@ -78,8 +78,11 @@ jobs:
             subprocess.run(check=True, env=env, args=args)
 
             # Copy the generated binary to the assets directory:
+            asset = "metamodel"
+            if goos == "windows":
+                asset += ".exe"
             binary = os.path.join(assets, f"metamodel-{goos}-{goarch}")
-            os.rename("metamodel", binary)
+            os.rename(asset, binary)
 
         # Build for the supported operating systems and architectures:
         build("darwin", "amd64")
