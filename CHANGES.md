@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.50 Jan 25 2022
+
+- Fix format of date query parameters so that it is RFC3339.
+
 ## 0.0.49 Jan 6 2022
 
 This release doesn't include any change in functionality, it only adds to the
