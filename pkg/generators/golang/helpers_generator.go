@@ -153,7 +153,14 @@ func (g *HelpersGenerator) Run() error {
 			if *query == nil {
 				*query = make(url.Values)
 			}
-			query.Add(name, fmt.Sprintf("%v", value))
+			var text string
+			switch typed := value.(type) {
+			case time.Time:
+				text = typed.UTC().Format(time.RFC3339)
+			default:
+				text = fmt.Sprintf("%v", value)
+			}
+			query.Add(name, text)
 		}
 
 		// CopyQuery creates a copy of the given set of query parameters.

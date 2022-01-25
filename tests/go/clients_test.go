@@ -20,6 +20,7 @@ package tests
 
 import (
 	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,6 +29,7 @@ import (
 	amv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/accountsmgmt/v1"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
 	"github.com/openshift-online/ocm-api-metamodel/tests/go/generated/errors"
+	sbv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/statusboard/v1"
 )
 
 var _ = Describe("Client", func() {
@@ -475,5 +477,29 @@ var _ = Describe("Client", func() {
 		Expect(err).To(BeAssignableToTypeOf(sdkErr))
 		sdkErr = err.(*errors.Error)
 		Expect(sdkErr.Status()).To(Equal(http.StatusNotFound))
+	})
+
+	It("Sends date parameter in RFC3339 format", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyRequest(
+					http.MethodGet,
+					"/api/status_board/v1/statuses",
+				),
+				VerifyFormKV("created_after", "2022-01-25T14:57:02Z"),
+				RespondWith(http.StatusOK, `{}`),
+			),
+		)
+
+		// Send the request:
+		client := sbv1.NewStatusesClient(transport, "/api/status_board/v1/statuses")
+		date, err := time.Parse(time.RFC3339, "2022-01-25T15:57:02+01:00")
+		Expect(err).ToNot(HaveOccurred())
+		response, err := client.List().
+			CreatedAfter(date).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
 	})
 })
