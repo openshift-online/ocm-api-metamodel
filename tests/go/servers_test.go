@@ -32,6 +32,7 @@ import (
 	az "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/authorizations"
 	cm "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt"
 	cmv1 "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/clustersmgmt/v1"
+	sb "github.com/openshift-online/ocm-api-metamodel/tests/go/generated/statusboard"
 )
 
 var _ = Describe("Server", func() {
@@ -593,6 +594,10 @@ func (s *MyServer) Authorizations() az.Server {
 
 func (s *MyServer) ClustersMgmt() cm.Server {
 	return s.clustersMgmt
+}
+
+func (s *MyServer) StatusBoard() sb.Server {
+	return nil
 }
 
 // MyCMServer is the implementation of the clusters management server.
