@@ -502,4 +502,29 @@ var _ = Describe("Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 	})
+
+	It("Accepts `204 No Content` with empty response body", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			RespondWith(http.StatusNoContent, ""),
+		)
+
+		// Create a transport that replaces the response body with an empty reader:
+		transport = &EmptyResponseBodyTransport{
+			wrapped: transport,
+		}
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		body, err := cmv1.NewCluster().
+			Name("my-cluster").
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+		response, err := client.Add().
+			Body(body).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.Status()).To(Equal(http.StatusNoContent))
+		Expect(response.Body()).To(BeNil())
+	})
 })
