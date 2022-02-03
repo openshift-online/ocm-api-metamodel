@@ -19,6 +19,8 @@ limitations under the License.
 package tests
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"testing"
 
@@ -54,5 +56,23 @@ func (t *Transport) RoundTrip(request *http.Request) (response *http.Response, e
 	request.URL.Host = t.server.Addr()
 	request.Header.Set("Content-type", "application/json")
 	response, err = t.wrapped.RoundTrip(request)
+	return
+}
+
+// EmptyResponseBodyTransport is an implementation of the RoundTripper interface that replaces the
+// response body with an empty reader different to `http.NoBody`. This is intended to test the
+// behaviour of the client when it receives this kind of response.
+type EmptyResponseBodyTransport struct {
+	wrapped http.RoundTripper
+}
+
+// RoundTrip implements the RoundTripper interface.
+func (t *EmptyResponseBodyTransport) RoundTrip(request *http.Request) (response *http.Response,
+	err error) {
+	response, err = t.wrapped.RoundTrip(request)
+	if err != nil {
+		return
+	}
+	response.Body = io.NopCloser(&bytes.Buffer{})
 	return
 }

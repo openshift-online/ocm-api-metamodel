@@ -305,7 +305,9 @@ func (g *ClientsGenerator) generateVersionMetadataClient(version *concepts.Versi
 }
 
 func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts.Version) {
+	g.buffer.Import("bufio", "")
 	g.buffer.Import("context", "")
+	g.buffer.Import("io", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
@@ -372,15 +374,20 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 				status: response.StatusCode,
 				header: response.Header,
 			}
+			reader := bufio.NewReader(response.Body)
+			_, err = reader.Peek(1)
+			if err == io.EOF {
+				return
+			}
 			if result.status >= 400 {
-				result.err, err = errors.UnmarshalErrorStatus(response.Body, result.status)
+				result.err, err = errors.UnmarshalErrorStatus(reader, result.status)
 				if err != nil {
 					return
 				}
 				err = result.err
 				return
 			}
-			result.body, err = UnmarshalMetadata(response.Body)
+			result.body, err = UnmarshalMetadata(reader)
 			if err != nil {
 				return
 			}
@@ -753,8 +760,10 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 		}
 	}
 
+	g.buffer.Import("bufio", "")
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("context", "")
+	g.buffer.Import("io", "")
 	g.buffer.Import("io/ioutil", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
@@ -860,8 +869,14 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			result = &{{ $responseName }}{}
 			result.status = response.StatusCode
 			result.header = response.Header
+			reader := bufio.NewReader(response.Body)
+			_, err = reader.Peek(1)
+			if err == io.EOF {
+				err = nil
+				return
+			}
 			if result.status >= 400 {
-				result.err, err = errors.UnmarshalErrorStatus(response.Body, result.status)
+				result.err, err = errors.UnmarshalErrorStatus(reader, result.status)
 				if err != nil {
 					return
 				}
@@ -869,7 +884,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				return
 			}
 			{{ if $responseParameters }}
-				err = {{ readResponseFunc .Method }}(result, response.Body)
+				err = {{ readResponseFunc .Method }}(result, reader)
 				if err != nil {
 					return
 				}
