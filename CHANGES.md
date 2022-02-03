@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.51 Feb 3 2022
+
+- Check for `io.EOF` before trying to parse response body.
+
 ## 0.0.50 Jan 25 2022
 
 - Fix format of date query parameters so that it is RFC3339.
