@@ -16,6 +16,7 @@ limitations under the License.
 
 // Root of the tree of resources of the clusters management service.
 resource Root {
+	@http(name = "register")
 	method RegisterCluster {
 		in SubscriptionID String
 		in ExternalID String
