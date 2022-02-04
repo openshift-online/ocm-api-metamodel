@@ -157,7 +157,7 @@ var _ = Describe("Unmarshal", func() {
 
 	It("Can read date", func() {
 		object, err := cmv1.UnmarshalCluster(`{
-			"creation_timestamp": "2019-07-12T17:12:57.019504Z"
+			"created_at": "2019-07-12T17:12:57.019504Z"
 		}`)
 		Expect(err).ToNot(HaveOccurred())
 		date := object.CreationTimestamp()

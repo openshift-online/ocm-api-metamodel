@@ -558,7 +558,7 @@ var _ = Describe("Server", func() {
 	It("Supports non REST method", func() {
 		request := httptest.NewRequest(
 			http.MethodPost,
-			"/api/clusters_mgmt/v1/register_cluster",
+			"/api/clusters_mgmt/v1/register",
 			strings.NewReader(`{
 				"subscription_id": "123",
 				"external_id": "456"

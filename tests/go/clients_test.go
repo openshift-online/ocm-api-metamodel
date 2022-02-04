@@ -178,7 +178,7 @@ var _ = Describe("Client", func() {
 			CombineHandlers(
 				VerifyRequest(
 					http.MethodPost,
-					"/api/clusters_mgmt/v1/register_cluster",
+					"/api/clusters_mgmt/v1/register",
 				),
 				VerifyJSON(`{
 					"subscription_id": "123",
