@@ -189,6 +189,7 @@ func run(cmd *cobra.Command, argv []string) {
 		Packages(goPackagesCalculator).
 		Names(goNamesCalculator).
 		Types(goTypesCalculator).
+		Binding(bindingCalculator).
 		Build()
 	if err != nil {
 		reporter.Errorf("Can't create types generator: %v", err)

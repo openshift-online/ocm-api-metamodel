@@ -1712,8 +1712,12 @@ func (g *JSONSupportGenerator) resourceFile(resource *concepts.Resource) string 
 }
 
 func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
-	name := names.Cat(nomenclator.Marshal, typ.Name())
-	return g.names.Public(name)
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
+	}
+	name = "Marshal" + name
+	return name
 }
 
 func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
@@ -1722,8 +1726,12 @@ func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
 }
 
 func (g *JSONSupportGenerator) unmarshalTypeFunc(typ *concepts.Type) string {
-	name := names.Cat(nomenclator.Unmarshal, typ.Name())
-	return g.names.Public(name)
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
+	}
+	name = "Unmarshal" + name
+	return name
 }
 
 func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type) string {
@@ -1741,64 +1749,94 @@ func (g *JSONSupportGenerator) parameterFieldName(parameter *concepts.Parameter)
 
 func (g *JSONSupportGenerator) clientRequestName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
+	var name string
 	if resource.IsRoot() {
-		name = names.Cat(method.Name(), nomenclator.Request)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
 	} else {
-		name = names.Cat(resource.Name(), method.Name(), nomenclator.Request)
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(name)
+	name += "Request"
+	return name
 }
 
 func (g *JSONSupportGenerator) serverRequestName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
+	var name string
 	if resource.IsRoot() {
-		name = names.Cat(
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Request,
-		)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
 	} else {
-		name = names.Cat(
-			resource.Name(),
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Request,
-		)
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(name)
+	name += "ServerRequest"
+	return name
 }
 
 func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
+	var name string
 	if resource.IsRoot() {
-		name = names.Cat(method.Name(), nomenclator.Response)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
 	} else {
-		name = names.Cat(resource.Name(), method.Name(), nomenclator.Response)
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(name)
+	name += "Response"
+	return name
 }
 
 func (g *JSONSupportGenerator) serverResponseName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
+	var name string
 	if resource.IsRoot() {
-		name = names.Cat(
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Response,
-		)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
 	} else {
-		name = names.Cat(
-			resource.Name(),
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Response,
-		)
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(name)
+	name += "ServerResponse"
+	return name
 }
 
 func (g *JSONSupportGenerator) writeRequestFunc(method *concepts.Method) string {

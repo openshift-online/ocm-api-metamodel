@@ -160,7 +160,7 @@ var _ = Describe("Unmarshal", func() {
 			"created_at": "2019-07-12T17:12:57.019504Z"
 		}`)
 		Expect(err).ToNot(HaveOccurred())
-		date := object.CreationTimestamp()
+		date := object.CreatedAt()
 		Expect(date.Year()).To(Equal(2019))
 		Expect(date.Month()).To(Equal(time.July))
 		Expect(date.Day()).To(Equal(12))

@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -34,6 +35,7 @@ type TypesGeneratorBuilder struct {
 	packages *PackagesCalculator
 	names    *NamesCalculator
 	types    *TypesCalculator
+	binding  *http.BindingCalculator
 }
 
 // TypesGenerator Go types for the model types. Don't create instances directly, use the builder
@@ -46,6 +48,7 @@ type TypesGenerator struct {
 	packages *PackagesCalculator
 	names    *NamesCalculator
 	types    *TypesCalculator
+	binding  *http.BindingCalculator
 	buffer   *Buffer
 }
 
@@ -91,6 +94,12 @@ func (b *TypesGeneratorBuilder) Types(value *TypesCalculator) *TypesGeneratorBui
 	return b
 }
 
+// Binding sets the object that will be used to calculate HTTP names.
+func (b *TypesGeneratorBuilder) Binding(value *http.BindingCalculator) *TypesGeneratorBuilder {
+	b.binding = value
+	return b
+}
+
 // Build checks the configuration stored in the builder and, if it is correct, creates a new
 // types generator using it.
 func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
@@ -119,6 +128,10 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 		err = fmt.Errorf("types calculator is mandatory")
 		return
 	}
+	if b.binding == nil {
+		err = fmt.Errorf("binding calculator is mandatory")
+		return
+	}
 
 	// Create the generator:
 	generator = &TypesGenerator{
@@ -128,6 +141,7 @@ func (b *TypesGeneratorBuilder) Build() (generator *TypesGenerator, err error) {
 		packages: b.packages,
 		names:    b.names,
 		types:    b.types,
+		binding:  b.binding,
 	}
 
 	return
@@ -593,19 +607,35 @@ func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReferenc
 }
 
 func (g *TypesGenerator) objectName(typ *concepts.Type) string {
-	return g.names.Public(typ.Name())
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
+	}
+	return name
 }
 
 func (g *TypesGenerator) valueName(value *concepts.EnumValue) string {
-	return g.names.Public(names.Cat(value.Type().Name(), value.Name()))
+	typeName := goName(value.Type())
+	if typeName == "" {
+		typeName = g.names.Public(value.Type().Name())
+	}
+	valueName := goName(value)
+	if valueName == "" {
+		valueName = g.names.Public(value.Name())
+	}
+	return typeName + valueName
 }
 
 func (g *TypesGenerator) valueTag(value *concepts.EnumValue) string {
-	return value.Name().String()
+	return g.binding.EnumValueName(value)
 }
 
 func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
-	return g.names.Public(attribute.Name())
+	name := goName(attribute)
+	if name == "" {
+		name = g.names.Public(attribute.Name())
+	}
+	return name
 }
 
 func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
@@ -636,6 +666,9 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference
 }
 
 func (g *TypesGenerator) listName(typ *concepts.Type) string {
-	name := names.Cat(typ.Name(), nomenclator.List)
-	return g.names.Public(name)
+	typeName := goName(typ)
+	if typeName == "" {
+		typeName = g.names.Public(typ.Name())
+	}
+	return typeName + "List"
 }
