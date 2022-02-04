@@ -25,6 +25,7 @@ import (
 // case. The workds that form the name are stored separated, so there is no need to parse the name
 // each time that the workds are needed.
 type Name struct {
+	text  string
 	words []*Word
 }
 
@@ -36,8 +37,18 @@ func NewName(words ...*Word) *Name {
 	return name
 }
 
+// Text returns the text that was originally used to create this name.
+func (n *Name) Text() string {
+	return n.text
+}
+
+// SetText sets the text that was originally used to create this name.
+func (n *Name) SetText(text string) {
+	n.text = text
+}
+
 // Words returns a slice containing the words of the name. The returned slice is a copy of the
-// internal representation, to it is safe to modify after alling this function.
+// internal representation, to it is safe to modify after calling this function.
 func (n *Name) Words() []*Word {
 	words := make([]*Word, len(n.words))
 	copy(words, n.words)
@@ -106,7 +117,7 @@ func (n *Name) CapitalizedJoined(separator string) string {
 	return strings.Join(chunks, separator)
 }
 
-// StringType generates a string representing this name, consisting on the list of words of the name
+// String generates a string representing this name, consisting on the list of words of the name
 // separated by an underscore.
 func (n *Name) String() string {
 	texts := make([]string, len(n.words))
