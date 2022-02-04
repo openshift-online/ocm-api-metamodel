@@ -47,10 +47,13 @@ VALUE: 'value';
 VARIABLE: 'variable';
 
 // Punctuation:
+AT_SIGN: '@';
 LEFT_CURLY_BRACKET: '{';
 RIGHT_CURLY_BRACKET: '}';
 LEFT_SQUARE_BRACKET: '[';
 RIGHT_SQUARE_BRACKET: ']';
+LEFT_PARENTHESIS: '(';
+RIGHT_PARENTHESIS: ')';
 
 // Operators:
 EQUALS_SIGN: '=';

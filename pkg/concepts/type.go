@@ -69,6 +69,7 @@ func NewType() *Type {
 // Type specifies the data type of attributes of structs and method parameters.
 type Type struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	owner      *Version
@@ -181,6 +182,16 @@ func (t *Type) AddAttribute(attribute *Attribute) {
 	}
 }
 
+// FindAttribute returns the attribute with the given name, or nil if no such attribute exists.
+func (t *Type) FindAttribute(name *names.Name) *Attribute {
+	for _, attribute := range t.attributes {
+		if attribute.Name().Equals(name) {
+			return attribute
+		}
+	}
+	return nil
+}
+
 // Values returns the list of values of an enumerated type. If called for any other kind of type it
 // will return nil.
 func (t *Type) Values() EnumValueSlice {
@@ -236,6 +247,7 @@ func (s TypeSlice) Swap(i, j int) {
 // EnumValue represents each of the values of an enum type.
 type EnumValue struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	typ *Type

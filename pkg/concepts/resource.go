@@ -25,6 +25,7 @@ import (
 // Resource represents an API resource.
 type Resource struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	owner    *Version

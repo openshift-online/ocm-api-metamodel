@@ -24,6 +24,7 @@ import (
 // Parameter represents a parameter of a method.
 type Parameter struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 	typedSupport
 

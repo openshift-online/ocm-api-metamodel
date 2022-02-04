@@ -337,7 +337,9 @@ func (r *Reader) loadFile(path string) {
 }
 
 func (r *Reader) ExitIdentifier(ctx *IdentifierContext) {
-	ctx.SetResult(names.ParseUsingCase(ctx.GetName().GetText()))
+	text := ctx.GetId().GetText()
+	ctx.SetResult(names.ParseUsingCase(text))
+	ctx.SetText(text)
 }
 
 func (r *Reader) ExitEnumDecl(ctx *EnumDeclContext) {
@@ -363,6 +365,9 @@ func (r *Reader) ExitEnumDecl(ctx *EnumDeclContext) {
 		typ.SetDoc(doc)
 	}
 
+	// Add the annotations:
+	r.addAnnotations(typ, ctx.GetAnnotations())
+
 	// Add the values:
 	memberCtxs := ctx.GetMembers()
 	if len(memberCtxs) > 0 {
@@ -382,6 +387,9 @@ func (r *Reader) ExitEnumMemberDecl(ctx *EnumMemberDeclContext) {
 	if doc != "" {
 		value.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(value, ctx.GetAnnotations())
 
 	// Return the value:
 	ctx.SetResult(value)
@@ -409,6 +417,9 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 	if doc != "" {
 		typ.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(typ, ctx.GetAnnotations())
 
 	// Add the attributes:
 	memberCtxs := ctx.GetMembers()
@@ -442,6 +453,9 @@ func (r *Reader) ExitStructDecl(ctx *StructDeclContext) {
 		typ.SetDoc(doc)
 	}
 
+	// Add the annotations:
+	r.addAnnotations(typ, ctx.GetAnnotations())
+
 	// Add the attributes:
 	memberCtxs := ctx.GetMembers()
 	if len(memberCtxs) > 0 {
@@ -462,6 +476,9 @@ func (r *Reader) ExitStructMemberDecl(ctx *StructMemberDeclContext) {
 	if doc != "" {
 		attribute.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(attribute, ctx.GetAnnotations())
 
 	// Set the link flag:
 	kind := ctx.GetKind()
@@ -613,6 +630,9 @@ func (r *Reader) ExitResourceDecl(ctx *ResourceDeclContext) {
 		resource.SetDoc(doc)
 	}
 
+	// Add the annotations:
+	r.addAnnotations(resource, ctx.GetAnnotations())
+
 	// Add the attributes:
 	memberCtxs := ctx.GetMembers()
 	if len(memberCtxs) > 0 {
@@ -637,6 +657,9 @@ func (r *Reader) ExitMethodDecl(ctx *MethodDeclContext) {
 	if doc != "" {
 		method.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(method, ctx.GetAnnotations())
 
 	// Add the membmers:
 	membersCtxs := ctx.GetMembers()
@@ -671,6 +694,9 @@ func (r *Reader) ExitMethodParameterDecl(ctx *MethodParameterDeclContext) {
 	if doc != "" {
 		parameter.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(parameter, ctx.GetAnnotations())
 
 	// Set the direction flags:
 	directionsCtxs := ctx.GetDirections()
@@ -707,6 +733,9 @@ func (r *Reader) ExitLocatorDecl(ctx *LocatorDeclContext) {
 	if doc != "" {
 		locator.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(locator, ctx.GetAnnotations())
 
 	// Add the members:
 	membersCtxs := ctx.GetMembers()
@@ -769,6 +798,9 @@ func (r *Reader) ExitErrorDecl(ctx *ErrorDeclContext) {
 	if doc != "" {
 		err.SetDoc(doc)
 	}
+
+	// Add the annotations:
+	r.addAnnotations(err, ctx.GetAnnotations())
 
 	// Process the members:
 	memberCtxs := ctx.GetMembers()
@@ -841,6 +873,37 @@ func (r *Reader) ExitLiteral(ctx *LiteralContext) {
 	default:
 		r.reporter.Errorf("Unknown kind of literal '%s'", ctx.GetText())
 	}
+}
+
+func (r *Reader) ExitAnnotation(ctx *AnnotationContext) {
+	// Create the annotation and set the basic properties:
+	annotation := concepts.NewAnnotation()
+	annotation.SetName(ctx.Identifier().GetText())
+
+	// Set the parameters:
+	if ctx.GetParameters() != nil {
+		for name, value := range ctx.GetParameters().GetResult() {
+			annotation.AddParameter(name, value)
+		}
+	}
+
+	// Set the result:
+	ctx.SetResult(annotation)
+}
+
+func (r *Reader) ExitAnnotationParameters(ctx *AnnotationParametersContext) {
+	result := map[string]interface{}{}
+	for _, parameterCtx := range ctx.GetParameters() {
+		name := parameterCtx.GetName()
+		value := parameterCtx.GetValue()
+		result[name] = value
+	}
+	ctx.SetResult(result)
+}
+
+func (r *Reader) ExitAnnotationParameter(ctx *AnnotationParameterContext) {
+	ctx.SetName(ctx.Identifier().GetText())
+	ctx.SetValue(ctx.Literal().GetResult())
 }
 
 func (r *Reader) isUndefinedType(typ *concepts.Type) bool {
@@ -948,4 +1011,10 @@ func (r *Reader) getDoc(token antlr.Token) string {
 
 	// Return the lines joined:
 	return strings.Join(lines, "\n")
+}
+
+func (r *Reader) addAnnotations(object concepts.Annotated, ctxs []IAnnotationContext) {
+	for _, ctx := range ctxs {
+		object.AddAnnotation(ctx.GetResult())
+	}
 }

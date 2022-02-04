@@ -182,6 +182,24 @@ func (s *BaseModelParserListener) EnterErrorCodeDecl(ctx *ErrorCodeDeclContext) 
 // ExitErrorCodeDecl is called when production errorCodeDecl is exited.
 func (s *BaseModelParserListener) ExitErrorCodeDecl(ctx *ErrorCodeDeclContext) {}
 
+// EnterAnnotation is called when production annotation is entered.
+func (s *BaseModelParserListener) EnterAnnotation(ctx *AnnotationContext) {}
+
+// ExitAnnotation is called when production annotation is exited.
+func (s *BaseModelParserListener) ExitAnnotation(ctx *AnnotationContext) {}
+
+// EnterAnnotationParameters is called when production annotationParameters is entered.
+func (s *BaseModelParserListener) EnterAnnotationParameters(ctx *AnnotationParametersContext) {}
+
+// ExitAnnotationParameters is called when production annotationParameters is exited.
+func (s *BaseModelParserListener) ExitAnnotationParameters(ctx *AnnotationParametersContext) {}
+
+// EnterAnnotationParameter is called when production annotationParameter is entered.
+func (s *BaseModelParserListener) EnterAnnotationParameter(ctx *AnnotationParameterContext) {}
+
+// ExitAnnotationParameter is called when production annotationParameter is exited.
+func (s *BaseModelParserListener) ExitAnnotationParameter(ctx *AnnotationParameterContext) {}
+
 // EnterLiteral is called when production literal is entered.
 func (s *BaseModelParserListener) EnterLiteral(ctx *LiteralContext) {}
 

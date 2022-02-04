@@ -45,28 +45,33 @@ typeDecl returns[result: *concepts.Type]:
 ;
 
 enumDecl returns[result: *concepts.Type]:
+  annotations += annotation*
   'enum' name = identifier '{'
     members += enumMemberDecl*
   '}'
 ;
 
 enumMemberDecl returns[result: *concepts.EnumValue]:
+  annotations += annotation*
   'value'? name = identifier
 ;
 
 classDecl returns[result: *concepts.Type]:
+  annotations += annotation*
   'class' name = identifier '{'
     members += structMemberDecl*
   '}'
 ;
 
 structDecl returns[result: *concepts.Type]:
+  annotations += annotation*
   'struct' name = identifier '{'
     members += structMemberDecl*
   '}'
 ;
 
 structMemberDecl returns[result: *concepts.Attribute]:
+  annotations += annotation*
   kind = attributeKind? name = identifier reference = typeReference
 ;
 
@@ -94,6 +99,7 @@ mapTypeReference returns[result: *concepts.Type]:
 ;
 
 resourceDecl returns[result: *concepts.Resource]:
+  annotations += annotation*
   'resource' name = identifier '{'
     members += resourceMemberDecl*
   '}'
@@ -105,6 +111,7 @@ resourceMemberDecl returns[result: interface{}]:
 ;
 
 methodDecl returns[result: *concepts.Method]:
+  annotations += annotation*
   'method'? name = identifier '{'
     members += methodMemberDecl*
   '}'
@@ -115,6 +122,7 @@ methodMemberDecl returns[result: interface{}]:
 ;
 
 methodParameterDecl returns[result: *concepts.Parameter]:
+  annotations += annotation*
   'parameter'?
   directions += parameterDirection*
   name = identifier reference =
@@ -128,6 +136,7 @@ parameterDirection:
 ;
 
 locatorDecl returns[result: *concepts.Locator]:
+  annotations += annotation*
   'locator' name = identifier '{'
     members += locatorMemberDecl*
   '}'
@@ -151,6 +160,7 @@ resourceReference returns[result: *concepts.Resource]:
 ;
 
 errorDecl returns[result: *concepts.Error]:
+  annotations += annotation*
   'error' name = identifier '{'
     members += errorMemberDecl*
   '}'
@@ -162,6 +172,18 @@ errorMemberDecl returns[result: interface{}]:
 
 errorCodeDecl returns[result: int]:
   'code' code = INTEGER_LITERAL
+;
+
+annotation returns[result: *concepts.Annotation]:
+  '@' name = identifier parameters = annotationParameters?
+;
+
+annotationParameters returns[result: map[string]interface{}]:
+  '(' parameters += annotationParameter* ')'
+;
+
+annotationParameter returns[name: string, value: interface{}]:
+  identifier '=' literal
 ;
 
 literal returns[result: interface{}]:
@@ -183,6 +205,6 @@ stringLiteral returns[result: string]:
   STRING_LITERAL
 ;
 
-identifier returns[result: *names.Name]:
-  name = IDENTIFIER
+identifier returns[result: *names.Name, text: string]:
+  id = IDENTIFIER
 ;

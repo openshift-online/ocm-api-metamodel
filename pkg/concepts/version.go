@@ -26,6 +26,7 @@ import (
 // Version is the representation of a version of a service.
 type Version struct {
 	documentedSupport
+	annotatedSupport
 	namedSupport
 
 	// Service that owns this version:
