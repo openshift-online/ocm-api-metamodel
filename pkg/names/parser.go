@@ -33,7 +33,9 @@ func ParseUsingSeparator(text string, separator string) *Name {
 	for i, chunk := range chunks {
 		words[i] = NewWord(chunk)
 	}
-	return NewName(words...)
+	name := NewName(words...)
+	name.SetText(text)
+	return name
 }
 
 // ParseUsingCase separates the given text into words, using the case transitions as separators, and
@@ -124,7 +126,9 @@ func ParseUsingCase(text string) *Name {
 	}
 
 	// Create the name from the stored words:
-	return NewName(words...)
+	name := NewName(words...)
+	name.SetText(text)
+	return name
 }
 
 // parseWord converts the given text into a Word object assuming that it is a single word.
