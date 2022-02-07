@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 // Representation of an identity provider.
+@go(name = "IDP")
 class IdentityProvider {
 	// Type of identity provider. The rest of the attributes will be populated according to this
 	// value. For example, if the type is `github` then only the `github` attribute will be

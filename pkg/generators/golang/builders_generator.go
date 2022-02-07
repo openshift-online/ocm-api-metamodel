@@ -555,31 +555,80 @@ func (g *BuildersGenerator) fileName(typ *concepts.Type) string {
 }
 
 func (g *BuildersGenerator) objectName(typ *concepts.Type) string {
-	if typ.IsStruct() || typ.IsList() {
-		return g.names.Public(typ.Name())
+	var name string
+	switch {
+	case typ.IsStruct():
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
+	case typ.IsList():
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "List"
+	default:
+		g.reporter.Errorf(
+			"Don't know how to calculate object type name for type '%s'",
+			typ,
+		)
 	}
-	g.reporter.Errorf(
-		"Don't know how to calculate object type name for type '%s'",
-		typ.Name(),
-	)
-	return ""
+	return name
 }
 
 func (g *BuildersGenerator) builderName(typ *concepts.Type) string {
-	if typ.IsStruct() || typ.IsList() {
-		name := names.Cat(typ.Name(), nomenclator.Builder)
-		return g.names.Public(name)
+	var name string
+	switch {
+	case typ.IsStruct():
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
+		name += "Builder"
+	case typ.IsList():
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "ListBuilder"
+	default:
+		g.reporter.Errorf(
+			"Don't know how to calculate builder type name for type '%s'",
+			typ,
+		)
+		return ""
+
 	}
-	g.reporter.Errorf(
-		"Don't know how to calculate builder type name for type '%s'",
-		typ.Name(),
-	)
-	return ""
+	return name
 }
 
 func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
-	name := names.Cat(nomenclator.New, typ.Name())
-	return g.names.Public(name)
+	var name string
+	switch {
+	case typ.IsList():
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "List"
+	case typ.IsStruct():
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
+	default:
+		g.reporter.Errorf(
+			"Don't know how to calculate builder constructor name for type '%s'",
+			typ,
+		)
+		return ""
+	}
+	name = "New" + name
+	return name
 }
 
 func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
@@ -636,7 +685,11 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
-	return g.names.Public(attribute.Name())
+	name := goName(attribute)
+	if name == "" {
+		name = g.names.Public(attribute.Name())
+	}
+	return name
 }
 
 func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeReference {

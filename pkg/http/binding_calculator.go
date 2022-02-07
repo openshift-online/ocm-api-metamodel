@@ -182,95 +182,67 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 
 // AttributeName returns the field name corresponding to the given model attribute.
 func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string {
-	name := c.jsonName(attribute)
-	if name != "" {
-		return name
+	name := jsonName(attribute)
+	if name == "" {
+		name = attribute.Name().Snake()
 	}
-	return attribute.Name().Snake()
+	return name
 }
 
 // ParameterName returns the name of the field or query parameter corresponding to the given  model
 // method parameter.
 func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string {
-	name := c.jsonName(parameter)
-	if name != "" {
-		return name
+	name := jsonName(parameter)
+	if name == "" {
+		name = parameter.Name().Snake()
 	}
-	return parameter.Name().Snake()
+	return name
 }
 
 // ServiceSegment calculates the URL segment corresponding to the given service.
 func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
-	name := c.httpName(service)
-	if name != "" {
-		return name
+	name := httpName(service)
+	if name == "" {
+		name = service.Name().Snake()
 	}
-	return service.Name().Snake()
+	return name
 }
 
 // VersionSegment calculates the URL segment corresponding to the given version.
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
-	name := c.httpName(version)
-	if name != "" {
-		return name
+	name := httpName(version)
+	if name == "" {
+		name = version.Name().Snake()
 	}
-	return version.Name().Snake()
+	return name
 }
 
 // LocatorSegment calculates the URL segment corresponding to the given method.
 func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 	if method.IsAction() {
-		name := c.httpName(method)
-		if name != "" {
-			return name
+		name := httpName(method)
+		if name == "" {
+			name = method.Name().Snake()
 		}
-		return method.Name().Snake()
+		return name
 	}
 	return ""
 }
 
 // LocatorSegment calculates the URL segment corresponding to the given locator.
 func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
-	name := c.httpName(locator)
-	if name != "" {
-		return name
+	name := httpName(locator)
+	if name == "" {
+		name = locator.Name().Snake()
 	}
-	return locator.Name().Snake()
+	return name
 }
 
 // EnumValueName returns the name corresponding to a value of an enumerated type.
 func (c *BindingCalculator) EnumValueName(value *concepts.EnumValue) string {
-	name := c.jsonName(value)
-	if name != "" {
-		return name
+	name := jsonName(value)
+	if name == "" {
+		name = value.Name().Snake()
 	}
-	return value.Name().Snake()
-}
-
-// httpName checks if the given concept has a `http` annotation. If it does then it returns the
-// value of the `name` parameter. If it doesn't, it returns an empty string.
-func (c *BindingCalculator) httpName(concept concepts.Annotated) string {
-	annotation := concept.GetAnnotation("http")
-	if annotation == nil {
-		return ""
-	}
-	name := annotation.FindParameter("name")
-	if name == nil {
-		return ""
-	}
-	return fmt.Sprintf("%s", name)
-}
-
-// jsonName checks if the given concept has a `json` annotation. If it does then it returns the
-// value of the `name` parameter. If it doesn't, it returns an empty string.
-func (c *BindingCalculator) jsonName(concept concepts.Annotated) string {
-	annotation := concept.GetAnnotation("json")
-	if annotation == nil {
-		return ""
-	}
-	name := annotation.FindParameter("name")
-	if name == nil {
-		return ""
-	}
-	return fmt.Sprintf("%s", name)
+	return name
 }

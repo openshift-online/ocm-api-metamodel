@@ -476,13 +476,13 @@ var _ = Describe("Server", func() {
 		adapter.ServeHTTP(recorder, request)
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 		Expect(recorder.Body).To(MatchJSON(`{
-			"kind": "IdentityProviderList",
+			"kind": "IDPList",
 			"page": 1,
 			"size": 1,
 			"total": 1,
 			"items": [
 				{
-					"kind": "IdentityProvider",
+					"kind": "IDP",
 					"name": "test-list-identity-providers"
 				}
 			]
@@ -739,8 +739,8 @@ var _ cmv1.IdentityProvidersServer = &MyIdentityProvidersServer{}
 func (s *MyIdentityProvidersServer) List(ctx context.Context,
 	request *cmv1.IdentityProvidersListServerRequest,
 	response *cmv1.IdentityProvidersListServerResponse) error {
-	items, err := cmv1.NewIdentityProviderList().
-		Items(cmv1.NewIdentityProvider().Name("test-list-identity-providers")).
+	items, err := cmv1.NewIDPList().
+		Items(cmv1.NewIDP().Name("test-list-identity-providers")).
 		Build()
 	if err != nil {
 		return err

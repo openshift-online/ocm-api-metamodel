@@ -95,7 +95,7 @@ func (b *TypesCalculatorBuilder) Build() (calculator *TypesCalculator, err error
 
 // Reference creates a new type reference with the given package and text.
 func (c *TypesCalculator) Reference(imprt, selector, name, text string) *TypeReference {
-	reference := new(TypeReference)
+	reference := &TypeReference{}
 	reference.imprt = imprt
 	reference.selector = selector
 	reference.text = text
@@ -132,13 +132,26 @@ func (c *TypesCalculator) StructName(typ *concepts.Type) string {
 // type.
 func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 	var ref *TypeReference
-	if typ.IsList() || typ.IsStruct() {
+	switch {
+	case typ.IsList():
+		element := typ.Element()
+		ref = &TypeReference{}
+		ref.imprt, ref.selector = c.Package(element)
+		ref.name = goName(element)
+		if ref.name == "" {
+			ref.name = c.names.Public(element.Name())
+		}
+		ref.name += "List"
+		ref.text = ref.name
+	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Public(typ.Name())
+		ref.name = goName(typ)
+		if ref.name == "" {
+			ref.name = c.names.Public(typ.Name())
+		}
 		ref.text = ref.name
-	}
-	if ref == nil {
+	default:
 		c.reporter.Errorf(
 			"Don't know how to calculate struct type reference for type '%s'",
 			typ,
@@ -186,7 +199,10 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsEnum():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Public(typ.Name())
+		ref.name = goName(typ)
+		if ref.name == "" {
+			ref.name = c.names.Public(typ.Name())
+		}
 		ref.text = ref.name
 	case typ.IsList():
 		element := typ.Element()
@@ -211,7 +227,10 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Public(typ.Name())
+		ref.name = goName(typ)
+		if ref.name == "" {
+			ref.name = c.names.Public(typ.Name())
+		}
 		ref.text = ref.name
 	}
 	if ref == nil {
@@ -254,9 +273,14 @@ func (c *TypesCalculator) ListReference(typ *concepts.Type) *TypeReference {
 	}
 
 	// Calculate the type reference:
+	element := typ.Element()
 	ref := &TypeReference{}
-	ref.imprt, ref.selector = c.Package(typ)
-	ref.name = c.names.Public(typ.Name())
+	ref.imprt, ref.selector = c.Package(element)
+	ref.name = goName(element)
+	if ref.name == "" {
+		ref.name = c.names.Public(element.Name())
+	}
+	ref.name += "List"
 	ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	return ref
 }
@@ -331,13 +355,27 @@ func (c *TypesCalculator) JSONStructReference(typ *concepts.Type) *TypeReference
 // Builder reference calculates a reference for the type used build objects of the given type.
 func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 	var ref *TypeReference
-	if typ.IsStruct() || typ.IsList() {
+	switch {
+	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Public(names.Cat(typ.Name(), nomenclator.Builder))
+		ref.name = goName(typ)
+		if ref.name == "" {
+			ref.name = c.names.Public(typ.Name())
+		}
+		ref.name += "Builder"
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
-	}
-	if ref == nil {
+	case typ.IsList():
+		element := typ.Element()
+		ref = &TypeReference{}
+		ref.imprt, ref.selector = c.Package(element)
+		ref.name = goName(element)
+		if ref.name == "" {
+			ref.name = c.names.Public(element.Name())
+		}
+		ref.name += "ListBuilder"
+		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+	default:
 		c.reporter.Errorf(
 			"Don't know how to calculate builder reference for type '%s'",
 			typ,
@@ -385,6 +423,8 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 	case typ == version.Boolean():
 		return
 	case typ == version.IntegerType():
+		return
+	case typ == version.LongType():
 		return
 	case typ == version.FloatType():
 		return
