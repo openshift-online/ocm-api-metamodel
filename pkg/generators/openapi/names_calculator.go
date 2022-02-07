@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
 
@@ -70,20 +71,20 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 // identifiers is `v1` then the result will be `clusters_mgmt/v1/openapi.json`.
 func (c *NamesCalculator) FileName(version *concepts.Version) string {
 	service := version.Owner()
-	return filepath.Join(service.Name().Snake(), version.Name().Snake(), "openapi.json")
+	return filepath.Join(service.Name(), version.Name(), "openapi.json")
 }
 
 // SchemaName calculates the schema name for the given type.
 func (c *NamesCalculator) SchemaName(typ *concepts.Type) string {
-	return typ.Name().Camel()
+	return typ.Name()
 }
 
 // AttributePropertyName calculates the property name for an attribute of a struct type.
 func (c *NamesCalculator) AttributePropertyName(attribute *concepts.Attribute) string {
-	return attribute.Name().Snake()
+	return names.ToSnake(attribute.Name())
 }
 
 // ParameterPropertyName calculates the property name for an parameter of a method.
 func (c *NamesCalculator) ParameterPropertyName(parameter *concepts.Parameter) string {
-	return parameter.Name().Snake()
+	return names.ToSnake(parameter.Name())
 }

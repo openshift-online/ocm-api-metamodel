@@ -21,9 +21,8 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // ServersGeneratorBuilder is an object used to configure and build the servers generator. Don't create
@@ -153,7 +152,7 @@ func (g *ServersGenerator) Run() error {
 	var err error
 
 	// Calculate the file name:
-	fileName := g.names.File(nomenclator.Server)
+	fileName := g.names.File(words.Server)
 
 	// Create the buffer for the model server:
 	g.buffer, err = NewBuffer().
@@ -287,7 +286,7 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 
 	// Calculate the package and file name:
 	pkgName := g.packages.ServicePackage(service)
-	fileName := g.names.File(nomenclator.Server)
+	fileName := g.names.File(words.Server)
 
 	// Create the buffer for the service:
 	g.buffer, err = NewBuffer().
@@ -326,7 +325,10 @@ func (g *ServersGenerator) generateServiceServer(service *concepts.Service) erro
 
 func (g *ServersGenerator) generateServiceServerSource(service *concepts.Service) {
 	for _, version := range service.Versions() {
-		g.buffer.Import(g.packages.VersionImport(version), "")
+		g.buffer.Import(
+			g.packages.VersionImport(version),
+			g.packages.VersionSelector(version),
+		)
 	}
 	g.buffer.Emit(`
 		// Server is the interface for the '{{ .Service.Name }}' service.
@@ -639,7 +641,7 @@ func (g *ServersGenerator) generateRequestSource(method *concepts.Method) {
 		}
 
 		{{ range $requestParameters }}
-			{{ $parameterType := .Type.Name.String }}
+			{{ $parameterType := .Type.Name }}
 			{{ $fieldName := fieldName . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
@@ -764,90 +766,58 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 	)
 }
 
-func (g *ServersGenerator) serversFile() string {
-	return g.names.File(nomenclator.Servers)
-}
-
 func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
-	return g.names.File(names.Cat(resource.Name(), nomenclator.Server))
+	return g.names.File(resource.Name() + words.Server)
 }
 
 func (g *ServersGenerator) serviceName(service *concepts.Service) string {
-	return g.names.Public(service.Name())
+	return g.names.Public(service)
 }
 
 func (g *ServersGenerator) versionName(version *concepts.Version) string {
-	return g.names.Public(version.Name())
+	return g.names.Public(version)
 }
 
 func (g *ServersGenerator) serverName(resource *concepts.Resource) string {
-	root := resource.Owner().Root()
-	if resource == root {
-		return g.names.Public(nomenclator.Server)
+	if resource.IsRoot() {
+		return g.names.Public(words.Server)
 	}
-	return g.names.Public(names.Cat(resource.Name(), nomenclator.Server))
+	return g.names.Public(resource, words.Server)
 }
 
 func (g *ServersGenerator) locatorName(locator *concepts.Locator) string {
-	return g.names.Public(locator.Name())
+	return g.names.Public(locator)
 }
 
 func (g *ServersGenerator) methodName(method *concepts.Method) string {
-	return g.names.Public(method.Name())
+	return g.names.Public(method)
 }
 
 func (g *ServersGenerator) dispatchName(resource *concepts.Resource) string {
-	root := resource.Owner().Root()
-	if resource == root {
-		return g.names.Public(nomenclator.Dispatch)
+	if resource.IsRoot() {
+		return g.names.Public(words.Dispatch)
 	}
-	return g.names.Private(names.Cat(nomenclator.Dispatch, resource.Name()))
+	return g.names.Private(words.Dispatch, resource)
 }
 
 func (g *ServersGenerator) adaptRequestName(method *concepts.Method) string {
-	name := names.Cat(
-		nomenclator.Adapt,
-		method.Owner().Name(),
-		method.Name(),
-		nomenclator.Request,
-	)
-	return g.names.Private(name)
+	return g.names.Private(words.Adapt, method.Owner(), method, words.Request)
 }
 
 func (g *ServersGenerator) requestName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(method.Name(), nomenclator.Server, nomenclator.Request)
-	} else {
-		name = names.Cat(
-			resource.Name(),
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Request,
-		)
+		return g.names.Public(method, words.Server, words.Request)
 	}
-	return g.names.Public(name)
+	return g.names.Public(resource, method, words.Server, words.Request)
 }
 
 func (g *ServersGenerator) responseName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Response,
-		)
-	} else {
-		name = names.Cat(
-			resource.Name(),
-			method.Name(),
-			nomenclator.Server,
-			nomenclator.Response,
-		)
+		return g.names.Public(method, words.Server, words.Response)
 	}
-	return g.names.Public(name)
+	return g.names.Public(resource, method, words.Server, words.Response)
 }
 
 func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
@@ -864,7 +834,7 @@ func (g *ServersGenerator) fieldType(parameter *concepts.Parameter) *TypeReferen
 }
 
 func (g *ServersGenerator) getterName(parameter *concepts.Parameter) string {
-	name := g.names.Public(parameter.Name())
+	name := g.names.Public(parameter)
 	name = g.avoidBuiltin(name, builtinGetters)
 	return name
 }
@@ -874,7 +844,7 @@ func (g *ServersGenerator) getterType(parameter *concepts.Parameter) *TypeRefere
 }
 
 func (g *ServersGenerator) setterName(parameter *concepts.Parameter) string {
-	name := g.names.Public(parameter.Name())
+	name := g.names.Public(parameter)
 	name = g.avoidBuiltin(name, builtinSetters)
 	return name
 }
@@ -884,7 +854,7 @@ func (g *ServersGenerator) setterType(parameter *concepts.Parameter) *TypeRefere
 }
 
 func (g *ServersGenerator) jsonFieldName(parameter *concepts.Parameter) string {
-	return g.names.Public(parameter.Name())
+	return g.names.Public(parameter)
 }
 
 func (g *ServersGenerator) jsonFieldType(parameter *concepts.Parameter) *TypeReference {
@@ -939,46 +909,21 @@ func (g *ServersGenerator) readerName(typ *concepts.Type) string {
 }
 
 func (g *ServersGenerator) writeFunc(typ *concepts.Type) string {
-	name := names.Cat(nomenclator.Write, typ.Name())
-	return g.names.Private(name)
+	return g.names.Private(words.Write, typ)
 }
 
 func (g *ServersGenerator) readRequestFunc(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Read,
-			method.Name(),
-			nomenclator.Request,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Read,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Request,
-		)
+		return g.names.Private(words.Read, method, words.Request)
 	}
-	return g.names.Private(name)
+	return g.names.Private(words.Read, resource, method, words.Request)
 }
 
 func (g *ServersGenerator) writeResponseFunc(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Write,
-			method.Name(),
-			nomenclator.Response,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Write,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Response,
-		)
+		return g.names.Private(words.Write, method, words.Response)
 	}
-	return g.names.Private(name)
+	return g.names.Private(words.Write, resource, method, words.Response)
 }

@@ -21,9 +21,8 @@ import (
 	"path"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // TypesCalculatorBuilder is an object used to configure and build the Go type calculators. Don't
@@ -137,19 +136,12 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 		element := typ.Element()
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(element)
-		ref.name = goName(element)
-		if ref.name == "" {
-			ref.name = c.names.Public(element.Name())
-		}
-		ref.name += "List"
+		ref.name = c.names.Public(element, words.List)
 		ref.text = ref.name
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
-		if ref.name == "" {
-			ref.name = c.names.Public(typ.Name())
-		}
+		ref.name = c.names.Public(typ)
 		ref.text = ref.name
 	default:
 		c.reporter.Errorf(
@@ -199,10 +191,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsEnum():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
-		if ref.name == "" {
-			ref.name = c.names.Public(typ.Name())
-		}
+		ref.name = c.names.Public(typ)
 		ref.text = ref.name
 	case typ.IsList():
 		element := typ.Element()
@@ -227,10 +216,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
-		if ref.name == "" {
-			ref.name = c.names.Public(typ.Name())
-		}
+		ref.name = c.names.Public(typ)
 		ref.text = ref.name
 	}
 	if ref == nil {
@@ -276,11 +262,7 @@ func (c *TypesCalculator) ListReference(typ *concepts.Type) *TypeReference {
 	element := typ.Element()
 	ref := &TypeReference{}
 	ref.imprt, ref.selector = c.Package(element)
-	ref.name = goName(element)
-	if ref.name == "" {
-		ref.name = c.names.Public(element.Name())
-	}
-	ref.name += "List"
+	ref.name = c.names.Public(element, "List")
 	ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	return ref
 }
@@ -313,7 +295,7 @@ func (c *TypesCalculator) JSONTypeReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Private(names.Cat(typ.Name(), nomenclator.JSON))
+		ref.name = c.names.Private(typ.Name(), words.JSON)
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	}
 	if ref == nil {
@@ -339,7 +321,7 @@ func (c *TypesCalculator) JSONStructReference(typ *concepts.Type) *TypeReference
 	if typ.IsStruct() || typ.IsList() {
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = c.names.Private(names.Cat(typ.Name(), nomenclator.JSON))
+		ref.name = c.names.Private(typ.Name(), words.JSON)
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	}
 	if ref == nil {
@@ -359,21 +341,13 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
-		if ref.name == "" {
-			ref.name = c.names.Public(typ.Name())
-		}
-		ref.name += "Builder"
+		ref.name = c.names.Public(typ, words.Builder)
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	case typ.IsList():
 		element := typ.Element()
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(element)
-		ref.name = goName(element)
-		if ref.name == "" {
-			ref.name = c.names.Public(element.Name())
-		}
-		ref.name += "ListBuilder"
+		ref.name = c.names.Public(element, words.List, words.Builder)
 		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 	default:
 		c.reporter.Errorf(

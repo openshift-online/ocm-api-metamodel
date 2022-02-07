@@ -17,8 +17,6 @@ limitations under the License.
 package language
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -42,13 +40,13 @@ var _ = Describe("Annotation", func() {
 		)
 
 		// Check the annotation:
-		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		service := model.FindService("my_service")
 		Expect(service).ToNot(BeNil())
-		version := service.FindVersion(names.ParseUsingSeparator("v1", "_"))
+		version := service.FindVersion("v1")
 		Expect(version).ToNot(BeNil())
-		class := version.FindType(names.ParseUsingCase("MyClass"))
+		class := version.FindType("MyClass")
 		Expect(class).ToNot(BeNil())
-		attribute := class.FindAttribute(names.ParseUsingCase("MyAttribute"))
+		attribute := class.FindAttribute("MyAttribute")
 		Expect(attribute).ToNot(BeNil())
 		annotation := attribute.GetAnnotation("go")
 		Expect(annotation).ToNot(BeNil())
@@ -74,13 +72,13 @@ var _ = Describe("Annotation", func() {
 		)
 
 		// Check the annotation:
-		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		service := model.FindService("my_service")
 		Expect(service).ToNot(BeNil())
-		version := service.FindVersion(names.ParseUsingSeparator("v1", "_"))
+		version := service.FindVersion("v1")
 		Expect(version).ToNot(BeNil())
-		class := version.FindType(names.ParseUsingCase("MyClass"))
+		class := version.FindType("MyClass")
 		Expect(class).ToNot(BeNil())
-		attribute := class.FindAttribute(names.ParseUsingCase("MyAttribute"))
+		attribute := class.FindAttribute("MyAttribute")
 		Expect(attribute).ToNot(BeNil())
 		annotation := attribute.GetAnnotation("deprecated")
 		Expect(annotation).ToNot(BeNil())

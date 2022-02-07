@@ -26,8 +26,9 @@ import (
 	"strconv"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // BindingCalculatorBuilder is an object used to configure and build the HTTP bindings calculator.
@@ -143,19 +144,18 @@ func (c *BindingCalculator) ResponseBodyParameters(method *concepts.Method) []*c
 
 // Method returns the HTTP method corresponding to the given model method.
 func (c *BindingCalculator) Method(method *concepts.Method) string {
-	name := method.Name()
-	switch {
-	case name.Equals(nomenclator.Add):
+	switch method.Name() {
+	case words.Add:
 		return http.MethodPost
-	case name.Equals(nomenclator.Delete):
+	case words.Delete:
 		return http.MethodDelete
-	case name.Equals(nomenclator.Get):
+	case words.Get:
 		return http.MethodGet
-	case name.Equals(nomenclator.List):
+	case words.List:
 		return http.MethodGet
-	case name.Equals(nomenclator.Post):
+	case words.Post:
 		return http.MethodPost
-	case name.Equals(nomenclator.Update):
+	case words.Update:
 		return http.MethodPatch
 	default:
 		return http.MethodPost
@@ -165,16 +165,15 @@ func (c *BindingCalculator) Method(method *concepts.Method) string {
 // Default status returns the HTTP status code that should be returned by default by the given
 // method when there are no errors.
 func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
-	name := method.Name()
 	status := http.StatusOK
-	switch {
-	case name.Equals(nomenclator.Post):
+	switch method.Name() {
+	case words.Post:
 		status = http.StatusCreated
-	case name.Equals(nomenclator.Add):
+	case words.Add:
 		status = http.StatusCreated
-	case name.Equals(nomenclator.Update):
+	case words.Update:
 		status = http.StatusOK
-	case name.Equals(nomenclator.Delete):
+	case words.Delete:
 		status = http.StatusNoContent
 	}
 	return strconv.Itoa(status)
@@ -184,7 +183,7 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string {
 	name := jsonName(attribute)
 	if name == "" {
-		name = attribute.Name().Snake()
+		name = names.ToSnake(attribute.Name())
 	}
 	return name
 }
@@ -194,7 +193,7 @@ func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string 
 func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string {
 	name := jsonName(parameter)
 	if name == "" {
-		name = parameter.Name().Snake()
+		name = names.ToSnake(parameter.Name())
 	}
 	return name
 }
@@ -203,7 +202,7 @@ func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string 
 func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
 	name := httpName(service)
 	if name == "" {
-		name = service.Name().Snake()
+		name = names.ToSnake(service.Name())
 	}
 	return name
 }
@@ -212,7 +211,7 @@ func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
 	name := httpName(version)
 	if name == "" {
-		name = version.Name().Snake()
+		name = names.ToSnake(version.Name())
 	}
 	return name
 }
@@ -222,7 +221,7 @@ func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 	if method.IsAction() {
 		name := httpName(method)
 		if name == "" {
-			name = method.Name().Snake()
+			name = names.ToSnake(method.Name())
 		}
 		return name
 	}
@@ -233,7 +232,7 @@ func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
 	name := httpName(locator)
 	if name == "" {
-		name = locator.Name().Snake()
+		name = names.ToSnake(locator.Name())
 	}
 	return name
 }
@@ -242,7 +241,7 @@ func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
 func (c *BindingCalculator) EnumValueName(value *concepts.EnumValue) string {
 	name := jsonName(value)
 	if name == "" {
-		name = value.Name().Snake()
+		name = names.ToSnake(value.Name())
 	}
 	return name
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
@@ -65,35 +66,66 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 	return
 }
 
-// Public converts the given name into an string, following the rules for Go public names.
-func (c *NamesCalculator) Public(name *names.Name) string {
-	words := name.Words()
-	chunks := make([]string, len(words))
-	for i, word := range words {
-		chunks[i] = word.Capitalize()
-	}
-	public := strings.Join(chunks, "")
-	public = AvoidReservedWord(public)
-	return public
+// Public concatenates the given list of values and converts them into a string that follows the
+// conventions for Go public names. The elements of the list can be strings or objects that
+// implement the names.Named interface. Strings will be used directly. Objects that implement the
+// names.Named interface will be replaced by the result of calling the Name() method. Objects that
+// have the @go annotation will be replaced by the value of the name paratemer of that annotation.
+func (c *NamesCalculator) Public(values ...interface{}) string {
+	result := c.concatenateValues(values)
+	result = names.ToUpperCamel(result)
+	result = AvoidReservedWord(result)
+	return result
 }
 
-// Private converts the given name into an string, following the rules for Go private names.
-func (c *NamesCalculator) Private(name *names.Name) string {
-	words := name.Words()
-	chunks := make([]string, len(words))
-	for i, word := range words {
-		if i == 0 {
-			chunks[i] = strings.ToLower(word.String())
-		} else {
-			chunks[i] = word.Capitalize()
-		}
+// Private concatenates the given list of values and converts them into a string that follows the
+// conventions for Go private names. The elements of the list can be strings or objects that
+// implement the names.Named interface. Strings will be used directly. Objects that implement the
+// names.Named interface will be replaced by the result of calling the Name() method. Objects that
+// have the @go annotation will be replaced by the value of the name paratemer of that annotation.
+func (c *NamesCalculator) Private(values ...interface{}) string {
+	result := c.concatenateValues(values)
+	result = names.ToLowerCamel(result)
+	result = AvoidReservedWord(result)
+	return result
+}
+
+func (c *NamesCalculator) concatenateValues(values []interface{}) string {
+	texts := make([]string, len(values))
+	for i, value := range values {
+		texts[i] = c.replaceValue(value)
 	}
-	private := strings.Join(chunks, "")
-	private = AvoidReservedWord(private)
-	return private
+	return strings.Join(texts, "")
+}
+
+func (c *NamesCalculator) replaceValue(value interface{}) string {
+	var result string
+	switch typed := value.(type) {
+	case string:
+		result = typed
+	case names.Named:
+		result = typed.Name()
+		annotated, ok := typed.(concepts.Annotated)
+		if ok {
+			annotation := annotated.GetAnnotation("go")
+			if annotation != nil {
+				name := annotation.GetString("name")
+				if name != "" {
+					result = name
+				}
+			}
+		}
+	default:
+		c.reporter.Errorf(
+			"Don't know how to concatenate object of type '%T'",
+			value,
+		)
+		result = "!"
+	}
+	return result
 }
 
 // File converts the given name into an string, following the rules for Go source files.
-func (c *NamesCalculator) File(name *names.Name) string {
-	return name.LowerJoined("_")
+func (c *NamesCalculator) File(name string) string {
+	return names.ToSnake(name)
 }

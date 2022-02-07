@@ -18,8 +18,7 @@ package concepts
 
 import (
 	"sort"
-
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"strings"
 )
 
 // TypeKind specifies the kind of a type. It can be scalar, enum, struct, list or class.
@@ -183,9 +182,9 @@ func (t *Type) AddAttribute(attribute *Attribute) {
 }
 
 // FindAttribute returns the attribute with the given name, or nil if no such attribute exists.
-func (t *Type) FindAttribute(name *names.Name) *Attribute {
+func (t *Type) FindAttribute(name string) *Attribute {
 	for _, attribute := range t.attributes {
-		if attribute.Name().Equals(name) {
+		if attribute.Name() == name {
 			return attribute
 		}
 	}
@@ -237,7 +236,7 @@ func (s TypeSlice) Len() int {
 }
 
 func (s TypeSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s TypeSlice) Swap(i, j int) {
@@ -276,7 +275,7 @@ func (s EnumValueSlice) Len() int {
 }
 
 func (s EnumValueSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s EnumValueSlice) Swap(i, j int) {

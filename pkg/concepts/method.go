@@ -18,9 +18,9 @@ package concepts
 
 import (
 	"sort"
+	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // Method represents a method of a resource.
@@ -64,12 +64,9 @@ func (m *Method) AddParameter(parameter *Parameter) {
 
 // GetParameter returns the parameter with the given name, or nil if there is no parameter with that
 // name.
-func (m *Method) GetParameter(name *names.Name) *Parameter {
-	if name == nil {
-		return nil
-	}
+func (m *Method) GetParameter(name string) *Parameter {
 	for _, parameter := range m.parameters {
-		if parameter.Name().Equals(name) {
+		if parameter.Name() == name {
 			return parameter
 		}
 	}
@@ -78,37 +75,37 @@ func (m *Method) GetParameter(name *names.Name) *Parameter {
 
 // IsAdd returns true if this is an add method.
 func (m *Method) IsAdd() bool {
-	return m.name.Equals(nomenclator.Add)
+	return m.name == words.Add
 }
 
 // IsDelete returns true if this is a delete method.
 func (m *Method) IsDelete() bool {
-	return m.name.Equals(nomenclator.Delete)
+	return m.name == words.Delete
 }
 
 // IsGet returns true if this is a get method.
 func (m *Method) IsGet() bool {
-	return m.name.Equals(nomenclator.Get)
+	return m.name == words.Get
 }
 
 // IsList returns true if this is a list method.
 func (m *Method) IsList() bool {
-	return m.name.Equals(nomenclator.List)
+	return m.name == words.List
 }
 
 // IsPost returns true if this is a post method.
 func (m *Method) IsPost() bool {
-	return m.name.Equals(nomenclator.Post)
+	return m.name == words.Post
 }
 
 // IsSearch returns true if this is a search method.
 func (m *Method) IsSearch() bool {
-	return m.name.Equals(nomenclator.Search)
+	return m.name == words.Search
 }
 
 // IsUpdate returns true if this is an update method.
 func (m *Method) IsUpdate() bool {
-	return m.name.Equals(nomenclator.Update)
+	return m.name == words.Update
 }
 
 // IsAction determined if this method is an action instead of a regular REST method.
@@ -141,7 +138,7 @@ func (s MethodSlice) Len() int {
 }
 
 func (s MethodSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s MethodSlice) Swap(i, j int) {

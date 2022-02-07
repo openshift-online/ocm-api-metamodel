@@ -16,9 +16,7 @@ limitations under the License.
 
 package concepts
 
-import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-)
+import "strings"
 
 // Error is the representation of a catagery of errors.
 type Error struct {
@@ -27,7 +25,6 @@ type Error struct {
 	namedSupport
 
 	owner *Version
-	name  *names.Name
 	code  int
 }
 
@@ -64,7 +61,7 @@ func (s ErrorSlice) Len() int {
 }
 
 func (s ErrorSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s ErrorSlice) Swap(i, j int) {

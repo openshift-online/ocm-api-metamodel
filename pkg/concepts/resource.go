@@ -18,8 +18,7 @@ package concepts
 
 import (
 	"sort"
-
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"strings"
 )
 
 // Resource represents an API resource.
@@ -63,9 +62,9 @@ func (r *Resource) AddMethod(method *Method) {
 }
 
 // FindMethod returns the method with the given name, or nil of there is no such method.
-func (r *Resource) FindMethod(name *names.Name) *Method {
+func (r *Resource) FindMethod(name string) *Method {
 	for _, method := range r.methods {
-		if method.Name().Equals(name) {
+		if method.Name() == name {
 			return method
 		}
 	}
@@ -121,7 +120,7 @@ func (s ResourceSlice) Len() int {
 }
 
 func (s ResourceSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s ResourceSlice) Swap(i, j int) {
