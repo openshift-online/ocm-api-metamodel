@@ -20,8 +20,7 @@ package language
 
 import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 func (r *Reader) checkModel() {
@@ -128,10 +127,10 @@ func (r *Reader) checkAdd(method *concepts.Method) {
 
 	// Struct parameters should be named `body`:
 	for _, parameter := range structs {
-		if !nomenclator.Body.Equals(parameter.Name()) {
+		if parameter.Name() != words.Body {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be '%s'",
-				parameter, nomenclator.Body,
+				parameter, words.Body,
 			)
 		}
 	}
@@ -203,10 +202,10 @@ func (r *Reader) checkGet(method *concepts.Method) {
 
 	// Struct parameters should be named `body`:
 	for _, parameter := range structs {
-		if !nomenclator.Body.Equals(parameter.Name()) {
+		if parameter.Name() != words.Body {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be '%s'",
-				parameter, nomenclator.Body,
+				parameter, words.Body,
 			)
 		}
 	}
@@ -238,16 +237,16 @@ func (r *Reader) checkList(method *concepts.Method) {
 		)
 	}
 
-	r.checkRequestParameter(method, nomenclator.Page, 1)
-	r.checkRequestParameter(method, nomenclator.Size, 100)
-	r.checkResponseParameter(method, nomenclator.Total)
+	r.checkRequestParameter(method, words.Page, 1)
+	r.checkRequestParameter(method, words.Size, 100)
+	r.checkResponseParameter(method, words.Total)
 
 	// Check the `items` parameter:
-	items := method.GetParameter(nomenclator.Items)
+	items := method.GetParameter(words.Items)
 	if items == nil {
 		r.reporter.Errorf(
 			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Items,
+			method, words.Items,
 		)
 	}
 
@@ -263,10 +262,10 @@ func (r *Reader) checkList(method *concepts.Method) {
 
 	// List parameters should be named `items`:
 	for _, parameter := range lists {
-		if !nomenclator.Items.Equals(parameter.Name()) {
+		if parameter.Name() != words.Items {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be '%s'",
-				parameter, nomenclator.Items,
+				parameter, words.Items,
 			)
 		}
 	}
@@ -366,16 +365,16 @@ func (r *Reader) checkSearch(method *concepts.Method) {
 		)
 	}
 
-	r.checkRequestParameter(method, nomenclator.Page, 1)
-	r.checkRequestParameter(method, nomenclator.Size, 100)
-	r.checkResponseParameter(method, nomenclator.Total)
+	r.checkRequestParameter(method, words.Page, 1)
+	r.checkRequestParameter(method, words.Size, 100)
+	r.checkResponseParameter(method, words.Total)
 
 	// Check the `items` parameter:
-	items := method.GetParameter(nomenclator.Items)
+	items := method.GetParameter(words.Items)
 	if items == nil {
 		r.reporter.Errorf(
 			"Method '%s' doesn't have a '%s' parameter",
-			method, nomenclator.Items,
+			method, words.Items,
 		)
 	}
 
@@ -391,10 +390,10 @@ func (r *Reader) checkSearch(method *concepts.Method) {
 
 	// List parameters should be named `items`:
 	for _, parameter := range lists {
-		if !nomenclator.Items.Equals(parameter.Name()) {
+		if parameter.Name() != words.Items {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be '%s'",
-				parameter, nomenclator.Items,
+				parameter, words.Items,
 			)
 		}
 	}
@@ -424,10 +423,10 @@ func (r *Reader) checkSearch(method *concepts.Method) {
 		}
 
 		// Struct parameter should be named `body`:
-		if !nomenclator.Body.Equals(parameter.Name()) {
+		if parameter.Name() != words.Body {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be be '%s'",
-				parameter, nomenclator.Body,
+				parameter, words.Body,
 			)
 		}
 	}
@@ -483,10 +482,10 @@ func (r *Reader) checkUpdate(method *concepts.Method) {
 
 	// Struct and list parameters should be named `body`:
 	for _, parameter := range parameters {
-		if !nomenclator.Body.Equals(parameter.Name()) {
+		if parameter.Name() != words.Body {
 			r.reporter.Errorf(
 				"Name of parameter '%s' should be be '%s'",
-				parameter, nomenclator.Body,
+				parameter, words.Body,
 			)
 		}
 	}
@@ -527,7 +526,7 @@ func (r *Reader) checkParameter(parameter *concepts.Parameter) {
 	}
 }
 
-func (r *Reader) checkRequestParameter(method *concepts.Method, name *names.Name, dflt int) {
+func (r *Reader) checkRequestParameter(method *concepts.Method, name string, dflt int) {
 	// Get the reference to the resource and to the version:
 	resource := method.Owner()
 	version := resource.Owner()
@@ -561,7 +560,7 @@ func (r *Reader) checkRequestParameter(method *concepts.Method, name *names.Name
 	}
 }
 
-func (r *Reader) checkResponseParameter(method *concepts.Method, name *names.Name) {
+func (r *Reader) checkResponseParameter(method *concepts.Method, name string) {
 	// Get the reference to the resource and to the version:
 	resource := method.Owner()
 	version := resource.Owner()

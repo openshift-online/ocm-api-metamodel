@@ -17,8 +17,9 @@ limitations under the License.
 package concepts
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"strings"
+
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // Parameter represents a parameter of a method.
@@ -81,7 +82,7 @@ func (p *Parameter) SetDefault(value interface{}) {
 
 // IsItems returns true if this is the items parameter of a list or search method.
 func (p *Parameter) IsItems() bool {
-	return p.owner != nil && (p.owner.IsList() || p.owner.IsSearch()) && p.name.Equals(nomenclator.Items)
+	return p.owner != nil && (p.owner.IsList() || p.owner.IsSearch()) && p.name == words.Items
 }
 
 // IsBody returns true if this is the body parameter of an add, get, search, or update method.
@@ -90,7 +91,7 @@ func (p *Parameter) IsBody() bool {
 		return false
 	}
 	isRest := p.owner.IsAdd() || p.owner.IsGet() || p.owner.IsSearch() || p.owner.IsUpdate()
-	if isRest && p.name.Equals(nomenclator.Body) {
+	if isRest && p.name == words.Body {
 		return true
 	}
 	return false
@@ -104,7 +105,7 @@ func (s ParameterSlice) Len() int {
 }
 
 func (s ParameterSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s ParameterSlice) Swap(i, j int) {

@@ -20,9 +20,8 @@ import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // ErrorsGeneratorBuilder is an object used to configure and build an errors generator. Don't create
@@ -174,9 +173,11 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	// Generate the code:
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
+	g.buffer.Import("net/http", "")
+	g.buffer.Import("strconv", "")
 	g.buffer.Import("strings", "")
 	g.buffer.Import("github.com/golang/glog", "")
-	g.buffer.Import("github.com/openshift-online/ocm-api-metamodel/pkg/runtime", "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Error kind is the name of the type used to represent errors.
@@ -724,9 +725,9 @@ func (g *ErrorsGenerator) generateVersionErrorsSource(version *concepts.Version)
 }
 
 func (g *ErrorsGenerator) errorsFile() string {
-	return g.names.File(nomenclator.Errors)
+	return g.names.File(words.Errors)
 }
 
 func (g *ErrorsGenerator) errorName(err *concepts.Error) string {
-	return g.names.Public(names.Cat(err.Name(), nomenclator.Error))
+	return g.names.Public(err, "Error")
 }

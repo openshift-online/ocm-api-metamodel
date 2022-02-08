@@ -23,9 +23,8 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // MetricsSupportGeneratorBuilder is an object used to configure and build the Metrics support
@@ -139,7 +138,7 @@ func (g *MetricsSupportGenerator) Run() error {
 
 	// Calculate the package and file name:
 	pkgName := g.packages.MetricsPackage()
-	fileName := g.names.File(names.Cat(nomenclator.Path, nomenclator.Tree, nomenclator.Data))
+	fileName := g.names.File(words.Path + words.Tree + words.Data)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = NewBuffer().

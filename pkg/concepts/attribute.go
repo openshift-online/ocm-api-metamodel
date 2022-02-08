@@ -16,9 +16,7 @@ limitations under the License.
 
 package concepts
 
-import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-)
+import "strings"
 
 // Attribute is the representation of an attribute of an structured type.
 type Attribute struct {
@@ -64,7 +62,7 @@ func (s AttributeSlice) Len() int {
 }
 
 func (s AttributeSlice) Less(i, j int) bool {
-	return names.Compare(s[i].name, s[j].name) == -1
+	return strings.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s AttributeSlice) Swap(i, j int) {

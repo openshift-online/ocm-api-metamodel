@@ -18,8 +18,6 @@ package concepts
 
 import (
 	"sort"
-
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // Model is the representation of the set of services, each with a set of versions.
@@ -30,8 +28,8 @@ type Model struct {
 
 // NewModel creates a new model containing only the built-in types.
 func NewModel() *Model {
-	model := new(Model)
-	model.services = make(map[string]*Service)
+	model := &Model{}
+	model.services = map[string]*Service{}
 	return model
 }
 
@@ -49,17 +47,14 @@ func (m *Model) Services() ServiceSlice {
 }
 
 // FindService returns the service with the given name, or nil of there is no such service.
-func (m *Model) FindService(name *names.Name) *Service {
-	if name == nil {
-		return nil
-	}
-	return m.services[name.String()]
+func (m *Model) FindService(name string) *Service {
+	return m.services[name]
 }
 
 // AddService adds the given service to the model.
 func (m *Model) AddService(service *Service) {
 	if service != nil {
-		m.services[service.Name().String()] = service
+		m.services[service.Name()] = service
 		service.SetOwner(m)
 	}
 }

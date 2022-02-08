@@ -21,9 +21,8 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // ClientsGeneratorBuilder is an object used to configure and build a client generator. Don't create
@@ -178,7 +177,7 @@ func (g *ClientsGenerator) generateServiceClient(service *concepts.Service) erro
 
 	// Calculate the package and file name:
 	pkgName := g.packages.ServicePackage(service)
-	fileName := g.names.File(nomenclator.Client)
+	fileName := g.names.File(words.Client)
 
 	// Create the buffer for the service:
 	g.buffer, err = NewBuffer().
@@ -570,7 +569,7 @@ func (g *ClientsGenerator) generateResourceClientSource(resource *concepts.Resou
 	)
 
 	// If the resource has a `Get` method then generate the `Poll` method:
-	method := resource.FindMethod(nomenclator.Get)
+	method := resource.FindMethod(words.Get)
 	if method != nil {
 		g.generatePollMethodSource(resource, method)
 	}
@@ -712,7 +711,7 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 		}
 
 		{{ range $methodResponseParameters }}
-			{{ $parameterType := .Type.Name.String }}
+			{{ $parameterType := .Type.Name }}
 			{{ $fieldName := fieldName . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
@@ -1001,31 +1000,23 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 }
 
 func (g *ClientsGenerator) versionName(version *concepts.Version) string {
-	name := goName(version)
-	if name == "" {
-		name = g.names.Public(version.Name())
-	}
-	return name
+	return g.names.Public(version)
 }
 
 func (g *ClientsGenerator) metadataFile() string {
-	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Client))
+	return g.names.File(words.Metadata + words.Client)
 }
 
 func (g *ClientsGenerator) resourceFile(resource *concepts.Resource) string {
-	return g.names.File(names.Cat(resource.Name(), nomenclator.Client))
+	return g.names.File(resource.Name() + words.Client)
 }
 
 func (g *ClientsGenerator) enumName(typ *concepts.Type) string {
-	name := goName(typ)
-	if name == "" {
-		name = g.names.Public(typ.Name())
-	}
-	return name
+	return g.names.Public(typ)
 }
 
 func (g *ClientsGenerator) fieldName(parameter *concepts.Parameter) string {
-	name := g.names.Private(parameter.Name())
+	name := g.names.Private(parameter)
 	name = g.avoidBuiltin(name, builtinFields)
 	return name
 }
@@ -1049,10 +1040,7 @@ func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *TypeReferen
 }
 
 func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
-	name := goName(parameter)
-	if name == "" {
-		name = g.names.Public(parameter.Name())
-	}
+	name := g.names.Public(parameter)
 	name = g.avoidBuiltin(name, builtinGetters)
 	return name
 }
@@ -1062,10 +1050,7 @@ func (g *ClientsGenerator) getterType(parameter *concepts.Parameter) *TypeRefere
 }
 
 func (g *ClientsGenerator) setterName(parameter *concepts.Parameter) string {
-	name := goName(parameter)
-	if name == "" {
-		name = g.names.Public(parameter.Name())
-	}
+	name := g.names.Public(parameter)
 	name = g.avoidBuiltin(name, builtinSetters)
 	return name
 }
@@ -1095,135 +1080,60 @@ func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *TypeRefe
 }
 
 func (g *ClientsGenerator) locatorName(locator *concepts.Locator) string {
-	name := goName(locator)
-	if name == "" {
-		name = g.names.Public(locator.Name())
-	}
-	return name
+	return g.names.Public(locator)
 }
 
 func (g *ClientsGenerator) methodName(method *concepts.Method) string {
-	name := goName(method)
-	if name == "" {
-		name = g.names.Public(method.Name())
-	}
-	return name
+	return g.names.Public(method)
 }
 
 func (g *ClientsGenerator) clientName(resource *concepts.Resource) string {
 	var name string
 	if !resource.IsRoot() {
-		name = goName(resource)
-		if name == "" {
-			name = g.names.Public(resource.Name())
-		}
+		name = g.names.Public(resource)
 	}
-	name += "Client"
+	name += words.Client
 	return name
 }
 
 func (g *ClientsGenerator) requestName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name string
 	if resource.IsRoot() {
-		name = goName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := goName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := goName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
+		return g.names.Public(method, words.Request)
 	}
-	name += "Request"
-	return name
+	return g.names.Public(resource, method, words.Request)
 }
 
 func (g *ClientsGenerator) responseName(method *concepts.Method) string {
 	resource := method.Owner()
-	var name string
 	if resource.IsRoot() {
-		name = goName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := goName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := goName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
+		return g.names.Public(method, words.Response)
 	}
-	name += "Response"
-	return name
+	return g.names.Public(resource, method, words.Response)
 }
 
 func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
-	name := goName(resource)
-	if name == "" {
-		name = g.names.Public(resource.Name())
-	}
-	name += "PollRequest"
-	return name
+	return g.names.Public(resource, words.Poll, words.Request)
 }
 
 func (g *ClientsGenerator) pollResponseName(resource *concepts.Resource) string {
-	name := goName(resource)
-	if name == "" {
-		name = g.names.Public(resource.Name())
-	}
-	name += "PollResponse"
-	return name
+	return g.names.Public(resource, words.Poll, words.Response)
 }
 
 func (g *ClientsGenerator) writeRequestFunc(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Write,
-			method.Name(),
-			nomenclator.Request,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Write,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Request,
-		)
+		return g.names.Private(words.Write, method, words.Request)
 	}
-	return g.names.Private(name)
+	return g.names.Private(words.Write, resource, method, words.Request)
 }
 
 func (g *ClientsGenerator) readResponseFunc(method *concepts.Method) string {
 	resource := method.Owner()
-	var name *names.Name
 	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Read,
-			method.Name(),
-			nomenclator.Response,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Read,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Response,
-		)
+		return g.names.Private(words.Read, method, words.Response)
 	}
-	return g.names.Private(name)
+	return g.names.Private(words.Read, resource, method, words.Response)
 }
 
 func (g *ClientsGenerator) avoidBuiltin(name string, builtins map[string]interface{}) string {

@@ -21,16 +21,16 @@ import "github.com/openshift-online/ocm-api-metamodel/pkg/names"
 // namedSupport is an implementation of the names.Named interface intended to be embeded in other
 // types that need to implement that interface.
 type namedSupport struct {
-	name *names.Name
+	name string
 }
 
 // Make sure we implement the interface:
 var _ names.Named = &namedSupport{}
 
-func (s *namedSupport) Name() *names.Name {
+func (s *namedSupport) Name() string {
 	return s.name
 }
 
-func (s *namedSupport) SetName(value *names.Name) {
+func (s *namedSupport) SetName(value string) {
 	s.name = value
 }
