@@ -19,9 +19,8 @@ package golang
 // AvoidReservedWord checks if the given string is one of the Go reserved words. If it is it will
 // add a trailing underscore, so that the result will never be a Go reserved word.
 func AvoidReservedWord(word string) string {
-	_, isReserved := reservedWords[word]
-	if isReserved {
-		word = word + "_"
+	if reservedWords[word] {
+		word += "_"
 	}
 	return word
 }
@@ -29,30 +28,31 @@ func AvoidReservedWord(word string) string {
 // reservedWords is the list of Go reserved words, which should be avoided in generated names. Note
 // that we use a map as a simple implementation of a set, as all what we need is to check if strings
 // are reserved words.
-var reservedWords = map[string]interface{}{
-	"break":       nil,
-	"case":        nil,
-	"chan":        nil,
-	"const":       nil,
-	"continue":    nil,
-	"default":     nil,
-	"defer":       nil,
-	"else":        nil,
-	"fallthrough": nil,
-	"for":         nil,
-	"func":        nil,
-	"go":          nil,
-	"goto":        nil,
-	"if":          nil,
-	"import":      nil,
-	"interface":   nil,
-	"map":         nil,
-	"package":     nil,
-	"range":       nil,
-	"return":      nil,
-	"select":      nil,
-	"struct":      nil,
-	"switch":      nil,
-	"type":        nil,
-	"var":         nil,
+var reservedWords = map[string]bool{
+	"break":       true,
+	"case":        true,
+	"chan":        true,
+	"const":       true,
+	"continue":    true,
+	"default":     true,
+	"defer":       true,
+	"else":        true,
+	"fallthrough": true,
+	"for":         true,
+	"func":        true,
+	"go":          true,
+	"goto":        true,
+	"if":          true,
+	"import":      true,
+	"interface":   true,
+	"map":         true,
+	"nil":         true,
+	"package":     true,
+	"range":       true,
+	"return":      true,
+	"select":      true,
+	"struct":      true,
+	"switch":      true,
+	"type":        true,
+	"var":         true,
 }

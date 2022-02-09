@@ -17,11 +17,11 @@ limitations under the License.
 // Manages a specific identity provider.
 resource IdentityProvider {
 	// Retrieves the details of the identity provider.
-	method Get {
-		out Body IdentityProvider
+	method get {
+		out body IdentityProvider
 	}
 
 	// Deletes the identity provider.
-	method Delete {
+	method delete {
 	}
 }

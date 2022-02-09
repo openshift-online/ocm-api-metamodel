@@ -17,14 +17,14 @@ limitations under the License.
 // Definition of a Status Board status.
 class Status {
   // Object creation timestamp.
-  CreatedAt Date
+  created_at date
 
   // Object modification timestamp.
-  UpdatedAt Date
+  updated_at date
 
   // A status message for the given service.
-  Status String
+  status string
 
   // Miscellaneous metadata about the application.
-  Metadata Interface
+  metadata interface
 }

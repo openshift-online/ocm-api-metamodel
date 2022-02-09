@@ -17,5 +17,5 @@ limitations under the License.
 // Representation of a group of users.
 class Group {
 	// List of users of the group.
-	link Users []User
+	link users []User
 }

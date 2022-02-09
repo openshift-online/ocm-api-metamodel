@@ -17,23 +17,26 @@ limitations under the License.
 // Contains the result of performing a resource access review.
 struct ResourceReview {
 	// Name of the account that is trying to perform the access.
-	AccountUsername String
+	account_username string
 
 	// Action that will the user is trying to perform.
-	Action String
+	action string
 
 	// Type of resource.
-	ResourceType String
+	resource_type string
 
 	// Identifiers of the clusters that the user has permission to see. If the user has
 	// permission to see all the clusters in the system then the value will be `*`.
-	ClusterIDs []String
+	@go(name = "ClusterIDs")
+	cluster_ids []string
 
 	// Identifiers of the subscriptions that the user has permission to see. If the user has
 	// permission to see all the clusters in the system then the value will be `*`.
-	SubscriptionIDs []String
+	@go(name = "SubscriptionIDs")
+	subscription_ids []string
 
 	// Identifiers of the organizations that the user has permission to see. If the user has
 	// permission to see all the clusters in the system then the value will be `*`.
-	OrganizationIDs []String
+	@go(name = "OrganizationIDs")
+	organization_ids []string
 }

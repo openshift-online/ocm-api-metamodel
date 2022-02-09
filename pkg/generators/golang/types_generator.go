@@ -567,11 +567,11 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 }
 
 func (g *TypesGenerator) metadataFile() string {
-	return g.names.File(words.Metadata + words.Type)
+	return g.names.File(words.Metadata, words.Type)
 }
 
 func (g *TypesGenerator) typeFile(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Type)
+	return g.names.File(typ.Name(), words.Type)
 }
 
 func (g *TypesGenerator) fieldName(attribute *concepts.Attribute) string {

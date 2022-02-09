@@ -266,7 +266,7 @@ func (v *Version) addScalarType(name string) {
 	// Add the list type:
 	listType := NewType()
 	listType.SetKind(ListType)
-	listType.SetName(name + words.List)
+	listType.SetName(name + "List")
 	listType.SetElement(scalarType)
 	v.AddType(listType)
 }
@@ -281,7 +281,7 @@ func (v *Version) addInterfaceType(name string) {
 	// Add the list type:
 	listType := NewType()
 	listType.SetKind(ListType)
-	listType.SetName(name + words.List)
+	listType.SetName(name + "List")
 	listType.SetElement(interfaceType)
 	v.AddType(listType)
 }

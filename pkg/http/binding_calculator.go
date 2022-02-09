@@ -183,7 +183,7 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string {
 	name := jsonName(attribute)
 	if name == "" {
-		name = names.ToSnake(attribute.Name())
+		name = attribute.Name()
 	}
 	return name
 }
@@ -193,27 +193,19 @@ func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string 
 func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string {
 	name := jsonName(parameter)
 	if name == "" {
-		name = names.ToSnake(parameter.Name())
+		name = parameter.Name()
 	}
 	return name
 }
 
 // ServiceSegment calculates the URL segment corresponding to the given service.
 func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
-	name := httpName(service)
-	if name == "" {
-		name = names.ToSnake(service.Name())
-	}
-	return name
+	return service.Name()
 }
 
 // VersionSegment calculates the URL segment corresponding to the given version.
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
-	name := httpName(version)
-	if name == "" {
-		name = names.ToSnake(version.Name())
-	}
-	return name
+	return version.Name()
 }
 
 // LocatorSegment calculates the URL segment corresponding to the given method.
@@ -221,7 +213,7 @@ func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 	if method.IsAction() {
 		name := httpName(method)
 		if name == "" {
-			name = names.ToSnake(method.Name())
+			name = method.Name()
 		}
 		return name
 	}
@@ -232,7 +224,7 @@ func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
 	name := httpName(locator)
 	if name == "" {
-		name = names.ToSnake(locator.Name())
+		name = locator.Name()
 	}
 	return name
 }

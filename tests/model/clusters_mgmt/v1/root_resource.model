@@ -15,26 +15,26 @@ limitations under the License.
 */
 
 // Root of the tree of resources of the clusters management service.
-resource Root {
+resource root {
 	@http(name = "register")
-	method RegisterCluster {
-		in SubscriptionID String
-		in ExternalID String
-		out Cluster Cluster
+	method register_cluster {
+		in subscription_id string
+		in external_id string
+		out cluster Cluster
 	}
 
-	method RegisterDisconnected {
-		in out Cluster Cluster
+	method register_disconnected {
+		in out cluster Cluster
 	}
 
 	// Reference to the resource that manages the collection of clusters.
-	locator Clusters {
+	locator clusters {
 		target Clusters
 	}
 
 	// This locator is intended to test what happens when the implementation of a locator
 	// returns nil.
-	locator Nil {
+	locator nil {
 		target Nil
 	}
 }

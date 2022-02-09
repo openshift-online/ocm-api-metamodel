@@ -43,7 +43,6 @@ RESOURCE: 'resource';
 STRUCT: 'struct';
 TARGET: 'target';
 TRUE: 'true';
-VALUE: 'value';
 VARIABLE: 'variable';
 
 // Punctuation:

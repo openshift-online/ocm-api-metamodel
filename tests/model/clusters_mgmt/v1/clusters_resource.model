@@ -17,12 +17,12 @@ limitations under the License.
 // Manages the collection of clusters.
 resource Clusters {
 	// Retrieves the list of clusters.
-	method List {
+	method list {
 		// Index of the requested page, where one corresponds to the first page.
-		in out Page Integer = 1
+		in out page integer = 1
 
 		// Maximum number of items that will be contained in the returned page.
-		in out Size Integer = 100
+		in out size integer = 100
 
 		// Search criteria.
 		//
@@ -38,7 +38,7 @@ resource Clusters {
 		//
 		// If the parameter isn't provided, or if the value is empty, then all the
 		// clusters that the user has permission to see will be returned.
-		in Search String
+		in search string
 
 		// Order criteria.
 		//
@@ -53,26 +53,26 @@ resource Clusters {
 		//
 		// If the parameter isn't provided, or if the value is empty, then the order of the
 		// results is undefined.
-		in Order String
+		in order string
 
 		// Total number of items of the collection that match the search criteria,
 		// regardless of the size of the page.
-		out Total Integer
+		out total integer
 
 		// Retrieved list of clusters.
-		out Items []Cluster
+		out items []Cluster
 	}
 
 	// Provision a new cluster and add it to the collection of clusters.
 	//
 	// See the `register_cluster` method for adding an existing cluster.
-	method Add {
+	method add {
 		// Description of the cluster.
-		in out Body Cluster
+		in out body Cluster
 	}
 
 	// Returns a reference to the service that manages an specific cluster.
-	locator Cluster {
+	locator cluster {
 		target Cluster
 		variable ID
 	}

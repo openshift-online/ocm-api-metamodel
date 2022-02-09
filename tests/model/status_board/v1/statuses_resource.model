@@ -17,12 +17,12 @@ limitations under the License.
 // Manages the collection of statuses
 resource Statuses {
   // Retrieves the list of statuses.
-  method List {
-    in out Page Integer = 1
-    in out Size Integer = 100
-    in CreatedAfter Date
-    in CreatedBefore Date
-    out Total Integer
-    out Items []Status
+  method list {
+    in out page integer = 1
+    in out size integer = 100
+    in created_after date
+    in created_before date
+    out total integer
+    out items []Status
   }
 }

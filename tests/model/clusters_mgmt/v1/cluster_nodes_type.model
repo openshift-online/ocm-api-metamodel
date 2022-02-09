@@ -17,14 +17,14 @@ limitations under the License.
 // Counts of different classes of nodes inside a cluster.
 struct ClusterNodes {
 	// Total number of nodes of the cluster.
-	Total Integer
+	total integer
 
 	// Number of controller nodes of the cluster.
-	Master Integer
+	master integer
 
 	// Number of infrastructure nodes of the cluster.
-	Infra Integer
+	infra integer
 
 	// Number of compute nodes of the cluster.
-	Compute Integer
+	compute integer
 }

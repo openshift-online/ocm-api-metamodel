@@ -17,28 +17,28 @@ limitations under the License.
 // Manages a specific cluster.
 resource Cluster {
 	// Retrieves the details of the cluster.
-	method Get {
-		out Body Cluster
+	method get {
+		out body Cluster
 	}
 
 	// Updates the cluster.
-	method Update {
-		in out Body Cluster
+	method update {
+		in out body Cluster
 	}
 
 	// Deletes the cluster.
-	method Delete {
-		in Reason String = "myreason"
-		in Deprovision Boolean = true
+	method delete {
+		in reason string = "myreason"
+		in deprovision boolean = true
 	}
 
 	// Reference to the resource that manages the collection of groups.
-	locator Groups {
+	locator groups {
 		target Groups
 	}
 
 	// Reference to the resource that manages the collection of identity providers.
-	locator IdentityProviders {
+	locator identity_providers {
 		target IdentityProviders
 	}
 }

@@ -17,28 +17,28 @@ limitations under the License.
 // Manages the collection of users of a group.
 resource Users {
 	// Retrieves the list of users.
-	method List {
+	method list {
 		// Index of the requested page, where one corresponds to the first page.
-		in out Page Integer = 1
+		in out page integer = 1
 
 		// Number of items contained in the returned page.
-		in out Size Integer = 100
+		in out size integer = 100
 
 		// Total number of items of the collection.
-		out Total Integer
+		out total integer
 
 		// Retrieved list of users.
-		out Items []User
+		out items []User
 	}
 
 	// Adds a new user to the group.
-	method Add {
+	method add {
 		// Description of the user.
-		in out Body User
+		in out body User
 	}
 
 	// Reference to the service that manages an specific user.
-	locator User {
+	locator user {
 		target User
 		variable ID
 	}

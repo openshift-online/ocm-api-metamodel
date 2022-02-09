@@ -107,7 +107,7 @@ func (r *Resource) AddLocator(locator *Locator) {
 	}
 }
 
-// IsRoot returns `true` if this is the root of the tree of resources of the version.
+// IsRoot returns true if this is the root of the tree of resources of the version.
 func (r *Resource) IsRoot() bool {
 	return r.owner != nil && r == r.owner.Root()
 }

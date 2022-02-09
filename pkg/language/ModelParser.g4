@@ -52,7 +52,7 @@ enumDecl returns[result: *concepts.Type]:
 
 enumMemberDecl returns[result: *concepts.EnumValue]:
   annotations += annotation*
-  'value'? name = identifier
+  name = identifier
 ;
 
 classDecl returns[result: *concepts.Type]:

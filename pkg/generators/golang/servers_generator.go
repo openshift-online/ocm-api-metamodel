@@ -767,7 +767,7 @@ func (g *ServersGenerator) generateResponseSource(method *concepts.Method) {
 }
 
 func (g *ServersGenerator) fileName(resource *concepts.Resource) string {
-	return g.names.File(resource.Name() + words.Server)
+	return g.names.File(resource.Name(), words.Server)
 }
 
 func (g *ServersGenerator) serviceName(service *concepts.Service) string {
@@ -821,7 +821,7 @@ func (g *ServersGenerator) responseName(method *concepts.Method) string {
 }
 
 func (g *ServersGenerator) fieldName(parameter *concepts.Parameter) string {
-	name := g.names.Private(parameter.Name())
+	name := g.names.Private(parameter)
 	name = g.avoidBuiltin(name, builtinFields)
 	return name
 }
@@ -903,7 +903,7 @@ func (g *ServersGenerator) readerName(typ *concepts.Type) string {
 	case version.DateType():
 		return "ParseDate"
 	default:
-		g.reporter.Errorf("We do not know how to handle type '%s'", typ)
+		g.reporter.Errorf("Don't know how to generate reader name for type '%s'", typ)
 		return ""
 	}
 }

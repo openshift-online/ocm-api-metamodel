@@ -806,8 +806,10 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 		Function("generateWriteBodyParameter", g.generateWriteBodyParameter).
 		Function("generateWriteValue", g.generateWriteValue).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
+		Function("newFunc", g.newFunc).
 		Function("parameterFieldName", g.parameterFieldName).
 		Function("parameterFieldTag", g.binding.ParameterName).
+		Function("parseFunc", g.parseFunc).
 		Function("readRequestFunc", g.readRequestFunc).
 		Function("readResponseFunc", g.readResponseFunc).
 		Function("readTypeFunc", g.readTypeFunc).
@@ -1481,25 +1483,22 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 	}
 	field := g.parameterFieldName(parameter)
 	tag := g.binding.ParameterName(parameter)
-	kind := typ.Name()
 	return g.buffer.Eval(`
 		{{ $field := parameterFieldName .Parameter }}
 		{{ $tag := parameterFieldTag .Parameter }}
-		{{ $kind := .Parameter.Type.Name }}
 
-		request.{{ $field }}, err = helpers.Parse{{ $kind }}(query, "{{ $tag }}")
+		request.{{ $field }}, err = {{ parseFunc .Parameter.Type }}(query, "{{ $tag }}")
 		if err != nil {
 			return err
 		}
 		{{ if .Parameter.Default }}
 			if request.{{ $field }} == nil {
-				request.{{ $field }} = helpers.New{{ $kind }}({{ defaultValue .Parameter }})
+				request.{{ $field }} = {{ newFunc .Parameter.Type }}({{ defaultValue .Parameter }})
 			}
 		{{ end }}
 		`,
 		"Field", field,
 		"Tag", tag,
-		"Kind", kind,
 		"Parameter", parameter,
 	)
 }
@@ -1695,19 +1694,19 @@ func (g *JSONSupportGenerator) generateWriteValue(value string, typ *concepts.Ty
 }
 
 func (g *JSONSupportGenerator) helpersFile() string {
-	return g.names.File(words.JSON + words.Helpers)
+	return g.names.File(words.JSON, words.Helpers)
 }
 
 func (g *JSONSupportGenerator) metadataFile() string {
-	return g.names.File(words.Metadata + words.Reader)
+	return g.names.File(words.Metadata, words.Reader)
 }
 
 func (g *JSONSupportGenerator) typeFile(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Type + words.JSON)
+	return g.names.File(typ.Name(), words.Type, words.JSON)
 }
 
 func (g *JSONSupportGenerator) resourceFile(resource *concepts.Resource) string {
-	return g.names.File(resource.Name() + words.Resource + words.JSON)
+	return g.names.File(resource.Name(), words.Resource, words.JSON)
 }
 
 func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
@@ -1825,6 +1824,44 @@ func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) strin
 			"Don't know how to render default value '%v' for parameter '%s'",
 			value, parameter,
 		)
+		return ""
+	}
+}
+
+func (g *JSONSupportGenerator) parseFunc(typ *concepts.Type) string {
+	version := typ.Owner()
+	switch typ {
+	case version.Boolean():
+		return "helpers.ParseBoolean"
+	case version.IntegerType():
+		return "helpers.ParseInteger"
+	case version.FloatType():
+		return "helpers.ParseFloat"
+	case version.StringType():
+		return "helpers.ParseString"
+	case version.DateType():
+		return "helpers.ParseDate"
+	default:
+		g.reporter.Errorf("Don't know how to generate parser name for type '%s'", typ)
+		return ""
+	}
+}
+
+func (g *JSONSupportGenerator) newFunc(typ *concepts.Type) string {
+	version := typ.Owner()
+	switch typ {
+	case version.Boolean():
+		return "helpers.NewBoolean"
+	case version.IntegerType():
+		return "helpers.NewInteger"
+	case version.FloatType():
+		return "helpers.NewFloat"
+	case version.StringType():
+		return "helpers.NewString"
+	case version.DateType():
+		return "helpers.NewDate"
+	default:
+		g.reporter.Errorf("Don't know how to generate parser name for type '%s'", typ)
 		return ""
 	}
 }

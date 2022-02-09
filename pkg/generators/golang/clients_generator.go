@@ -1004,11 +1004,11 @@ func (g *ClientsGenerator) versionName(version *concepts.Version) string {
 }
 
 func (g *ClientsGenerator) metadataFile() string {
-	return g.names.File(words.Metadata + words.Client)
+	return g.names.File(words.Metadata, words.Client)
 }
 
 func (g *ClientsGenerator) resourceFile(resource *concepts.Resource) string {
-	return g.names.File(resource.Name() + words.Client)
+	return g.names.File(resource.Name(), words.Client)
 }
 
 func (g *ClientsGenerator) enumName(typ *concepts.Type) string {
@@ -1088,12 +1088,10 @@ func (g *ClientsGenerator) methodName(method *concepts.Method) string {
 }
 
 func (g *ClientsGenerator) clientName(resource *concepts.Resource) string {
-	var name string
-	if !resource.IsRoot() {
-		name = g.names.Public(resource)
+	if resource.IsRoot() {
+		return g.names.Public(words.Client)
 	}
-	name += words.Client
-	return name
+	return g.names.Public(resource, words.Client)
 }
 
 func (g *ClientsGenerator) requestName(method *concepts.Method) string {

@@ -23,15 +23,15 @@ class IdentityProvider {
 	Type IdentityProviderType
 
 	// The name of the identity provider.
-	Name String
+	name string
 
 	// When `true` unauthenticated token requests from non-web clients (like the CLI) are sent a
 	// `WWW-Authenticate` challenge header for this provider.
-	Challenge Boolean
+	challenge boolean
 
 	// When `true` unauthenticated token requests from web clients (like the web console) are
 	// redirected to the authorize URL to log in.
-	Login Boolean
+	login boolean
 
 	// Controls how mappings are established between this provider's identities and user
 	// objects.
@@ -73,47 +73,47 @@ enum IdentityProviderMappingMethod {
 // Details for `github` identity providers.
 struct GithubIdentityProvider {
 	// Optional trusted certificate authority bundle to use when making requests tot he server.
-	CA String
+	ca string
 
 	// Client identifier of a registered _GitHub_ OAuth application.
-	ClientID String
+	client_id string
 
 	// For _GitHub Enterprise_ you must provide the host name of your instance, such as
 	// `example.com`. This value must match the _GitHub Enterprise_ host name value in the
 	// `/setup/settings` file and cannot include a port number.
 	//
 	// For plain _GitHub_ omit this parameter.
-	Hostname String
+	hostname string
 
 	// Optional list of temas. Cannot be used in combination with the organizations field.
-	Teams []String
+	teams []string
 }
 
 // Details for `gitlab` identity providers.
 struct GitlabIdentityProvider {
 	// Optional trusted certificate authority bundle to use when making requests tot he server.
-	CA String
+	ca string
 
 	// Client identifier of a registered _GitLab_ OAuth application.
-	ClientID String
+	client_id string
 
 	// Client secret issued by _GitLab_.
-	ClientSecret String
+	client_secret string
 
 	// URL of the _GitLab_ instance.
-	URL String
+	url string
 }
 
 // Details for `google` identity providers.
 struct GoogleIdentityProvider {
 	// Client identifier of a registered _Google_ project.
-	ClientID String
+	client_id string
 
 	// Client secret issued by _Google.
-	ClientSecret String
+	client_secret string
 
 	// Optional hosted domain to restrict sign-in accounts to.
-	HostedDomain String
+	hosted_domain string
 }
 
 // Details for `ldap` identity providers.
@@ -122,58 +122,58 @@ struct LDAPIdentityProvider {
 	LDAPAttributes LDAPAttributes
 
 	// Optional distinguished name to use to bind during the search phase.
-	BindDN String
+	bind_dn string
 
 	// Optional password to use to bind during the search phase.
-	BindPassword String
+	bind_password string
 
 	// Certificate bundle to use to validate server certificates for the configured URL.
-	CA String
+	ca string
 
 	// An [RFC 2255](https://tools.ietf.org/html/rfc2255) URL which specifies the LDAP host and
 	// search parameters to use.
-	URL String
+	url string
 
 	// When `true` no TLS connection is made to the server. When `false` `ldaps://...` URLs
 	// connect using TLS and `ldap://...` are upgraded to TLS.
-	Insecure Boolean
+	insecure boolean
 }
 
 // LDAP attributes used to configure the LDAP identity provider.
 struct LDAPAttributes {
 	// List of attributes to use as the mail address.
-	Email []String
+	email []string
 
 	// List of attributes to use as the identity.
-	ID []String
+	id []string
 
 	// List of attributes to use as the display name.
-	Name []String
+	name []string
 
 	// List of attributes to use as the preferred user name when provisioning a user.
-	PreferredUsername []String
+	preferred_username []string
 }
 
 // Details for `openid` identity providers.
 struct OpenIDIdentityProvider {
 	// Certificate bunde to use to validate server certificates for the configured URL.
-	CA String
+	ca string
 
 	// Claims used to configure the provider.
 	Claims OpenIDClaims
 
 	// Identifier of a client registered with the _OpenID_ provider.
-	ClientID String
+	client_id string
 
 	// Client secret.
-	ClientSecret String
+	client_secret string
 
 	// Optional map of extra parameters to add to the authorization token request.
-	ExtraAuthorizeParameters [String]String
+	extra_authorize_parameters [string]string
 
 	// Optional list of scopes to request, in addition to the `openid` scope, during the
 	// authorization token request.
-	ExtraScopes []String
+	extra_scopes []string
 
 	// URLs of the provider.
 	URLS OpenIDURLs
@@ -182,23 +182,23 @@ struct OpenIDIdentityProvider {
 // _OpenID_ identity provider claims.
 struct OpenIDClaims {
 	// List of claims to use as the mail address.
-	Email []String
+	email []string
 
 	// List of claims to use as the display name.
-	Name []String
+	name []string
 
 	// List of claims to use as the preferred user name when provisioning a user.
-	PreferredUsername []String
+	preferred_username []string
 }
 
 // _OpenID_ identity provider URLs.
 struct OpenIDURLs {
 	// Authorization endpoint described in the _OpenID_ specification. Must use HTTPS.
-	Authorize String
+	authorize string
 
 	// Token endpoint described in the _OpenID_ specification. Must use HTTPS.
-	Token String
+	token string
 
 	// User information endpoint described in the _OpenID_ specification. Must use HTTPS.
-	UserInfo String
+	user_info string
 }

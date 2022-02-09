@@ -17,22 +17,22 @@ limitations under the License.
 // Manages the collection of groups of a cluster.
 resource Groups {
 	// Retrieves the list of groups.
-	method List {
+	method list {
 		// Index of the requested page, where one corresponds to the first page.
-		in out Page Integer = 1
+		in out page integer = 1
 
 		// Number of items contained in the returned page.
-		in out Size Integer = 100
+		in out size integer = 100
 
 		// Total number of items of the collection.
-		out Total Integer
+		out total integer
 
 		// Retrieved list of groups.
-		out Items []Group
+		out items []Group
 	}
 
 	// Reference to the service that manages an specific group.
-	locator Group {
+	locator group {
 		target Group
 		variable ID
 	}

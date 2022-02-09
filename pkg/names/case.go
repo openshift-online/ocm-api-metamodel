@@ -153,6 +153,9 @@ func splitCamelWords(text string) []string {
 }
 
 func toCamelWord(word string) string {
+	if isInitialism(word) {
+		return strings.ToUpper(word)
+	}
 	head, size := utf8.DecodeRuneInString(word)
 	if unicode.IsUpper(head) {
 		return word
@@ -202,4 +205,20 @@ func isUpper(s string) bool {
 		}
 	}
 	return true
+}
+
+// isInitialism checks if the given string is a well know initialism that should be written using
+// upper case.
+func isInitialism(s string) bool {
+	return initialisms[strings.ToLower(s)]
+}
+
+var initialisms = map[string]bool{
+	"api": true,
+	"aws": true,
+	"cpu": true,
+	"gcp": true,
+	"id":  true,
+	"ip":  true,
+	"url": true,
 }

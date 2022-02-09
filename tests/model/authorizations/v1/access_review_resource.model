@@ -17,8 +17,8 @@ limitations under the License.
 // Manages access review.
 resource AccessReview {
 	// Reviews a user's access to a resource
-	method Post {
-		in Request AccessReviewRequest
-		out Response AccessReviewResponse
+	method post {
+		in request AccessReviewRequest
+		out response AccessReviewResponse
 	}
 }

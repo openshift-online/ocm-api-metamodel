@@ -17,8 +17,8 @@ limitations under the License.
 // Manages a specific group.
 resource Group {
 	// Retrieves the details of the group.
-	method Get {
-		out Body Group
+	method get {
+		out body Group
 	}
 
 	// Reference to the resource that manages the collection of users.

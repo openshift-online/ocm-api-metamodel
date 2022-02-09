@@ -138,7 +138,7 @@ func (g *MetricsSupportGenerator) Run() error {
 
 	// Calculate the package and file name:
 	pkgName := g.packages.MetricsPackage()
-	fileName := g.names.File(words.Path + words.Tree + words.Data)
+	fileName := g.names.File(words.Path, words.Tree, words.Data)
 
 	// Create the buffer for the generated code:
 	g.buffer, err = NewBuffer().

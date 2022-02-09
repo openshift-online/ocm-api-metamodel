@@ -44,7 +44,7 @@ func (k TypeKind) String() string {
 	case EnumType:
 		return "enum"
 	case InterfaceType:
-		return "interface{}"
+		return "interface"
 	case ListType:
 		return "list"
 	case MapType:

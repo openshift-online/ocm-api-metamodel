@@ -17,11 +17,11 @@ limitations under the License.
 // Manages a specific user.
 resource User {
 	// Retrieves the details of the user.
-	method Get {
-		out Body User
+	method get {
+		out body User
 	}
 
 	// Deletes the user.
-	method Delete {
+	method delete {
 	}
 }

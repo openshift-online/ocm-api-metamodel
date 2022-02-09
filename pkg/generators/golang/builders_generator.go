@@ -550,7 +550,7 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
 }
 
 func (g *BuildersGenerator) fileName(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Builder)
+	return g.names.File(typ.Name(), words.Builder)
 }
 
 func (g *BuildersGenerator) objectName(typ *concepts.Type) string {
@@ -559,7 +559,7 @@ func (g *BuildersGenerator) objectName(typ *concepts.Type) string {
 	case typ.IsStruct():
 		name = g.names.Public(typ)
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "List")
+		name = g.names.Public(typ.Element(), words.List)
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate object type name for type '%s'",
@@ -573,9 +573,9 @@ func (g *BuildersGenerator) builderName(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsStruct():
-		name = g.names.Public(typ, "Builder")
+		name = g.names.Public(typ, words.Builder)
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "ListBuilder")
+		name = g.names.Public(typ.Element(), words.List, words.Builder)
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate builder type name for type '%s'",
@@ -591,9 +591,9 @@ func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "List")
+		name = g.names.Public(words.New, typ.Element(), words.List)
 	case typ.IsStruct():
-		name = g.names.Public(typ)
+		name = g.names.Public(words.New, typ)
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate builder constructor name for type '%s'",
@@ -601,11 +601,15 @@ func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
 		)
 		return ""
 	}
-	name = "New" + name
 	return name
 }
 
 func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
+	original := attribute.Name()
+	transformed := g.names.Private(attribute)
+	if transformed == "map" {
+		g.reporter.Infof("--- %s -> %s", original, transformed)
+	}
 	return g.names.Private(attribute)
 }
 

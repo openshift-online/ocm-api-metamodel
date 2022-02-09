@@ -18,106 +18,106 @@ package words
 
 const (
 	// A:
-	Adapt   = "Adapt"
-	Adapter = "Adapter"
-	Add     = "Add"
+	Adapt   = "adapt"
+	Adapter = "adapter"
+	Add     = "add"
 
 	// B:
-	Body    = "Body"
-	Boolean = "Boolean"
-	Builder = "Builder"
+	Body    = "body"
+	Boolean = "boolean"
+	Builder = "builder"
 
 	// C:
-	Client  = "Client"
-	Clients = "Clients"
+	Client  = "client"
+	Clients = "clients"
 
 	// D:
-	Data     = "Data"
-	Date     = "Date"
-	Delete   = "Delete"
-	Dispatch = "Dispatch"
+	Data     = "data"
+	Date     = "date"
+	Delete   = "delete"
+	Dispatch = "dispatch"
 
 	// E:
-	Error  = "Error"
-	Errors = "Errors"
+	Error  = "error"
+	Errors = "errors"
 
 	// F:
-	Float = "Float"
+	Float = "float"
 
 	// G:
-	Get = "Get"
+	Get = "get"
 
 	// H:
-	HREF    = "HREF"
-	Handler = "Handler"
-	Helpers = "Helpers"
+	HREF    = "href"
+	Handler = "handler"
+	Helpers = "helpers"
 
 	// I:
-	ID        = "ID"
-	Index     = "Index"
-	Integer   = "Integer"
-	Interface = "Interface"
-	Items     = "Items"
+	ID        = "id"
+	Index     = "index"
+	Integer   = "integer"
+	Interface = "interface"
+	Items     = "items"
 
 	// J:
-	JSON = "JSON"
+	JSON = "json"
 
 	// K:
-	Kind = "Kind"
+	Kind = "kind"
 
 	// L:
-	Link = "Link"
-	List = "List"
-	Long = "Long"
+	Link = "link"
+	List = "list"
+	Long = "long"
 
 	// M:
-	Map      = "Map"
-	Marshal  = "Marshal"
-	Metadata = "Metadata"
-	Method   = "Method"
-	Metrics  = "Metrics"
+	Map      = "map"
+	Marshal  = "marshal"
+	Metadata = "metadata"
+	Method   = "method"
+	Metrics  = "metrics"
 
 	// N:
-	New = "New"
+	New = "new"
 
 	// P:
-	Page  = "Page"
-	Parse = "Parse"
-	Path  = "Path"
-	Poll  = "Poll"
-	Post  = "Post"
+	Page  = "page"
+	Parse = "parse"
+	Path  = "path"
+	Poll  = "poll"
+	Post  = "post"
 
 	// R:
-	Read     = "Read"
-	Reader   = "Reader"
-	Readers  = "Readers"
-	Request  = "Request"
-	Resource = "Resource"
-	Response = "Response"
-	Root     = "Root"
+	Read     = "read"
+	Reader   = "reader"
+	Readers  = "readers"
+	Request  = "request"
+	Resource = "resource"
+	Response = "response"
+	Root     = "root"
 
 	// S:
-	Search  = "Search"
-	Server  = "Server"
-	Servers = "Servers"
-	Service = "Service"
-	Set     = "Set"
-	Size    = "Size"
-	Spec    = "Spec"
-	Stream  = "Stream"
-	String  = "String"
+	Search  = "search"
+	Server  = "server"
+	Servers = "servers"
+	Service = "service"
+	Set     = "set"
+	Size    = "size"
+	Spec    = "spec"
+	Stream  = "stream"
+	String  = "string"
 
 	// T:
-	Total = "Total"
-	Tree  = "Tree"
-	Type  = "Type"
+	Total = "total"
+	Tree  = "tree"
+	Type  = "type"
 
 	// U:
-	Unmarshal = "Unmarshal"
-	Unwrap    = "Unwrap"
-	Update    = "Update"
+	Unmarshal = "unmarshal"
+	Unwrap    = "unwrap"
+	Update    = "update"
 
 	// W:
-	Wrap  = "Wrap"
-	Write = "Write"
+	Wrap  = "wrap"
+	Write = "write"
 )

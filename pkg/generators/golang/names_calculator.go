@@ -72,10 +72,7 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 // names.Named interface will be replaced by the result of calling the Name() method. Objects that
 // have the @go annotation will be replaced by the value of the name paratemer of that annotation.
 func (c *NamesCalculator) Public(values ...interface{}) string {
-	result := c.concatenateValues(values)
-	result = names.ToUpperCamel(result)
-	result = AvoidReservedWord(result)
-	return result
+	return c.joinSegments(values)
 }
 
 // Private concatenates the given list of values and converts them into a string that follows the
@@ -84,23 +81,32 @@ func (c *NamesCalculator) Public(values ...interface{}) string {
 // names.Named interface will be replaced by the result of calling the Name() method. Objects that
 // have the @go annotation will be replaced by the value of the name paratemer of that annotation.
 func (c *NamesCalculator) Private(values ...interface{}) string {
-	result := c.concatenateValues(values)
+	result := c.joinSegments(values)
 	result = names.ToLowerCamel(result)
 	result = AvoidReservedWord(result)
 	return result
 }
 
-func (c *NamesCalculator) concatenateValues(values []interface{}) string {
-	texts := make([]string, len(values))
-	for i, value := range values {
-		texts[i] = c.replaceValue(value)
+// File concatenates the given list of values and converts them into a string that follows the
+// conventions for Go file names. The elements of the list can be strings or objects that implement
+// the names.Named interface. Strings will be used directly. Objects that implement the names.Named
+// interface will be replaced by the result of calling the Name() method. Objects that have the @go
+// annotation will be replaced by the value of the name paratemer of that annotation.
+func (c *NamesCalculator) File(values ...interface{}) string {
+	return names.ToSnake(c.Public(values...))
+}
+
+func (c *NamesCalculator) joinSegments(segments []interface{}) string {
+	texts := make([]string, len(segments))
+	for i, segment := range segments {
+		texts[i] = c.convertSegment(segment)
 	}
 	return strings.Join(texts, "")
 }
 
-func (c *NamesCalculator) replaceValue(value interface{}) string {
+func (c *NamesCalculator) convertSegment(segment interface{}) string {
 	var result string
-	switch typed := value.(type) {
+	switch typed := segment.(type) {
 	case string:
 		result = typed
 	case names.Named:
@@ -117,15 +123,10 @@ func (c *NamesCalculator) replaceValue(value interface{}) string {
 		}
 	default:
 		c.reporter.Errorf(
-			"Don't know how to concatenate object of type '%T'",
-			value,
+			"Don't know how to convert segment of type '%T' to name",
+			segment,
 		)
 		result = "!"
 	}
-	return result
-}
-
-// File converts the given name into an string, following the rules for Go source files.
-func (c *NamesCalculator) File(name string) string {
-	return names.ToSnake(name)
+	return names.ToUpperCamel(result)
 }

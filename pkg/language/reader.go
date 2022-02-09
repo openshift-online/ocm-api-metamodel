@@ -32,7 +32,6 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // Reader is used to read a model from a set of files. Don't create objects of this type directly,
@@ -132,7 +131,7 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 		for _, version := range service.Versions() {
 			for _, typ := range version.Types() {
 				if typ.Kind() != concepts.ListType {
-					listName := typ.Name() + words.List
+					listName := typ.Name() + "List"
 					listType := version.FindType(listName)
 					if listType == nil {
 						listType = concepts.NewType()
@@ -533,7 +532,7 @@ func (r *Reader) ExitListTypeReference(ctx *ListTypeReferenceContext) {
 	}
 
 	// Try to find an existing list type, or else create a new one:
-	listName := elementName + words.List
+	listName := elementName + "List"
 	listType := r.version.FindType(listName)
 	if listType == nil {
 		listType = concepts.NewType()
@@ -568,7 +567,7 @@ func (r *Reader) ExitMapTypeReference(ctx *MapTypeReferenceContext) {
 	}
 
 	// Try to find an existing map type, or else create a new one:
-	mapName := indexName + elementName + words.Map
+	mapName := indexName + elementName + "Map"
 	mapType := r.version.FindType(mapName)
 	if mapType == nil {
 		mapType = concepts.NewType()

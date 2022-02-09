@@ -27,14 +27,14 @@ var _ = Describe("Annotation", func() {
 		model := MakeModel(
 			"my_service/v1/root.model",
 			`
-			resource Root {
+			resource root {
 			}
 			`,
 			"my_service/v1/my_class.model",
 			`
 			class MyClass {
-				@go(name = "my_name")
-				attribute MyAttribute Integer
+				@go(name = "MyName")
+				my_attribute integer
 			}
 			`,
 		)
@@ -46,12 +46,12 @@ var _ = Describe("Annotation", func() {
 		Expect(version).ToNot(BeNil())
 		class := version.FindType("MyClass")
 		Expect(class).ToNot(BeNil())
-		attribute := class.FindAttribute("MyAttribute")
+		attribute := class.FindAttribute("my_attribute")
 		Expect(attribute).ToNot(BeNil())
 		annotation := attribute.GetAnnotation("go")
 		Expect(annotation).ToNot(BeNil())
 		name := annotation.GetString("name")
-		Expect(name).To(Equal("my_name"))
+		Expect(name).To(Equal("MyName"))
 	})
 
 	It("Reads attribute annotation without parameters", func() {
@@ -59,14 +59,14 @@ var _ = Describe("Annotation", func() {
 		model := MakeModel(
 			"my_service/v1/root.model",
 			`
-			resource Root {
+			resource root {
 			}
 			`,
 			"my_service/v1/my_class.model",
 			`
 			class MyClass {
 				@deprecated
-				attribute MyAttribute Integer
+				my_attribute integer
 			}
 			`,
 		)
@@ -78,7 +78,7 @@ var _ = Describe("Annotation", func() {
 		Expect(version).ToNot(BeNil())
 		class := version.FindType("MyClass")
 		Expect(class).ToNot(BeNil())
-		attribute := class.FindAttribute("MyAttribute")
+		attribute := class.FindAttribute("my_attribute")
 		Expect(attribute).ToNot(BeNil())
 		annotation := attribute.GetAnnotation("deprecated")
 		Expect(annotation).ToNot(BeNil())

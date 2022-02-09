@@ -17,28 +17,28 @@ limitations under the License.
 // Manages the collection of identity providers of a cluster.
 resource IdentityProviders {
 	// Retrieves the list of identity providers.
-	method List {
+	method list {
 		// Index of the requested page, where one corresponds to the first page.
-		in out Page Integer = 1
+		in out page integer = 1
 
 		// Number of items contained in the returned page.
-		in out Size Integer = 100
+		in out size integer = 100
 
 		// Total number of items of the collection.
-		out Total Integer
+		out total integer
 
 		// Retrieved list of identity providers.
-		out Items []IdentityProvider
+		out items []IdentityProvider
 	}
 
 	// Adds a new identity provider to the cluster.
-	method Add {
+	method add {
 		// Description of the cluster.
-		in out Body IdentityProvider
+		in out body IdentityProvider
 	}
 
 	// Reference to the service that manages an specific identity provider.
-	locator IdentityProvider {
+	locator identity_provider {
 		target IdentityProvider
 		variable ID
 	}
