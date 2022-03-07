@@ -802,6 +802,13 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			return r
 		}
 
+		// Impersonate wraps requests on behalf of another user.
+		// Note: Services that do not support this feature may silently ignore this call. 
+		func (r *{{ $requestName }}) Impersonate(user string) *{{ $requestName }} {
+			helpers.AddImpersonationHeader(&r.header, user)
+			return r
+		}
+
 		{{ range $requestParameters }}
 			{{ $fieldName := fieldName . }}
 			{{ $setterName := setterName . }}

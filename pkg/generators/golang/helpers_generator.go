@@ -193,6 +193,11 @@ func (g *HelpersGenerator) Run() error {
 			return result
 		}
 
+		const impersonateUserHeader = "Impersonate-User"
+		func AddImpersonationHeader(header *http.Header, user string) {
+			AddHeader(header, impersonateUserHeader, user)
+		}
+
 		// CopyValues copies a slice of strings.
 		func CopyValues(values []string) []string {
 			if values == nil {
