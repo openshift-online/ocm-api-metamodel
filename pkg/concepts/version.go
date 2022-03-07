@@ -18,9 +18,9 @@ package concepts
 
 import (
 	"sort"
-	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
 // Version is the representation of a version of a service.
@@ -51,18 +51,18 @@ func NewVersion() *Version {
 	version.errors = make(map[string]*Error)
 
 	// Add the built-in scalar types:
-	version.addScalarType(words.Boolean)
-	version.addScalarType(words.Integer)
-	version.addScalarType(words.Long)
-	version.addScalarType(words.Float)
-	version.addScalarType(words.String)
-	version.addScalarType(words.Date)
+	version.addScalarType(nomenclator.Boolean)
+	version.addScalarType(nomenclator.Integer)
+	version.addScalarType(nomenclator.Long)
+	version.addScalarType(nomenclator.Float)
+	version.addScalarType(nomenclator.String)
+	version.addScalarType(nomenclator.Date)
 
 	// Add the built-in interface{} type:
 	// We treat the built-in interface type as scalar for most purposes,
 	// but define it as a new type to differentiate in how pointers are
 	// generated.
-	version.addInterfaceType(words.Interface)
+	version.addInterfaceType(nomenclator.Interface)
 
 	return version
 }
@@ -91,14 +91,17 @@ func (v *Version) Types() TypeSlice {
 }
 
 // FindType returns the type with the given name, or nil of there is no such type.
-func (v *Version) FindType(name string) *Type {
-	return v.types[name]
+func (v *Version) FindType(name *names.Name) *Type {
+	if name == nil {
+		return nil
+	}
+	return v.types[name.String()]
 }
 
 // AddType adds the given type to the version.
 func (v *Version) AddType(typ *Type) {
 	if typ != nil {
-		v.types[typ.Name()] = typ
+		v.types[typ.Name().String()] = typ
 		typ.SetOwner(v)
 	}
 }
@@ -112,37 +115,37 @@ func (v *Version) AddTypes(types []*Type) {
 
 // Boolean returns the boolean type.
 func (v *Version) Boolean() *Type {
-	return v.FindType(words.Boolean)
+	return v.FindType(nomenclator.Boolean)
 }
 
 // IntegerType returns the integer type.
 func (v *Version) IntegerType() *Type {
-	return v.FindType(words.Integer)
+	return v.FindType(nomenclator.Integer)
 }
 
 // LongType returns the long type.
 func (v *Version) LongType() *Type {
-	return v.FindType(words.Long)
+	return v.FindType(nomenclator.Long)
 }
 
 // StringType returns the string type.
 func (v *Version) StringType() *Type {
-	return v.FindType(words.String)
+	return v.FindType(nomenclator.String)
 }
 
 // FloatType returns the floating point type.
 func (v *Version) FloatType() *Type {
-	return v.FindType(words.Float)
+	return v.FindType(nomenclator.Float)
 }
 
 // DateType returns the date type.
 func (v *Version) DateType() *Type {
-	return v.FindType(words.Date)
+	return v.FindType(nomenclator.Date)
 }
 
 // InterfaceType returns the interface{} type.
 func (v *Version) InterfaceType() *Type {
-	return v.FindType(words.Interface)
+	return v.FindType(nomenclator.Interface)
 }
 
 // Resources returns the list of resources that are part of this version.
@@ -159,14 +162,17 @@ func (v *Version) Resources() ResourceSlice {
 }
 
 // FindResource returns the resource with the given name, or nil if there is no such resource.
-func (v *Version) FindResource(name string) *Resource {
-	return v.resources[name]
+func (v *Version) FindResource(name *names.Name) *Resource {
+	if name == nil {
+		return nil
+	}
+	return v.resources[name.String()]
 }
 
 // AddResource adds the given resource to the version.
 func (v *Version) AddResource(resource *Resource) {
 	if resource != nil {
-		v.resources[resource.Name()] = resource
+		v.resources[resource.Name().String()] = resource
 		resource.SetOwner(v)
 	}
 }
@@ -180,7 +186,7 @@ func (v *Version) AddResources(resources []*Resource) {
 
 // Root returns the root resource, or nil if there is no such resource.
 func (v *Version) Root() *Resource {
-	return v.resources[words.Root]
+	return v.resources[nomenclator.Root.String()]
 }
 
 // Errors returns the list of errors that are part of this version.
@@ -197,14 +203,17 @@ func (v *Version) Errors() ErrorSlice {
 }
 
 // FindError returns the error with the given name, or nil if there is no such error.
-func (v *Version) FindError(name string) *Error {
-	return v.errors[name]
+func (v *Version) FindError(name *names.Name) *Error {
+	if name == nil {
+		return nil
+	}
+	return v.errors[name.String()]
 }
 
 // AddError adds the given error to the version.
 func (v *Version) AddError(err *Error) {
 	if err != nil {
-		v.errors[err.Name()] = err
+		v.errors[err.Name().String()] = err
 		err.SetOwner(v)
 	}
 }
@@ -256,7 +265,7 @@ func (v *Version) Paths() [][]*Locator {
 	return results
 }
 
-func (v *Version) addScalarType(name string) {
+func (v *Version) addScalarType(name *names.Name) {
 	// Add the scalar type:
 	scalarType := NewType()
 	scalarType.SetKind(ScalarType)
@@ -266,12 +275,12 @@ func (v *Version) addScalarType(name string) {
 	// Add the list type:
 	listType := NewType()
 	listType.SetKind(ListType)
-	listType.SetName(name + words.List)
+	listType.SetName(names.Cat(name, nomenclator.List))
 	listType.SetElement(scalarType)
 	v.AddType(listType)
 }
 
-func (v *Version) addInterfaceType(name string) {
+func (v *Version) addInterfaceType(name *names.Name) {
 	// Add the interface{} type:
 	interfaceType := NewType()
 	interfaceType.SetKind(InterfaceType)
@@ -281,7 +290,7 @@ func (v *Version) addInterfaceType(name string) {
 	// Add the list type:
 	listType := NewType()
 	listType.SetKind(ListType)
-	listType.SetName(name + words.List)
+	listType.SetName(names.Cat(name, nomenclator.List))
 	listType.SetElement(interfaceType)
 	v.AddType(listType)
 }
@@ -294,7 +303,7 @@ func (s VersionSlice) Len() int {
 }
 
 func (s VersionSlice) Less(i, j int) bool {
-	return strings.Compare(s[i].name, s[j].name) == -1
+	return names.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s VersionSlice) Swap(i, j int) {

@@ -22,8 +22,9 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // JSONSupportGeneratorBuilder is an object used to configure and build the JSON support generator.
@@ -223,11 +224,11 @@ func (g *JSONSupportGenerator) generateHelpers() error {
 	}
 
 	// Generate the code:
+	g.buffer.Import("bytes", "")
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import("strconv", "")
-	g.buffer.Import("time", "")
 	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		// NewIterator creates a new JSON iterator that will read to the given source, which
@@ -864,7 +865,7 @@ func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method) {
 
 func (g *JSONSupportGenerator) generateAddMethodSource(method *concepts.Method) {
 	// For `Add` methods we need to put in the request and response the `Body` parameter:
-	body := method.GetParameter(words.Body)
+	body := method.GetParameter(nomenclator.Body)
 
 	// Generate the code:
 	g.buffer.Import("net/http", "")
@@ -938,7 +939,7 @@ func (g *JSONSupportGenerator) generateDeleteMethodSource(method *concepts.Metho
 
 func (g *JSONSupportGenerator) generateGetMethodSource(method *concepts.Method) {
 	// For `Get` methods we need to put in the response the `Body` parameter:
-	body := method.GetParameter(words.Body)
+	body := method.GetParameter(nomenclator.Body)
 
 	// Generate the code:
 	g.buffer.Import("net/http", "")
@@ -985,14 +986,14 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 	var items *concepts.Parameter
 	var other []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
-		switch parameter.Name() {
-		case words.Page:
+		switch {
+		case parameter.Name().Equals(nomenclator.Page):
 			page = parameter
-		case words.Size:
+		case parameter.Name().Equals(nomenclator.Size):
 			size = parameter
-		case words.Total:
+		case parameter.Name().Equals(nomenclator.Total):
 			total = parameter
-		case words.Items:
+		case parameter.Name().Equals(nomenclator.Items):
 			items = parameter
 		default:
 			other = append(other, parameter)
@@ -1176,16 +1177,16 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 	var items *concepts.Parameter
 	var other []*concepts.Parameter
 	for _, parameter := range method.Parameters() {
-		switch parameter.Name() {
-		case words.Page:
+		switch {
+		case parameter.Name().Equals(nomenclator.Page):
 			page = parameter
-		case words.Size:
+		case parameter.Name().Equals(nomenclator.Size):
 			size = parameter
-		case words.Total:
+		case parameter.Name().Equals(nomenclator.Total):
 			total = parameter
-		case words.Body:
+		case parameter.Name().Equals(nomenclator.Body):
 			body = parameter
-		case words.Items:
+		case parameter.Name().Equals(nomenclator.Items):
 			items = parameter
 		default:
 			other = append(other, parameter)
@@ -1320,7 +1321,7 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 
 func (g *JSONSupportGenerator) generateUpdateMethodSource(method *concepts.Method) {
 	// For `Update` methods we need to put in the request and response the `Body` parameter:
-	body := method.GetParameter(words.Body)
+	body := method.GetParameter(nomenclator.Body)
 
 	// Generate the code:
 	g.buffer.Import("net/http", "")
@@ -1481,11 +1482,11 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 	}
 	field := g.parameterFieldName(parameter)
 	tag := g.binding.ParameterName(parameter)
-	kind := typ.Name()
+	kind := typ.Name().Camel()
 	return g.buffer.Eval(`
 		{{ $field := parameterFieldName .Parameter }}
 		{{ $tag := parameterFieldTag .Parameter }}
-		{{ $kind := .Parameter.Type.Name }}
+		{{ $kind := .Parameter.Type.Name.Camel }}
 
 		request.{{ $field }}, err = helpers.Parse{{ $kind }}(query, "{{ $tag }}")
 		if err != nil {
@@ -1695,119 +1696,227 @@ func (g *JSONSupportGenerator) generateWriteValue(value string, typ *concepts.Ty
 }
 
 func (g *JSONSupportGenerator) helpersFile() string {
-	return g.names.File(words.JSON + words.Helpers)
+	return g.names.File(names.Cat(nomenclator.JSON, nomenclator.Helpers))
 }
 
 func (g *JSONSupportGenerator) metadataFile() string {
-	return g.names.File(words.Metadata + words.Reader)
+	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Reader))
 }
 
 func (g *JSONSupportGenerator) typeFile(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Type + words.JSON)
+	return g.names.File(names.Cat(typ.Name(), nomenclator.Type, nomenclator.JSON))
 }
 
 func (g *JSONSupportGenerator) resourceFile(resource *concepts.Resource) string {
-	return g.names.File(resource.Name() + words.Resource + words.JSON)
+	return g.names.File(names.Cat(resource.Name(), nomenclator.Resource, nomenclator.JSON))
 }
 
 func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
-	if typ.IsList() {
-		return g.names.Public(words.Marshal, typ.Element(), words.List)
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
 	}
-	return g.names.Public(words.Marshal, typ)
+	name = "Marshal" + name
+	return name
 }
 
 func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
-	if typ.IsList() {
-		return g.names.Private(words.Write, typ.Element(), words.List)
-	}
-	return g.names.Private(words.Write, typ)
+	name := names.Cat(nomenclator.Write, typ.Name())
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) unmarshalTypeFunc(typ *concepts.Type) string {
-	if typ.IsList() {
-		return g.names.Public(words.Unmarshal, typ.Element(), words.List)
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
 	}
-	return g.names.Public(words.Unmarshal, typ)
+	name = "Unmarshal" + name
+	return name
 }
 
 func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type) string {
-	if typ.IsList() {
-		return g.names.Private(words.Read, typ.Element(), words.List)
-	}
-	return g.names.Private(words.Read, typ)
+	name := names.Cat(nomenclator.Read, typ.Name())
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) fieldName(attribute *concepts.Attribute) string {
-	return g.names.Private(attribute)
+	return g.names.Private(attribute.Name())
 }
 
 func (g *JSONSupportGenerator) parameterFieldName(parameter *concepts.Parameter) string {
-	return g.names.Private(parameter)
+	return g.names.Private(parameter.Name())
 }
 
 func (g *JSONSupportGenerator) clientRequestName(method *concepts.Method) string {
 	resource := method.Owner()
+	var name string
 	if resource.IsRoot() {
-		return g.names.Public(method, words.Request)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
+	} else {
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(resource, method, words.Request)
+	name += "Request"
+	return name
 }
 
 func (g *JSONSupportGenerator) serverRequestName(method *concepts.Method) string {
 	resource := method.Owner()
+	var name string
 	if resource.IsRoot() {
-		return g.names.Public(method, words.Server, words.Request)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
+	} else {
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(resource, method, words.Server, words.Request)
+	name += "ServerRequest"
+	return name
 }
 
 func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) string {
 	resource := method.Owner()
+	var name string
 	if resource.IsRoot() {
-		return g.names.Public(method, words.Response)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
+	} else {
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(resource, method, words.Response)
+	name += "Response"
+	return name
 }
 
 func (g *JSONSupportGenerator) serverResponseName(method *concepts.Method) string {
 	resource := method.Owner()
+	var name string
 	if resource.IsRoot() {
-		return g.names.Public(method, words.Server, words.Response)
+		name = goName(method)
+		if name == "" {
+			name = g.names.Public(method.Name())
+		}
+	} else {
+		resourceName := goName(resource)
+		if resourceName == "" {
+			resourceName = g.names.Public(resource.Name())
+		}
+		methodName := goName(method)
+		if methodName == "" {
+			methodName = g.names.Public(method.Name())
+		}
+		name = resourceName + methodName
 	}
-	return g.names.Public(resource, method, words.Server, words.Response)
+	name += "ServerResponse"
+	return name
 }
 
 func (g *JSONSupportGenerator) writeRequestFunc(method *concepts.Method) string {
 	resource := method.Owner()
+	var name *names.Name
 	if resource.IsRoot() {
-		return g.names.Private(words.Write, method, words.Request)
+		name = names.Cat(
+			nomenclator.Write,
+			method.Name(),
+			nomenclator.Request,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Write,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Request,
+		)
 	}
-	return g.names.Private(words.Write, resource, method, words.Request)
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) readResponseFunc(method *concepts.Method) string {
 	resource := method.Owner()
+	var name *names.Name
 	if resource.IsRoot() {
-		return g.names.Private(words.Read, method, words.Response)
+		name = names.Cat(
+			nomenclator.Read,
+			method.Name(),
+			nomenclator.Response,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Read,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Response,
+		)
 	}
-	return g.names.Private(words.Read, resource, method, words.Response)
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) readRequestFunc(method *concepts.Method) string {
 	resource := method.Owner()
+	var name *names.Name
 	if resource.IsRoot() {
-		return g.names.Private(words.Read, method, words.Request)
+		name = names.Cat(
+			nomenclator.Read,
+			method.Name(),
+			nomenclator.Request,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Read,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Request,
+		)
 	}
-	return g.names.Private(words.Read, resource, method, words.Request)
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) writeResponseFunc(method *concepts.Method) string {
 	resource := method.Owner()
+	var name *names.Name
 	if resource.IsRoot() {
-		return g.names.Private(words.Write, method, words.Response)
+		name = names.Cat(
+			nomenclator.Write,
+			method.Name(),
+			nomenclator.Response,
+		)
+	} else {
+		name = names.Cat(
+			nomenclator.Write,
+			resource.Name(),
+			method.Name(),
+			nomenclator.Response,
+		)
 	}
-	return g.names.Private(words.Write, resource, method, words.Response)
+	return g.names.Private(name)
 }
 
 func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) string {

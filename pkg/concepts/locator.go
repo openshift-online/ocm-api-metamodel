@@ -16,7 +16,9 @@ limitations under the License.
 
 package concepts
 
-import "strings"
+import (
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+)
 
 // Locator represents a resource locator, the reference from a resource to another resource.
 type Locator struct {
@@ -75,7 +77,7 @@ func (s LocatorSlice) Len() int {
 }
 
 func (s LocatorSlice) Less(i, j int) bool {
-	return strings.Compare(s[i].name, s[j].name) == -1
+	return names.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s LocatorSlice) Swap(i, j int) {

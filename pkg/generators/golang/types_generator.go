@@ -21,8 +21,9 @@ import (
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // TypesGeneratorBuilder is an object used to configure and build the types generator. Don't create
@@ -410,7 +411,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		}
 
 		{{ range .Type.Attributes }}
-			{{ $attributeType := .Type.Name }}
+			{{ $attributeType := .Type.Name.String }}
 			{{ $fieldName := fieldName . }}
 			{{ $fieldMask := bitMask . }}
 			{{ $getterName := getterName . }}
@@ -567,15 +568,15 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 }
 
 func (g *TypesGenerator) metadataFile() string {
-	return g.names.File(words.Metadata + words.Type)
+	return g.names.File(names.Cat(nomenclator.Metadata, nomenclator.Type))
 }
 
 func (g *TypesGenerator) typeFile(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Type)
+	return g.names.File(names.Cat(typ.Name(), nomenclator.Type))
 }
 
 func (g *TypesGenerator) fieldName(attribute *concepts.Attribute) string {
-	return g.names.Private(attribute)
+	return g.names.Private(attribute.Name())
 }
 
 func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReference {
@@ -606,11 +607,23 @@ func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReferenc
 }
 
 func (g *TypesGenerator) objectName(typ *concepts.Type) string {
-	return g.names.Public(typ)
+	name := goName(typ)
+	if name == "" {
+		name = g.names.Public(typ.Name())
+	}
+	return name
 }
 
 func (g *TypesGenerator) valueName(value *concepts.EnumValue) string {
-	return g.names.Public(value.Type(), value)
+	typeName := goName(value.Type())
+	if typeName == "" {
+		typeName = g.names.Public(value.Type().Name())
+	}
+	valueName := goName(value)
+	if valueName == "" {
+		valueName = g.names.Public(value.Name())
+	}
+	return typeName + valueName
 }
 
 func (g *TypesGenerator) valueTag(value *concepts.EnumValue) string {
@@ -618,7 +631,11 @@ func (g *TypesGenerator) valueTag(value *concepts.EnumValue) string {
 }
 
 func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
-	return g.names.Public(attribute)
+	name := goName(attribute)
+	if name == "" {
+		name = g.names.Public(attribute.Name())
+	}
+	return name
 }
 
 func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
@@ -649,5 +666,9 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference
 }
 
 func (g *TypesGenerator) listName(typ *concepts.Type) string {
-	return g.names.Public(typ, words.List)
+	typeName := goName(typ)
+	if typeName == "" {
+		typeName = g.names.Public(typ.Name())
+	}
+	return typeName + "List"
 }

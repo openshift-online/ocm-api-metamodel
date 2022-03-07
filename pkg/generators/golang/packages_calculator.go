@@ -19,11 +19,10 @@ package golang
 import (
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // PackagesCalculatorBuilder is an object used to configure and build the Go packages calculators.
@@ -82,7 +81,7 @@ func (b *PackagesCalculatorBuilder) Build() (calculator *PackagesCalculator, err
 
 // ServicePackage returns the name of the package for the given service.
 func (g *PackagesCalculator) ServicePackage(service *concepts.Service) string {
-	return strings.ReplaceAll(service.Name(), "_", "")
+	return service.Name().LowerJoined("")
 }
 
 // ServiceImport returns the complete import path of the package for the given service.
@@ -98,8 +97,8 @@ func (g *PackagesCalculator) ServiceSelector(service *concepts.Service) string {
 // VersionPackage returns the name of the package for the given version.
 func (g *PackagesCalculator) VersionPackage(version *concepts.Version) string {
 	return path.Join(
-		g.ServicePackage(version.Owner()),
-		strings.ReplaceAll(version.Name(), "_", ""),
+		version.Owner().Name().LowerJoined(""),
+		version.Name().LowerJoined(""),
 	)
 }
 
@@ -115,7 +114,7 @@ func (g *PackagesCalculator) VersionSelector(version *concepts.Version) string {
 
 // HelpersPackage returns the name of the helpers package.
 func (g *PackagesCalculator) HelpersPackage() string {
-	return strings.ToLower(words.Helpers)
+	return nomenclator.Helpers.LowerJoined("")
 }
 
 // HelpersImport returns complete import path of the helpers package.
@@ -125,7 +124,7 @@ func (g *PackagesCalculator) HelpersImport() string {
 
 // MetricsPackage returns the name of the metrics package.
 func (g *PackagesCalculator) MetricsPackage() string {
-	return strings.ToLower(words.Metrics)
+	return nomenclator.Metrics.LowerJoined("")
 }
 
 // MetricsImport returns complete import path of the metrics package.
@@ -135,7 +134,7 @@ func (g *PackagesCalculator) MetricsImport() string {
 
 // ErrorsPackage returns the name of the errors package.
 func (g *PackagesCalculator) ErrorsPackage() string {
-	return strings.ToLower(words.Errors)
+	return nomenclator.Errors.LowerJoined("")
 }
 
 // ErrorsImport returns complete import path of the errors package.

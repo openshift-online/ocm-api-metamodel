@@ -20,8 +20,9 @@ import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // BuildersGeneratorBuilder is an object used to configure and build the builders generator. Don't
@@ -550,16 +551,24 @@ func (g *BuildersGenerator) generateStructListBuilderSource(typ *concepts.Type) 
 }
 
 func (g *BuildersGenerator) fileName(typ *concepts.Type) string {
-	return g.names.File(typ.Name() + words.Builder)
+	return g.names.File(names.Cat(typ.Name(), nomenclator.Builder))
 }
 
 func (g *BuildersGenerator) objectName(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsStruct():
-		name = g.names.Public(typ)
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "List")
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "List"
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate object type name for type '%s'",
@@ -573,9 +582,18 @@ func (g *BuildersGenerator) builderName(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsStruct():
-		name = g.names.Public(typ, "Builder")
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
+		name += "Builder"
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "ListBuilder")
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "ListBuilder"
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate builder type name for type '%s'",
@@ -591,9 +609,17 @@ func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsList():
-		name = g.names.Public(typ.Element(), "List")
+		element := typ.Element()
+		name = goName(element)
+		if name == "" {
+			name = g.names.Public(element.Name())
+		}
+		name += "List"
 	case typ.IsStruct():
-		name = g.names.Public(typ)
+		name = goName(typ)
+		if name == "" {
+			name = g.names.Public(typ.Name())
+		}
 	default:
 		g.reporter.Errorf(
 			"Don't know how to calculate builder constructor name for type '%s'",
@@ -606,7 +632,7 @@ func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
 }
 
 func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
-	return g.names.Private(attribute)
+	return g.names.Private(attribute.Name())
 }
 
 func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
@@ -659,7 +685,11 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
-	return g.names.Public(attribute)
+	name := goName(attribute)
+	if name == "" {
+		name = g.names.Public(attribute.Name())
+	}
+	return name
 }
 
 func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeReference {

@@ -23,8 +23,8 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/markdown"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // DocsGeneratorBuilder is an object used to configure and build the builders generator. Don't
@@ -154,7 +154,7 @@ func (g *DocsGenerator) generateIndex() error {
 	var err error
 
 	// Calculate the file name:
-	fileName := g.names.File(words.Index)
+	fileName := g.names.File(nomenclator.Index)
 
 	// Create the buffer for the generated documentation:
 	g.buffer, err = markdown.NewBufferBuilder().
@@ -370,25 +370,25 @@ func (g *DocsGenerator) fileName(object names.Named) string {
 	name := object.Name()
 	switch object.(type) {
 	case *concepts.Type:
-		name += words.Type
+		name = names.Cat(name, nomenclator.Type)
 	case *concepts.Resource:
-		name += words.Resource
+		name = names.Cat(name, nomenclator.Resource)
 	}
 	return g.names.File(name)
 }
 
 func (g *DocsGenerator) httpMethod(method *concepts.Method) string {
 	name := method.Name()
-	if name == words.Get || name == words.List {
+	if name.Equals(nomenclator.Get) || name.Equals(nomenclator.List) {
 		return "GET"
 	}
-	if name == words.Add {
+	if name.Equals(nomenclator.Add) {
 		return "POST"
 	}
-	if name == words.Update {
+	if name.Equals(nomenclator.Update) {
 		return "PATCH"
 	}
-	if name == words.Delete {
+	if name.Equals(nomenclator.Delete) {
 		return "DELETE"
 	}
 	return "POST"

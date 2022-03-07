@@ -102,8 +102,8 @@ func (r *Reporter) Errorf(format string, args ...interface{}) error {
 }
 
 func (r *Reporter) printf(format string, args []interface{}) string {
-	// Replace arguments that are named objects or names with their
-	// corresponding name, as that is what users type in the source files:
+	// Replace arguments that are named objects or names with their camel case equivalent,
+	// as that is what users type in the source files:
 	for i, arg := range args {
 		switch typed := arg.(type) {
 		case *concepts.Service:
@@ -117,7 +117,7 @@ func (r *Reporter) printf(format string, args []interface{}) string {
 			args[i] = r.fqn(service, version, typed)
 		case *concepts.Type:
 			if typed.IsScalar() || !typed.IsEnum() {
-				args[i] = typed.Name()
+				args[i] = typed.Name().Camel()
 			} else {
 				version := typed.Owner()
 				service := version.Owner()
@@ -146,8 +146,8 @@ func (r *Reporter) printf(format string, args []interface{}) string {
 			args[i] = r.fqn(service, version, resource, method, typed)
 		case names.Named:
 			args[i] = r.fqn(typed)
-		case string:
-			args[i] = typed
+		case *names.Name:
+			args[i] = typed.Camel()
 		}
 	}
 
@@ -158,7 +158,8 @@ func (r *Reporter) printf(format string, args []interface{}) string {
 func (r *Reporter) fqn(nameds ...names.Named) string {
 	segments := make([]string, len(nameds))
 	for i, named := range nameds {
-		segments[i] = named.Name()
+		name := named.Name()
+		segments[i] = name.Camel()
 	}
 	return strings.Join(segments, ".")
 }

@@ -18,9 +18,9 @@ package concepts
 
 import (
 	"sort"
-	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 )
 
 // Method represents a method of a resource.
@@ -64,9 +64,12 @@ func (m *Method) AddParameter(parameter *Parameter) {
 
 // GetParameter returns the parameter with the given name, or nil if there is no parameter with that
 // name.
-func (m *Method) GetParameter(name string) *Parameter {
+func (m *Method) GetParameter(name *names.Name) *Parameter {
+	if name == nil {
+		return nil
+	}
 	for _, parameter := range m.parameters {
-		if parameter.Name() == name {
+		if parameter.Name().Equals(name) {
 			return parameter
 		}
 	}
@@ -75,37 +78,37 @@ func (m *Method) GetParameter(name string) *Parameter {
 
 // IsAdd returns true if this is an add method.
 func (m *Method) IsAdd() bool {
-	return m.name == words.Add
+	return m.name.Equals(nomenclator.Add)
 }
 
 // IsDelete returns true if this is a delete method.
 func (m *Method) IsDelete() bool {
-	return m.name == words.Delete
+	return m.name.Equals(nomenclator.Delete)
 }
 
 // IsGet returns true if this is a get method.
 func (m *Method) IsGet() bool {
-	return m.name == words.Get
+	return m.name.Equals(nomenclator.Get)
 }
 
 // IsList returns true if this is a list method.
 func (m *Method) IsList() bool {
-	return m.name == words.List
+	return m.name.Equals(nomenclator.List)
 }
 
 // IsPost returns true if this is a post method.
 func (m *Method) IsPost() bool {
-	return m.name == words.Post
+	return m.name.Equals(nomenclator.Post)
 }
 
 // IsSearch returns true if this is a search method.
 func (m *Method) IsSearch() bool {
-	return m.name == words.Search
+	return m.name.Equals(nomenclator.Search)
 }
 
 // IsUpdate returns true if this is an update method.
 func (m *Method) IsUpdate() bool {
-	return m.name == words.Update
+	return m.name.Equals(nomenclator.Update)
 }
 
 // IsAction determined if this method is an action instead of a regular REST method.
@@ -138,7 +141,7 @@ func (s MethodSlice) Len() int {
 }
 
 func (s MethodSlice) Less(i, j int) bool {
-	return strings.Compare(s[i].name, s[j].name) == -1
+	return names.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s MethodSlice) Swap(i, j int) {

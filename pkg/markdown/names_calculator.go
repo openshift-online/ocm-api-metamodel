@@ -18,6 +18,7 @@ package markdown
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -66,16 +67,31 @@ func (b *NamesCalculatorBuilder) Build() (calculator *NamesCalculator, err error
 
 // Display converts the given name into an string, following the rules for names displayed in the
 // documentation.
-func (c *NamesCalculator) Display(name string) string {
-	return name
+func (c *NamesCalculator) Display(name *names.Name) string {
+	words := name.Words()
+	chunks := make([]string, len(words))
+	for i, word := range words {
+		chunks[i] = word.Capitalize()
+	}
+	return strings.Join(chunks, "")
 }
 
 // File converts the given name into an string, following the rules for Markdown files.
-func (c *NamesCalculator) File(name string) string {
-	return names.ToSnake(name)
+func (c *NamesCalculator) File(name *names.Name) string {
+	words := name.Words()
+	chunks := make([]string, len(words))
+	for i, word := range words {
+		chunks[i] = strings.ToLower(word.String())
+	}
+	return strings.Join(chunks, "_")
 }
 
 // Tag converts the given name into an string, following the rules for JSON field names.
-func (c *NamesCalculator) Tag(name string) string {
-	return "`" + name + "`"
+func (c *NamesCalculator) Tag(name *names.Name) string {
+	words := name.Words()
+	chunks := make([]string, len(words))
+	for i, word := range words {
+		chunks[i] = strings.ToLower(word.String())
+	}
+	return "`" + strings.Join(chunks, "_") + "`"
 }

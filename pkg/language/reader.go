@@ -31,8 +31,9 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // Reader is used to read a model from a set of files. Don't create objects of this type directly,
@@ -132,7 +133,7 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 		for _, version := range service.Versions() {
 			for _, typ := range version.Types() {
 				if typ.Kind() != concepts.ListType {
-					listName := typ.Name() + words.List
+					listName := names.Cat(typ.Name(), nomenclator.List)
 					listType := version.FindType(listName)
 					if listType == nil {
 						listType = concepts.NewType()
@@ -221,11 +222,11 @@ func (r *Reader) loadService(dir string) {
 	}
 
 	// Create the service, if needed:
-	name := dirInfo.Name()
+	name := names.ParseUsingSeparator(dirInfo.Name(), "_")
 	r.service = r.model.FindService(name)
 	if r.service == nil {
 		r.service = concepts.NewService()
-		r.service.SetName(dirInfo.Name())
+		r.service.SetName(name)
 		r.model.AddService(r.service)
 	}
 
@@ -268,7 +269,7 @@ func (r *Reader) loadVersion(dir string) {
 	}
 
 	// Create the version, if needed:
-	name := dirInfo.Name()
+	name := names.ParseUsingSeparator(dirInfo.Name(), "_")
 	r.version = r.service.FindVersion(name)
 	if r.version == nil {
 		r.version = concepts.NewVersion()
@@ -336,7 +337,9 @@ func (r *Reader) loadFile(path string) {
 }
 
 func (r *Reader) ExitIdentifier(ctx *IdentifierContext) {
-	ctx.SetResult(ctx.GetId().GetText())
+	text := ctx.GetId().GetText()
+	ctx.SetResult(names.ParseUsingCase(text))
+	ctx.SetText(text)
 }
 
 func (r *Reader) ExitEnumDecl(ctx *EnumDeclContext) {
@@ -533,7 +536,7 @@ func (r *Reader) ExitListTypeReference(ctx *ListTypeReferenceContext) {
 	}
 
 	// Try to find an existing list type, or else create a new one:
-	listName := elementName + words.List
+	listName := names.Cat(elementName, nomenclator.List)
 	listType := r.version.FindType(listName)
 	if listType == nil {
 		listType = concepts.NewType()
@@ -568,7 +571,7 @@ func (r *Reader) ExitMapTypeReference(ctx *MapTypeReferenceContext) {
 	}
 
 	// Try to find an existing map type, or else create a new one:
-	mapName := indexName + elementName + words.Map
+	mapName := names.Cat(indexName, elementName, nomenclator.Map)
 	mapType := r.version.FindType(mapName)
 	if mapType == nil {
 		mapType = concepts.NewType()
@@ -739,7 +742,7 @@ func (r *Reader) ExitLocatorDecl(ctx *LocatorDeclContext) {
 	if len(membersCtxs) > 0 {
 		for _, memberCtx := range membersCtxs {
 			switch member := memberCtx.GetResult().(type) {
-			case string:
+			case *names.Name:
 				locator.SetVariable(true)
 			case *concepts.Resource:
 				locator.SetTarget(member)
@@ -904,42 +907,51 @@ func (r *Reader) ExitAnnotationParameter(ctx *AnnotationParameterContext) {
 }
 
 func (r *Reader) isUndefinedType(typ *concepts.Type) bool {
-	_, ok := r.undefinedTypes[typ.Name()]
+	key := typ.Name().String()
+	_, ok := r.undefinedTypes[key]
 	return ok
 }
 
 func (r *Reader) addUndefinedType(typ *concepts.Type) {
-	r.undefinedTypes[typ.Name()] = typ
+	key := typ.Name().String()
+	r.undefinedTypes[key] = typ
 }
 
 func (r *Reader) removeUndefinedType(typ *concepts.Type) {
-	delete(r.undefinedTypes, typ.Name())
+	key := typ.Name().String()
+	delete(r.undefinedTypes, key)
 }
 
 func (r *Reader) isUndefinedResource(resource *concepts.Resource) bool {
-	_, ok := r.undefinedResources[resource.Name()]
+	key := resource.Name().String()
+	_, ok := r.undefinedResources[key]
 	return ok
 }
 
 func (r *Reader) addUndefinedResource(resource *concepts.Resource) {
-	r.undefinedResources[resource.Name()] = resource
+	key := resource.Name().String()
+	r.undefinedResources[key] = resource
 }
 
-func (r *Reader) removeUndefinedResource(resource *concepts.Resource) {
-	delete(r.undefinedResources, resource.Name())
+func (r *Reader) removeUndefinedResource(typ *concepts.Resource) {
+	key := typ.Name().String()
+	delete(r.undefinedResources, key)
 }
 
 func (r *Reader) isUndefinedError(err *concepts.Error) bool {
-	_, ok := r.undefinedErrors[err.Name()]
+	key := err.Name().String()
+	_, ok := r.undefinedErrors[key]
 	return ok
 }
 
 func (r *Reader) addUndefinedError(err *concepts.Error) {
-	r.undefinedErrors[err.Name()] = err
+	key := err.Name().String()
+	r.undefinedErrors[key] = err
 }
 
-func (r *Reader) removeUndefinedError(err *concepts.Error) {
-	delete(r.undefinedErrors, err.Name())
+func (r *Reader) removeUndefinedError(typ *concepts.Error) {
+	key := typ.Name().String()
+	delete(r.undefinedErrors, key)
 }
 
 // comments stores the line comments that haven't yet been converted into documentation comments:

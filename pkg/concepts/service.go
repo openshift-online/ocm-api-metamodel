@@ -18,7 +18,8 @@ package concepts
 
 import (
 	"sort"
-	"strings"
+
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // Service is the representation of service, containing potentiall mutiple versions, for example the
@@ -66,14 +67,17 @@ func (s *Service) Versions() VersionSlice {
 }
 
 // FindVersion returns the version with the given name, or nil of there is no such version.
-func (s *Service) FindVersion(name string) *Version {
-	return s.versions[name]
+func (s *Service) FindVersion(name *names.Name) *Version {
+	if name == nil {
+		return nil
+	}
+	return s.versions[name.String()]
 }
 
 // AddVersion adds the given version to the service.
 func (s *Service) AddVersion(version *Version) {
 	if version != nil {
-		s.versions[version.Name()] = version
+		s.versions[version.Name().String()] = version
 		version.SetOwner(s)
 	}
 }
@@ -95,7 +99,7 @@ func (s ServiceSlice) Len() int {
 }
 
 func (s ServiceSlice) Less(i, j int) bool {
-	return strings.Compare(s[i].name, s[j].name) == -1
+	return names.Compare(s[i].name, s[j].name) == -1
 }
 
 func (s ServiceSlice) Swap(i, j int) {
