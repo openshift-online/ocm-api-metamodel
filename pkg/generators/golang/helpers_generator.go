@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/words"
 )
 
 // HelpersGeneratorBuilder is an object used to configure and build a helpers generator. Don't
@@ -304,5 +304,5 @@ func (g *HelpersGenerator) Run() error {
 }
 
 func (g *HelpersGenerator) helpersFile() string {
-	return g.names.File(words.Helpers)
+	return g.names.File(nomenclator.Helpers)
 }

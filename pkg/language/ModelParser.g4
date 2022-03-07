@@ -24,6 +24,7 @@ options {
 @header {
   import (
     "github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+    "github.com/openshift-online/ocm-api-metamodel/pkg/names"
   )
 }
 
@@ -150,7 +151,7 @@ locatorTargetDecl returns[result: *concepts.Resource]:
   'target' reference = resourceReference
 ;
 
-locatorVariableDecl returns[result: string]:
+locatorVariableDecl returns[result: *names.Name]:
   'variable' name = identifier
 ;
 
@@ -204,6 +205,6 @@ stringLiteral returns[result: string]:
   STRING_LITERAL
 ;
 
-identifier returns[result: string]:
+identifier returns[result: *names.Name, text: string]:
   id = IDENTIFIER
 ;

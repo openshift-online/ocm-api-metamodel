@@ -20,21 +20,21 @@ struct AccessReviewResponse {
 	Allowed Boolean
 
 	// Defines the username of the account of which access is being reviewed
-	AccountUsername String
+	AccountUsername string
 
 	// Indicates the action, one of: [get,list,create,delete,update]
-	Action String
+	Action string
 
 	// Indicates which Organization the resource type belongs to
-	OrganizationID String
+	OrganizationID string
 
 	// Indicates which Cluster the resource type belongs to
-	ClusterID String
+	ClusterID string
 
 	// Indicates which Subscription the resource type belongs to
-	SubscriptionID String
+	SubscriptionID string
 
 	// Indicates the type of the resource an action would be taken on.
 	// See uhc-account-manager/openapi/openapi.yaml for a list of possible values
-	ResourceType String
+	ResourceType string
 }

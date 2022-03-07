@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 Red Hat, Inc.
+Copyright (c) 2022 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,30 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This file contains functions used to determine the case of strings.
-
-package names
+package golang
 
 import (
-	"unicode"
+	"fmt"
+
+	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 )
 
-// isLower checks if all the runes of the given string are lower case.
-func isLower(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLower(r) {
-			return false
-		}
+// goName checks if the given concept as a `go` annotation. If it has it then it returns the value
+// of the `name` parameter. It returns an empty string if there is no such annotation or parameter.
+func goName(concept concepts.Annotated) string {
+	annotation := concept.GetAnnotation("go")
+	if annotation == nil {
+		return ""
 	}
-	return true
-}
-
-// isUpper checks if all the runes of the given string are upper case or digits.
-func isUpper(s string) bool {
-	for _, r := range s {
-		if !unicode.IsUpper(r) && !unicode.IsDigit(r) {
-			return false
-		}
+	name := annotation.FindParameter("name")
+	if name == nil {
+		return ""
 	}
-	return true
+	return fmt.Sprintf("%s", name)
 }

@@ -183,8 +183,8 @@ func (g *OpenAPIGenerator) generateSpecSource(version *concepts.Version) {
 
 func (g *OpenAPIGenerator) generateInfo(version *concepts.Version) {
 	g.buffer.StartObject("info")
-	g.buffer.Field("version", version.Name())
-	g.buffer.Field("title", version.Owner().Name())
+	g.buffer.Field("version", version.Name().String())
+	g.buffer.Field("title", version.Owner().Name().String())
 	g.buffer.StartObject("license")
 	g.buffer.Field("name", "Apache 2.0")
 	g.buffer.Field("url", "http://www.apache.org/licenses/LICENSE-2.0")

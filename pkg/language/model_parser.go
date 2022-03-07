@@ -11,6 +11,7 @@ import (
 
 import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
 // Suppress unused import errors
@@ -4604,10 +4605,10 @@ type ILocatorVariableDeclContext interface {
 	SetName(IIdentifierContext)
 
 	// GetResult returns the result attribute.
-	GetResult() string
+	GetResult() *names.Name
 
 	// SetResult sets the result attribute.
-	SetResult(string)
+	SetResult(*names.Name)
 
 	// IsLocatorVariableDeclContext differentiates from other interfaces.
 	IsLocatorVariableDeclContext()
@@ -4616,7 +4617,7 @@ type ILocatorVariableDeclContext interface {
 type LocatorVariableDeclContext struct {
 	*antlr.BaseParserRuleContext
 	parser antlr.Parser
-	result string
+	result *names.Name
 	name   IIdentifierContext
 }
 
@@ -4646,9 +4647,9 @@ func (s *LocatorVariableDeclContext) GetName() IIdentifierContext { return s.nam
 
 func (s *LocatorVariableDeclContext) SetName(v IIdentifierContext) { s.name = v }
 
-func (s *LocatorVariableDeclContext) GetResult() string { return s.result }
+func (s *LocatorVariableDeclContext) GetResult() *names.Name { return s.result }
 
-func (s *LocatorVariableDeclContext) SetResult(v string) { s.result = v }
+func (s *LocatorVariableDeclContext) SetResult(v *names.Name) { s.result = v }
 
 func (s *LocatorVariableDeclContext) VARIABLE() antlr.TerminalNode {
 	return s.GetToken(ModelParserVARIABLE, 0)
@@ -6355,10 +6356,16 @@ type IIdentifierContext interface {
 	SetId(antlr.Token)
 
 	// GetResult returns the result attribute.
-	GetResult() string
+	GetResult() *names.Name
+
+	// GetText returns the text attribute.
+	GetText() string
 
 	// SetResult sets the result attribute.
-	SetResult(string)
+	SetResult(*names.Name)
+
+	// SetText sets the text attribute.
+	SetText(string)
 
 	// IsIdentifierContext differentiates from other interfaces.
 	IsIdentifierContext()
@@ -6367,7 +6374,8 @@ type IIdentifierContext interface {
 type IdentifierContext struct {
 	*antlr.BaseParserRuleContext
 	parser antlr.Parser
-	result string
+	result *names.Name
+	text   string
 	id     antlr.Token
 }
 
@@ -6397,9 +6405,13 @@ func (s *IdentifierContext) GetId() antlr.Token { return s.id }
 
 func (s *IdentifierContext) SetId(v antlr.Token) { s.id = v }
 
-func (s *IdentifierContext) GetResult() string { return s.result }
+func (s *IdentifierContext) GetResult() *names.Name { return s.result }
 
-func (s *IdentifierContext) SetResult(v string) { s.result = v }
+func (s *IdentifierContext) GetText() string { return s.text }
+
+func (s *IdentifierContext) SetResult(v *names.Name) { s.result = v }
+
+func (s *IdentifierContext) SetText(v string) { s.text = v }
 
 func (s *IdentifierContext) IDENTIFIER() antlr.TerminalNode {
 	return s.GetToken(ModelParserIDENTIFIER, 0)

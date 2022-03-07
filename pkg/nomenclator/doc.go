@@ -14,30 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This file contains functions used to determine the case of strings.
-
-package names
-
-import (
-	"unicode"
-)
-
-// isLower checks if all the runes of the given string are lower case.
-func isLower(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLower(r) {
-			return false
-		}
-	}
-	return true
-}
-
-// isUpper checks if all the runes of the given string are upper case or digits.
-func isUpper(s string) bool {
-	for _, r := range s {
-		if !unicode.IsUpper(r) && !unicode.IsDigit(r) {
-			return false
-		}
-	}
-	return true
-}
+// Package nomenclator contains some names that are frequently used in the project, so that they
+// don't have to be created repeatedly.
+package nomenclator
