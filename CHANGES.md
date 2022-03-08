@@ -3,6 +3,14 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.52 Mar 8 2020
+
+- Add support for annotations.
+- Add `@json` and `@http` annotations.
+- Add `@go` annotation.
+- Add original text to names.
+- Add `Impersonate` method to support the `Impersonate-User` header.
+
 ## 0.0.51 Feb 3 2022
 
 - Check for `io.EOF` before trying to parse response body.
