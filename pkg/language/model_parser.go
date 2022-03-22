@@ -10,8 +10,8 @@ import (
 )
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 )
 
 // Suppress unused import errors

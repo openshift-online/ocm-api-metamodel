@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 )
 
 // Builder contains the data and logic needed to create a new reporter. Don't create instances of

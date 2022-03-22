@@ -17,7 +17,7 @@ limitations under the License.
 package language
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

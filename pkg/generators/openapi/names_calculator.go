@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // NamesCalculatorBuilder is an object used to configure and build the OpenAPI names calculators.

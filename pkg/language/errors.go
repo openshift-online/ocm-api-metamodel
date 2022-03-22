@@ -24,7 +24,7 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // ErrorListenerBuilder is used to build error listeners.

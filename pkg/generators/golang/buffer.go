@@ -27,7 +27,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // BufferBuilder is used to create a new Go buffer. Don't create it directly, use the

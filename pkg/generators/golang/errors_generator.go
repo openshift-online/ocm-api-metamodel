@@ -19,10 +19,10 @@ package golang
 import (
 	"fmt"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // ErrorsGeneratorBuilder is an object used to configure and build an errors generator. Don't create
@@ -176,7 +176,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	g.buffer.Import("io", "")
 	g.buffer.Import("strings", "")
 	g.buffer.Import("github.com/golang/glog", "")
-	g.buffer.Import("github.com/openshift-online/ocm-api-metamodel/pkg/runtime", "")
+	g.buffer.Import("github.com/openshift-online/ocm-api-metamodel/v2/pkg/runtime", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		// Error kind is the name of the type used to represent errors.

@@ -1,4 +1,4 @@
-module github.com/openshift-online/ocm-api-metamodel
+module github.com/openshift-online/ocm-api-metamodel/v2
 
 go 1.17
 

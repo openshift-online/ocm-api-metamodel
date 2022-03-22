@@ -19,7 +19,7 @@ package concepts
 import (
 	"sort"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 )
 
 // Model is the representation of the set of services, each with a set of versions.
