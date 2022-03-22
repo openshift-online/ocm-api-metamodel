@@ -228,22 +228,6 @@ func run(cmd *cobra.Command, argv []string) {
 	}
 	gens = append(gens, gen)
 
-	// Create the resource generator:
-	gen, err = golang.NewServersGenerator().
-		Reporter(reporter).
-		Model(model).
-		Output(args.output).
-		Packages(goPackagesCalculator).
-		Names(goNamesCalculator).
-		Types(goTypesCalculator).
-		Binding(bindingCalculator).
-		Build()
-	if err != nil {
-		reporter.Errorf("Can't create servers generator: %v", err)
-		os.Exit(1)
-	}
-	gens = append(gens, gen)
-
 	// Create the JSON support generator:
 	gen, err = golang.NewJSONSupportGenerator().
 		Reporter(reporter).

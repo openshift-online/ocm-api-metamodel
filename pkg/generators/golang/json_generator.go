@@ -809,19 +809,15 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("parameterFieldName", g.parameterFieldName).
 		Function("parameterFieldTag", g.binding.ParameterName).
-		Function("readRequestFunc", g.readRequestFunc).
 		Function("readResponseFunc", g.readResponseFunc).
 		Function("readTypeFunc", g.readTypeFunc).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
 		Function("requestQueryParameters", g.binding.RequestQueryParameters).
 		Function("responseBodyParameters", g.binding.ResponseParameters).
-		Function("serverRequestName", g.serverRequestName).
-		Function("serverResponseName", g.serverResponseName).
 		Function("structName", g.types.StructName).
 		Function("unmarshalTypeFunc", g.unmarshalTypeFunc).
 		Function("valueReference", g.types.ValueReference).
 		Function("writeRequestFunc", g.writeRequestFunc).
-		Function("writeResponseFunc", g.writeResponseFunc).
 		Function("writeTypeFunc", g.writeTypeFunc).
 		Build()
 	if err != nil {
@@ -871,20 +867,6 @@ func (g *JSONSupportGenerator) generateAddMethodSource(method *concepts.Method) 
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			var err error
-			{{ if $requestQueryParameters }}
-				query := r.URL.Query()
-				{{ range $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			request.body, err = {{ unmarshalTypeFunc .Body.Type }}(r.Body)
-			return err
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			return {{ marshalTypeFunc .Body.Type }}(request.body, writer)
 		}
@@ -893,10 +875,6 @@ func (g *JSONSupportGenerator) generateAddMethodSource(method *concepts.Method) 
 			var err error
 			response.body, err = {{ unmarshalTypeFunc .Body.Type }}(reader)
 			return err
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			return {{ marshalTypeFunc .Body.Type }}(response.body, w)
 		}
 		`,
 		"Method", method,
@@ -908,28 +886,11 @@ func (g *JSONSupportGenerator) generateDeleteMethodSource(method *concepts.Metho
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			{{ if $requestQueryParameters }}
-				var err error
-				query := r.URL.Query()
-				{{ range $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			return nil
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			return nil
 		}
 
 		func {{ readResponseFunc .Method }}(response *{{ clientResponseName .Method }}, reader io.Reader) error {
-			return nil
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
 			return nil
 		}
 		`,
@@ -945,19 +906,6 @@ func (g *JSONSupportGenerator) generateGetMethodSource(method *concepts.Method) 
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			{{ if $requestQueryParameters }}
-				var err error
-				query := r.URL.Query()
-				{{ range $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			return nil
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			return nil
 		}
@@ -966,10 +914,6 @@ func (g *JSONSupportGenerator) generateGetMethodSource(method *concepts.Method) 
 			var err error
 			response.body, err = {{ unmarshalTypeFunc .Body.Type }}(reader)
 			return err
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			return {{ marshalTypeFunc .Body.Type }}(response.body, w)
 		}
 		`,
 		"Method", method,
@@ -1004,19 +948,6 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			{{ if $requestQueryParameters }}
-				var err error
-				query := r.URL.Query()
-				{{ range $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			return nil
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			return nil
 		}
@@ -1057,45 +988,6 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 			}
 			return iterator.Error
 		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(response.status)
-			stream := helpers.NewStream(w)
-			stream.WriteObjectStart()
-			stream.WriteObjectField("kind")
-			count := 1
-			stream.WriteString({{ structName .Items.Type }}Kind)
-			if response.items != nil && response.items.href != "" {
-				stream.WriteMore()
-				stream.WriteObjectField("href")
-				stream.WriteString(response.items.href)
-				count++
-			}
-			{{ if .Page }}
-				{{ generateWriteBodyParameter "response" .Page }}
-			{{ end }}
-			{{ if .Size }}
-				{{ generateWriteBodyParameter "response" .Size }}
-			{{ end }}
-			{{ if .Total }}
-				{{ generateWriteBodyParameter "response" .Total }}
-			{{ end }}
-			{{ range .Other }}
-				{{ if .Out }}
-					{{ generateWriteBodyParameter "response" . }}
-				{{ end }}
-			{{ end }}
-			if response.items != nil {
-				{{ generateWriteBodyParameter "response.items" .Items }}
-			}
-			stream.WriteObjectEnd()
-			err := stream.Flush()
-			if err != nil {
-				return err
-			}
-			return stream.Error
-		}
 		`,
 		"Version", method.Owner().Owner(),
 		"Method", method,
@@ -1125,16 +1017,6 @@ func (g *JSONSupportGenerator) generatePostMethodSource(method *concepts.Method)
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			{{ if .Request }}
-				var err error
-				request.{{ parameterFieldName .Request }}, err = {{ unmarshalTypeFunc .Request.Type }}(r) 
-				return err
-			{{ else }}
-				return nil
-			{{ end }}
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			{{ if .Request }}
 				return {{ marshalTypeFunc .Request.Type }}(request.{{ parameterFieldName .Request }}, writer)
@@ -1148,14 +1030,6 @@ func (g *JSONSupportGenerator) generatePostMethodSource(method *concepts.Method)
 				var err error
 				response.{{ parameterFieldName .Response }}, err = {{ unmarshalTypeFunc .Response.Type }}(reader)
 				return err
-			{{ else }}
-				return nil
-			{{ end }}
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			{{ if .Response }}
-				return {{ marshalTypeFunc .Response.Type }}(response.{{ parameterFieldName .Response }}, w)
 			{{ else }}
 				return nil
 			{{ end }}
@@ -1197,33 +1071,6 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			var err error
-			{{ if $requestQueryParameters }}
-				query := r.URL.Query()
-				{{ if .Page }}
-					{{ generateReadQueryParameter .Page }}
-				{{ end }}
-				{{ if .Size }}
-					{{ generateReadQueryParameter .Size }}
-				{{ end }}
-				{{ range .Other }}
-					{{ if .Out }}
-						{{ generateReadQueryParameter . }}
-					{{ end }}
-				{{ end }}
-			{{ end }}
-			{{ if .Body }}
-				request.{{ parameterFieldName .Body }}, err = {{ unmarshalTypeFunc .Body.Type }}(r)
-				if err != nil {
-					return err
-				}
-			{{ end }}
-			return nil
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			{{ if .Body }}
 				return {{ marshalTypeFunc .Body.Type }}(request.{{ parameterFieldName .Body }}, writer)
@@ -1268,45 +1115,6 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 			}
 			return iterator.Error
 		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(response.status)
-			stream := helpers.NewStream(w)
-			stream.WriteObjectStart()
-			stream.WriteObjectField("kind")
-			count := 1
-			stream.WriteString({{ structName .Items.Type }}Kind)
-			if response.items != nil && response.items.href != "" {
-				stream.WriteMore()
-				stream.WriteObjectField("href")
-				stream.WriteString(response.items.href)
-				count++
-			}
-			{{ if .Page }}
-				{{ generateWriteBodyParameter "response" .Page }}
-			{{ end }}
-			{{ if .Size }}
-				{{ generateWriteBodyParameter "response" .Size }}
-			{{ end }}
-			{{ if .Total }}
-				{{ generateWriteBodyParameter "response" .Total }}
-			{{ end }}
-			{{ range .Other }}
-				{{ if .Out }}
-					{{ generateWriteBodyParameter "response" . }}
-				{{ end }}
-			{{ end }}
-			if response.items != nil {
-				{{ generateWriteBodyParameter "response.items" .Items }}
-			}
-			stream.WriteObjectEnd()
-			err := stream.Flush()
-			if err != nil {
-				return err
-			}
-			return stream.Error
-		}
 		`,
 		"Version", method.Owner().Owner(),
 		"Method", method,
@@ -1327,20 +1135,6 @@ func (g *JSONSupportGenerator) generateUpdateMethodSource(method *concepts.Metho
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ serverRequestName .Method }}, r *http.Request) error {
-			var err error
-			{{ if $requestQueryParameters }}
-				query := r.URL.Query()
-				{{ range $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			request.body, err = {{ unmarshalTypeFunc .Body.Type }}(r.Body)
-			return err
-		}
-
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			return {{ marshalTypeFunc .Body.Type }}(request.body, writer)
 		}
@@ -1349,10 +1143,6 @@ func (g *JSONSupportGenerator) generateUpdateMethodSource(method *concepts.Metho
 			var err error
 			response.body, err = {{ unmarshalTypeFunc .Body.Type }}(reader)
 			return err
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ serverResponseName .Method }}, w http.ResponseWriter) error {
-			return {{ marshalTypeFunc .Body.Type }}(response.body, w)
 		}
 		`,
 		"Method", method,
@@ -1365,44 +1155,7 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $requestBodyParameters := requestBodyParameters .Method }}
-		{{ $requestQueryParameters := requestQueryParameters .Method }}
 		{{ $responseBodyParameters := responseBodyParameters .Method }}
-		{{ $serverRequestName := serverRequestName .Method }}
-		{{ $serverResponseName := serverResponseName .Method }}
-
-		func {{ readRequestFunc .Method }}(request *{{ $serverRequestName }}, r *http.Request) error {
-			{{ if $requestQueryParameters }}
-				var err error
-				query := r.URL.Query()
-				{{ range  $requestQueryParameters }}
-					{{ generateReadQueryParameter . }}
-				{{ end }}
-			{{ end }}
-			{{ if $requestBodyParameters }}
-				iterator, err := helpers.NewIterator(r.Body)
-				if err != nil {
-					return err
-				}
-				for {
-					field := iterator.ReadObject()
-					if field == "" {
-						break
-					}
-					switch field {
-					{{ range $requestBodyParameters }}
-						{{ generateReadBodyParameter "request" . }}
-					{{ end }}
-					default:
-						iterator.ReadAny()
-					}
-				}
-				err = iterator.Error
-				if err != nil {
-					return err
-				}
-			{{ end }}
-			return nil
-		}
 
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			{{ if $requestBodyParameters }} 
@@ -1443,25 +1196,6 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 					}
 				}
 				return iterator.Error
-			{{ else }}
-				return nil
-			{{ end }}
-		}
-
-		func {{ writeResponseFunc .Method }}(response *{{ $serverResponseName }}, w http.ResponseWriter) error {
-			{{ if $responseBodyParameters }} 
-				count := 0
-				stream := helpers.NewStream(w)
-				stream.WriteObjectStart()
-				{{ range $responseBodyParameters }}
-					{{ generateWriteBodyParameter "response" . }}
-				{{ end }}
-				stream.WriteObjectEnd()
-				err := stream.Flush()
-				if err != nil {
-					return err
-				}
-				return stream.Error
 			{{ else }}
 				return nil
 			{{ end }}
@@ -1770,29 +1504,6 @@ func (g *JSONSupportGenerator) clientRequestName(method *concepts.Method) string
 	return name
 }
 
-func (g *JSONSupportGenerator) serverRequestName(method *concepts.Method) string {
-	resource := method.Owner()
-	var name string
-	if resource.IsRoot() {
-		name = goName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := goName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := goName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
-	}
-	name += "ServerRequest"
-	return name
-}
-
 func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) string {
 	resource := method.Owner()
 	var name string
@@ -1813,29 +1524,6 @@ func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) strin
 		name = resourceName + methodName
 	}
 	name += "Response"
-	return name
-}
-
-func (g *JSONSupportGenerator) serverResponseName(method *concepts.Method) string {
-	resource := method.Owner()
-	var name string
-	if resource.IsRoot() {
-		name = goName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := goName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := goName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
-	}
-	name += "ServerResponse"
 	return name
 }
 
@@ -1871,46 +1559,6 @@ func (g *JSONSupportGenerator) readResponseFunc(method *concepts.Method) string 
 	} else {
 		name = names.Cat(
 			nomenclator.Read,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Response,
-		)
-	}
-	return g.names.Private(name)
-}
-
-func (g *JSONSupportGenerator) readRequestFunc(method *concepts.Method) string {
-	resource := method.Owner()
-	var name *names.Name
-	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Read,
-			method.Name(),
-			nomenclator.Request,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Read,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Request,
-		)
-	}
-	return g.names.Private(name)
-}
-
-func (g *JSONSupportGenerator) writeResponseFunc(method *concepts.Method) string {
-	resource := method.Owner()
-	var name *names.Name
-	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Write,
-			method.Name(),
-			nomenclator.Response,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Write,
 			resource.Name(),
 			method.Name(),
 			nomenclator.Response,
