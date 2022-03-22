@@ -179,7 +179,8 @@ var _ = Describe("Marshal", func() {
 			Reason("My reason").
 			OperationID("456").
 			Details(map[string]interface{}{
-				"kind": "cluster error"}).
+				"kind": "cluster error",
+			}).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 		buffer := new(bytes.Buffer)

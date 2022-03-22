@@ -1,11 +1,11 @@
 module github.com/openshift-online/ocm-api-metamodel/v2
 
-go 1.17
+go 1.18
 
 require (
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211106181442-e4c1a74c66bd
 	github.com/json-iterator/go v1.1.12
-	github.com/onsi/ginkgo/v2 v2.0.0
+	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.17.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
