@@ -48,7 +48,7 @@ var _ = Describe("Poll", func() {
 		ctx := context.Background()
 		_, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -56,7 +56,7 @@ var _ = Describe("Poll", func() {
 		client := cmv1.NewClusterClient(transport, "")
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -65,7 +65,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(0).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -74,7 +74,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		_, err := client.Poll().
 			Interval(-1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -89,7 +89,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 		status := response.Status()
@@ -113,7 +113,7 @@ var _ = Describe("Poll", func() {
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
 			Status(http.StatusNotFound).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 		status := response.Status()
 		Expect(status).To(Equal(http.StatusNotFound))
@@ -142,7 +142,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		status := response.Status()
 		Expect(status).To(Equal(http.StatusOK))
@@ -170,7 +170,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		status := response.Status()
 		Expect(status).To(Equal(http.StatusOK))
@@ -196,7 +196,7 @@ var _ = Describe("Poll", func() {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		response, err := client.Poll().
 			Interval(1 * time.Millisecond).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).To(HaveOccurred())
 		Expect(ctx.Err()).ToNot(BeNil())
 		Expect(response).To(BeNil())
@@ -217,7 +217,7 @@ var _ = Describe("Poll", func() {
 			Predicate(func(response *cmv1.ClusterGetResponse) bool {
 				return response.Body().State() == cmv1.ClusterStateReady
 			}).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		status := response.Status()
 		Expect(status).To(Equal(http.StatusOK))
@@ -250,7 +250,7 @@ var _ = Describe("Poll", func() {
 			Predicate(func(response *cmv1.ClusterGetResponse) bool {
 				return response.Body().State() == cmv1.ClusterStateReady
 			}).
-			StartContext(ctx)
+			Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		status := response.Status()
 		Expect(status).To(Equal(http.StatusOK))

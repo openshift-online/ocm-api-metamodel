@@ -342,15 +342,7 @@ func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts
 		}
 
 		// Send sends the metadata request, waits for the response, and returns it.
-		//
-		// This is a potentially lengthy operation, as it requires network communication.
-		// Consider using a context and the SendContext method.
-		func (r *MetadataRequest) Send() (result *MetadataResponse, err error) {
-			return r.SendContext(context.Background())
-		}
-
-		// SendContext sends the metadata request, waits for the response, and returns it.
-		func (r *MetadataRequest) SendContext(ctx context.Context) (result *MetadataResponse, err error) {
+		func (r *MetadataRequest) Send(ctx context.Context) (result *MetadataResponse, err error) {
 			query := helpers.CopyQuery(r.query)
 			header := helpers.CopyHeader(r.header)
 			uri := &url.URL{
@@ -656,13 +648,13 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 			return r
 		}
 
-		// StartContext starts the polling loop. Responses will be considered successful if the status is one of
+		// Start starts the polling loop. Responses will be considered successful if the status is one of
 		// the values specified with the Status method and if all the predicates specified with the Predicate
 		// method return nil.
 		//
 		// The context must have a timeout or deadline, otherwise this method will immediately return an error.
-		func (r *{{ $requestName }}) StartContext(ctx context.Context) (response *{{ $responseName }}, err error) {
-			result, err := helpers.PollContext(ctx, r.interval, r.statuses, r.predicates, r.task)
+		func (r *{{ $requestName }}) Start(ctx context.Context) (response *{{ $responseName }}, err error) {
+			result, err := helpers.Poll(ctx, r.interval, r.statuses, r.predicates, r.task)
 			if result != nil {
 				response = &{{ $responseName }}{
 					response: result.(*{{ $methodResponseName }}),
@@ -674,7 +666,7 @@ func (g *ClientsGenerator) generatePollMethodSource(resource *concepts.Resource,
 		// task adapts the types of the request/response types so that they can be used with the generic
 		// polling function from the helpers package.
 		func (r *{{ $requestName }}) task(ctx context.Context) (status int, result interface{}, err error) {
-			response, err := r.request.SendContext(ctx)
+			response, err := r.request.Send(ctx)
 			if response != nil {
 				status = response.Status()
 				result = response
@@ -828,15 +820,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 		{{ end }}
 
 		// Send sends this request, waits for the response, and returns it.
-		//
-		// This is a potentially lengthy operation, as it requires network communication.
-		// Consider using a context and the SendContext method.
-		func (r *{{ $requestName }}) Send() (result *{{ $responseName }}, err error) {
-			return r.SendContext(context.Background())
-		}
-
-		// SendContext sends this request, waits for the response, and returns it.
-		func (r *{{ $requestName }}) SendContext(ctx context.Context) (result *{{ $responseName }}, err error) {
+		func (r *{{ $requestName }}) Send(ctx context.Context) (result *{{ $responseName }}, err error) {
 			query := helpers.CopyQuery(r.query)
 			{{ range $requestQueryParameters }}
 				{{ $fieldName := fieldName . }}
