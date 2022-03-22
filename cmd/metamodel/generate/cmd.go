@@ -19,9 +19,9 @@ package generate
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-online/ocm-api-metamodel/cmd/metamodel/generate/docs"
-	"github.com/openshift-online/ocm-api-metamodel/cmd/metamodel/generate/golang"
-	"github.com/openshift-online/ocm-api-metamodel/cmd/metamodel/generate/openapi"
+	"github.com/openshift-online/ocm-api-metamodel/v2/cmd/metamodel/generate/docs"
+	"github.com/openshift-online/ocm-api-metamodel/v2/cmd/metamodel/generate/golang"
+	"github.com/openshift-online/ocm-api-metamodel/v2/cmd/metamodel/generate/openapi"
 )
 
 // Cmd is the definition of the command:

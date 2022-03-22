@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/markdown"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/markdown"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // DocsGeneratorBuilder is an object used to configure and build the builders generator. Don't

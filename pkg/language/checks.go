@@ -19,9 +19,9 @@ limitations under the License.
 package language
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/nomenclator"
 )
 
 func (r *Reader) checkModel() {

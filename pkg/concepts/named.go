@@ -16,7 +16,7 @@ limitations under the License.
 
 package concepts
 
-import "github.com/openshift-online/ocm-api-metamodel/pkg/names"
+import "github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 
 // namedSupport is an implementation of the names.Named interface intended to be embeded in other
 // types that need to implement that interface.

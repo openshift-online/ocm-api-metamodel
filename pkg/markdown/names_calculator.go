@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/reporter"
 )
 
 // NamesCalculatorBuilder is an object used to configure and build the Markdown names calculators.

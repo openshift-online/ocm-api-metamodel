@@ -19,7 +19,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
 )
 
 // goName checks if the given concept as a `go` annotation. If it has it then it returns the value

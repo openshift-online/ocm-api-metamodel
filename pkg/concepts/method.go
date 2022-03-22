@@ -19,8 +19,8 @@ package concepts
 import (
 	"sort"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/nomenclator"
 )
 
 // Method represents a method of a resource.

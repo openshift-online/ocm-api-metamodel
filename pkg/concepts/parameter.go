@@ -17,8 +17,8 @@ limitations under the License.
 package concepts
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
-	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/nomenclator"
 )
 
 // Parameter represents a parameter of a method.

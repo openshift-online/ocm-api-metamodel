@@ -19,7 +19,7 @@ package http
 import (
 	"fmt"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/concepts"
 )
 
 // httpName checks if the given concept has a `http` annotation. If it does then it returns the

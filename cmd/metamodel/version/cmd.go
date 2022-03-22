@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/info"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/info"
 )
 
 var Cmd = &cobra.Command{

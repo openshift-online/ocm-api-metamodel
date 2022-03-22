@@ -17,7 +17,7 @@ limitations under the License.
 package concepts
 
 import (
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 )
 
 // Attribute is the representation of an attribute of an structured type.

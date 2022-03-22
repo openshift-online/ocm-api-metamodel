@@ -19,7 +19,7 @@ package concepts
 import (
 	"sort"
 
-	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
+	"github.com/openshift-online/ocm-api-metamodel/v2/pkg/names"
 )
 
 // TypeKind specifies the kind of a type. It can be scalar, enum, struct, list or class.
