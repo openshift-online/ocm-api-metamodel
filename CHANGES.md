@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.54 Apr 1 2022
+
+- Remove generation of experimental server code.
+
 ## 0.0.53 Apr 1 2022
 
 - Don't consider `Status` and `Error` built-in request parameters.
