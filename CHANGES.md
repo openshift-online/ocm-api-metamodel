@@ -3,7 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
-## 0.0.52 Mar 8 2020
+## 0.0.53 Apr 1 2022
+
+- Don't consider `Status` and `Error` built-in request parameters.
+
+## 0.0.52 Mar 8 2022
 
 - Add support for annotations.
 - Add `@json` and `@http` annotations.
