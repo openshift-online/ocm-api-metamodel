@@ -1252,6 +1252,4 @@ var builtinGetters = map[string]interface{}{
 }
 
 var builtinSetters = map[string]interface{}{
-	"Error":  nil,
-	"Status": nil,
 }
