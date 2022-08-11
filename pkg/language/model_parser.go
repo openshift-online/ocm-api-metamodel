@@ -1273,9 +1273,7 @@ func (s *ClassDeclContext) Get_annotation() IAnnotationContext { return s._annot
 
 func (s *ClassDeclContext) GetName() IIdentifierContext { return s.name }
 
-func (s *ClassDeclContext) Get_structMemberDecl() IStructMemberDeclContext {
-	return s._structMemberDecl
-}
+func (s *ClassDeclContext) Get_structMemberDecl() IStructMemberDeclContext { return s._structMemberDecl }
 
 func (s *ClassDeclContext) Set_annotation(v IAnnotationContext) { s._annotation = v }
 
@@ -3675,9 +3673,7 @@ func (s *MethodParameterDeclContext) SetDflt(v ILiteralContext) { s.dflt = v }
 
 func (s *MethodParameterDeclContext) GetAnnotations() []IAnnotationContext { return s.annotations }
 
-func (s *MethodParameterDeclContext) GetDirections() []IParameterDirectionContext {
-	return s.directions
-}
+func (s *MethodParameterDeclContext) GetDirections() []IParameterDirectionContext { return s.directions }
 
 func (s *MethodParameterDeclContext) SetAnnotations(v []IAnnotationContext) { s.annotations = v }
 
@@ -5603,9 +5599,7 @@ func (s *AnnotationParametersContext) GetParameters() []IAnnotationParameterCont
 	return s.parameters
 }
 
-func (s *AnnotationParametersContext) SetParameters(v []IAnnotationParameterContext) {
-	s.parameters = v
-}
+func (s *AnnotationParametersContext) SetParameters(v []IAnnotationParameterContext) { s.parameters = v }
 
 func (s *AnnotationParametersContext) GetResult() map[string]interface{} { return s.result }
 

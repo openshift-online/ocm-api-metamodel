@@ -17,7 +17,6 @@ limitations under the License.
 package language
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +36,7 @@ func TestLanguage(t *testing.T) {
 // given in the list of pairs. It then reads those model files and returns the resulting model.
 func MakeModel(pairs ...string) *concepts.Model {
 	// Create a temporary directory for the model files:
-	root, err := ioutil.TempDir("", "model-*")
+	root, err := os.MkdirTemp("", "model-*")
 	Expect(err).ToNot(HaveOccurred())
 	defer func() {
 		err = os.RemoveAll(root)
@@ -56,7 +55,7 @@ func MakeModel(pairs ...string) *concepts.Model {
 			err = os.MkdirAll(dir, 0700)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		err = ioutil.WriteFile(path, []byte(data), 0600)
+		err = os.WriteFile(path, []byte(data), 0600)
 		Expect(err).ToNot(HaveOccurred())
 	}
 

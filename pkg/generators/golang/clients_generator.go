@@ -764,7 +764,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 	g.buffer.Import("bytes", "")
 	g.buffer.Import("context", "")
 	g.buffer.Import("io", "")
-	g.buffer.Import("io/ioutil", "")
+	g.buffer.Import("os", "")
 	g.buffer.Import("net/http", "")
 	g.buffer.Import("net/url", "")
 	g.buffer.Import(g.packages.ErrorsImport(), "")
@@ -862,7 +862,7 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 				URL:    uri,
 				Header: header,
 				{{ if $requestBodyParameters }}
-					Body: ioutil.NopCloser(buffer),
+					Body: io.NopCloser(buffer),
 				{{ end }}
 			}
 			if ctx != nil {
@@ -1251,5 +1251,4 @@ var builtinGetters = map[string]interface{}{
 	"Status": nil,
 }
 
-var builtinSetters = map[string]interface{}{
-}
+var builtinSetters = map[string]interface{}{}
