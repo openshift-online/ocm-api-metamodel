@@ -21,7 +21,6 @@ package golang
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -142,7 +141,7 @@ func (b *OpenAPIGeneratorBuilder) Build() (generator *OpenAPIGenerator, err erro
 // Run executes the code generator.
 func (g *OpenAPIGenerator) Run() error {
 	// Create a temporary directory to write the OpenAPI JSON to, and remember to delete it:
-	jsonDir, err := ioutil.TempDir("", "openapi")
+	jsonDir, err := os.MkdirTemp("", "openapi")
 	if err != nil {
 		return g.reporter.Errorf("Can't create temporary OpenAPI directory: %v", err)
 	}
@@ -200,7 +199,7 @@ func (g *OpenAPIGenerator) generateSpec(version *concepts.Version, jsonDir strin
 
 	// Read the JSON file that contains the previously generated OpenAPI specification:
 	jsonFile := filepath.Join(jsonDir, g.names.FileName(version))
-	jsonData, err := ioutil.ReadFile(jsonFile)
+	jsonData, err := os.ReadFile(jsonFile)
 	if err != nil {
 		return g.reporter.Errorf(
 			"Can't read JSON file '%s' for version '%s': %v",

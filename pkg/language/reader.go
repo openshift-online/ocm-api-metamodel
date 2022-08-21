@@ -184,7 +184,7 @@ func (r *Reader) loadModel(dir string) {
 	}
 
 	// List the services:
-	fileInfos, err := ioutil.ReadDir(dir)
+	fileInfos, err := os.ReadDir(dir)
 	if err != nil {
 		r.reporter.Errorf("Can't list model directory '%s': %v", dir, err)
 		return
@@ -231,7 +231,7 @@ func (r *Reader) loadService(dir string) {
 	}
 
 	// List the versions:
-	fileInfos, err := ioutil.ReadDir(dir)
+	fileInfos, err := os.ReadDir(dir)
 	if err != nil {
 		r.reporter.Errorf("Can't list service directory '%s': %v", dir, err)
 		return
