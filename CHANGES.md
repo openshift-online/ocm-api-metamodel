@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.55 Aug 21 2022
+
+- Replace deprecated APIs in ioutil with the alternatives.
+
 ## 0.0.54 Apr 1 2022
 
 - Remove generation of experimental server code.
