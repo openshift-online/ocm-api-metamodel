@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.56 Aug 21 2022
+
+- Update version field
+
 ## 0.0.55 Aug 21 2022
 
 - Replace deprecated APIs in ioutil with the alternatives.
