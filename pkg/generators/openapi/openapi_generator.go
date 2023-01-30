@@ -372,6 +372,7 @@ func (g *OpenAPIGenerator) generatePathParameter(locator *concepts.Locator) {
 	g.buffer.StartObject("schema")
 	g.buffer.Field("type", "string")
 	g.buffer.EndObject()
+	g.buffer.Field("required", true)
 	g.buffer.EndObject()
 }
 
@@ -630,7 +631,7 @@ func (g *OpenAPIGenerator) generateErrorSchema() {
 	g.buffer.StartObject("details")
 	g.generateDescription("Extra information about the error.")
 	g.buffer.Field("type", "object")
-	g.buffer.Field("additionalProperties", "true")
+	g.buffer.Field("additionalProperties", true)
 	g.buffer.EndObject()
 
 	g.buffer.EndObject()
