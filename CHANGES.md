@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.57 Jan 31 2023
+
+- additionalProperties: is boolean
+- path parameter "addon_id" must be required
+
 ## 0.0.56 Aug 21 2022
 
 - Update version field
