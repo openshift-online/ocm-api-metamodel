@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.58 May 18 2023
+
+- Honor `@json` annotation in OpenAPI generation.
+
 ## 0.0.57 Jan 31 2023
 
 - additionalProperties: is boolean
