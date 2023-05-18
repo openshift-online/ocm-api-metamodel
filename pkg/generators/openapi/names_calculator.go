@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
 )
@@ -80,7 +81,11 @@ func (c *NamesCalculator) SchemaName(typ *concepts.Type) string {
 
 // AttributePropertyName calculates the property name for an attribute of a struct type.
 func (c *NamesCalculator) AttributePropertyName(attribute *concepts.Attribute) string {
-	return attribute.Name().Snake()
+	name := annotations.JSONName(attribute)
+	if name == "" {
+		name = attribute.Name().Snake()
+	}
+	return name
 }
 
 // ParameterPropertyName calculates the property name for an parameter of a method.
