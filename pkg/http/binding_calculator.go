@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -182,7 +183,7 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 
 // AttributeName returns the field name corresponding to the given model attribute.
 func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string {
-	name := jsonName(attribute)
+	name := annotations.JSONName(attribute)
 	if name == "" {
 		name = attribute.Name().Snake()
 	}
@@ -192,7 +193,7 @@ func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string 
 // ParameterName returns the name of the field or query parameter corresponding to the given  model
 // method parameter.
 func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string {
-	name := jsonName(parameter)
+	name := annotations.JSONName(parameter)
 	if name == "" {
 		name = parameter.Name().Snake()
 	}
@@ -201,7 +202,7 @@ func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string 
 
 // ServiceSegment calculates the URL segment corresponding to the given service.
 func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
-	name := httpName(service)
+	name := annotations.HTTPName(service)
 	if name == "" {
 		name = service.Name().Snake()
 	}
@@ -210,7 +211,7 @@ func (c *BindingCalculator) ServiceSegment(service *concepts.Service) string {
 
 // VersionSegment calculates the URL segment corresponding to the given version.
 func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
-	name := httpName(version)
+	name := annotations.HTTPName(version)
 	if name == "" {
 		name = version.Name().Snake()
 	}
@@ -220,7 +221,7 @@ func (c *BindingCalculator) VersionSegment(version *concepts.Version) string {
 // LocatorSegment calculates the URL segment corresponding to the given method.
 func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 	if method.IsAction() {
-		name := httpName(method)
+		name := annotations.HTTPName(method)
 		if name == "" {
 			name = method.Name().Snake()
 		}
@@ -231,7 +232,7 @@ func (c *BindingCalculator) MethodSegment(method *concepts.Method) string {
 
 // LocatorSegment calculates the URL segment corresponding to the given locator.
 func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
-	name := httpName(locator)
+	name := annotations.HTTPName(locator)
 	if name == "" {
 		name = locator.Name().Snake()
 	}
@@ -240,7 +241,7 @@ func (c *BindingCalculator) LocatorSegment(locator *concepts.Locator) string {
 
 // EnumValueName returns the name corresponding to a value of an enumerated type.
 func (c *BindingCalculator) EnumValueName(value *concepts.EnumValue) string {
-	name := jsonName(value)
+	name := annotations.JSONName(value)
 	if name == "" {
 		name = value.Name().Snake()
 	}

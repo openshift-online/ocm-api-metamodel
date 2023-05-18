@@ -19,6 +19,7 @@ package golang
 import (
 	"fmt"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -1008,7 +1009,7 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 }
 
 func (g *ClientsGenerator) versionName(version *concepts.Version) string {
-	name := goName(version)
+	name := annotations.GoName(version)
 	if name == "" {
 		name = g.names.Public(version.Name())
 	}
@@ -1024,7 +1025,7 @@ func (g *ClientsGenerator) resourceFile(resource *concepts.Resource) string {
 }
 
 func (g *ClientsGenerator) enumName(typ *concepts.Type) string {
-	name := goName(typ)
+	name := annotations.GoName(typ)
 	if name == "" {
 		name = g.names.Public(typ.Name())
 	}
@@ -1056,7 +1057,7 @@ func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *TypeReferen
 }
 
 func (g *ClientsGenerator) getterName(parameter *concepts.Parameter) string {
-	name := goName(parameter)
+	name := annotations.GoName(parameter)
 	if name == "" {
 		name = g.names.Public(parameter.Name())
 	}
@@ -1069,7 +1070,7 @@ func (g *ClientsGenerator) getterType(parameter *concepts.Parameter) *TypeRefere
 }
 
 func (g *ClientsGenerator) setterName(parameter *concepts.Parameter) string {
-	name := goName(parameter)
+	name := annotations.GoName(parameter)
 	if name == "" {
 		name = g.names.Public(parameter.Name())
 	}
@@ -1102,7 +1103,7 @@ func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *TypeRefe
 }
 
 func (g *ClientsGenerator) locatorName(locator *concepts.Locator) string {
-	name := goName(locator)
+	name := annotations.GoName(locator)
 	if name == "" {
 		name = g.names.Public(locator.Name())
 	}
@@ -1110,7 +1111,7 @@ func (g *ClientsGenerator) locatorName(locator *concepts.Locator) string {
 }
 
 func (g *ClientsGenerator) methodName(method *concepts.Method) string {
-	name := goName(method)
+	name := annotations.GoName(method)
 	if name == "" {
 		name = g.names.Public(method.Name())
 	}
@@ -1120,7 +1121,7 @@ func (g *ClientsGenerator) methodName(method *concepts.Method) string {
 func (g *ClientsGenerator) clientName(resource *concepts.Resource) string {
 	var name string
 	if !resource.IsRoot() {
-		name = goName(resource)
+		name = annotations.GoName(resource)
 		if name == "" {
 			name = g.names.Public(resource.Name())
 		}
@@ -1133,16 +1134,16 @@ func (g *ClientsGenerator) requestName(method *concepts.Method) string {
 	resource := method.Owner()
 	var name string
 	if resource.IsRoot() {
-		name = goName(method)
+		name = annotations.GoName(method)
 		if name == "" {
 			name = g.names.Public(method.Name())
 		}
 	} else {
-		resourceName := goName(resource)
+		resourceName := annotations.GoName(resource)
 		if resourceName == "" {
 			resourceName = g.names.Public(resource.Name())
 		}
-		methodName := goName(method)
+		methodName := annotations.GoName(method)
 		if methodName == "" {
 			methodName = g.names.Public(method.Name())
 		}
@@ -1156,16 +1157,16 @@ func (g *ClientsGenerator) responseName(method *concepts.Method) string {
 	resource := method.Owner()
 	var name string
 	if resource.IsRoot() {
-		name = goName(method)
+		name = annotations.GoName(method)
 		if name == "" {
 			name = g.names.Public(method.Name())
 		}
 	} else {
-		resourceName := goName(resource)
+		resourceName := annotations.GoName(resource)
 		if resourceName == "" {
 			resourceName = g.names.Public(resource.Name())
 		}
-		methodName := goName(method)
+		methodName := annotations.GoName(method)
 		if methodName == "" {
 			methodName = g.names.Public(method.Name())
 		}
@@ -1176,7 +1177,7 @@ func (g *ClientsGenerator) responseName(method *concepts.Method) string {
 }
 
 func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
-	name := goName(resource)
+	name := annotations.GoName(resource)
 	if name == "" {
 		name = g.names.Public(resource.Name())
 	}
@@ -1185,7 +1186,7 @@ func (g *ClientsGenerator) pollRequestName(resource *concepts.Resource) string {
 }
 
 func (g *ClientsGenerator) pollResponseName(resource *concepts.Resource) string {
-	name := goName(resource)
+	name := annotations.GoName(resource)
 	if name == "" {
 		name = g.names.Public(resource.Name())
 	}

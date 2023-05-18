@@ -19,6 +19,7 @@ package golang
 import (
 	"fmt"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -558,13 +559,13 @@ func (g *BuildersGenerator) objectName(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsStruct():
-		name = goName(typ)
+		name = annotations.GoName(typ)
 		if name == "" {
 			name = g.names.Public(typ.Name())
 		}
 	case typ.IsList():
 		element := typ.Element()
-		name = goName(element)
+		name = annotations.GoName(element)
 		if name == "" {
 			name = g.names.Public(element.Name())
 		}
@@ -582,14 +583,14 @@ func (g *BuildersGenerator) builderName(typ *concepts.Type) string {
 	var name string
 	switch {
 	case typ.IsStruct():
-		name = goName(typ)
+		name = annotations.GoName(typ)
 		if name == "" {
 			name = g.names.Public(typ.Name())
 		}
 		name += "Builder"
 	case typ.IsList():
 		element := typ.Element()
-		name = goName(element)
+		name = annotations.GoName(element)
 		if name == "" {
 			name = g.names.Public(element.Name())
 		}
@@ -610,13 +611,13 @@ func (g *BuildersGenerator) builderCtor(typ *concepts.Type) string {
 	switch {
 	case typ.IsList():
 		element := typ.Element()
-		name = goName(element)
+		name = annotations.GoName(element)
 		if name == "" {
 			name = g.names.Public(element.Name())
 		}
 		name += "List"
 	case typ.IsStruct():
-		name = goName(typ)
+		name = annotations.GoName(typ)
 		if name == "" {
 			name = g.names.Public(typ.Name())
 		}
@@ -685,7 +686,7 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
-	name := goName(attribute)
+	name := annotations.GoName(attribute)
 	if name == "" {
 		name = g.names.Public(attribute.Name())
 	}

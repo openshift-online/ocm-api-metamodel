@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -1446,7 +1447,7 @@ func (g *JSONSupportGenerator) resourceFile(resource *concepts.Resource) string 
 }
 
 func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
-	name := goName(typ)
+	name := annotations.GoName(typ)
 	if name == "" {
 		name = g.names.Public(typ.Name())
 	}
@@ -1460,7 +1461,7 @@ func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
 }
 
 func (g *JSONSupportGenerator) unmarshalTypeFunc(typ *concepts.Type) string {
-	name := goName(typ)
+	name := annotations.GoName(typ)
 	if name == "" {
 		name = g.names.Public(typ.Name())
 	}
@@ -1485,16 +1486,16 @@ func (g *JSONSupportGenerator) clientRequestName(method *concepts.Method) string
 	resource := method.Owner()
 	var name string
 	if resource.IsRoot() {
-		name = goName(method)
+		name = annotations.GoName(method)
 		if name == "" {
 			name = g.names.Public(method.Name())
 		}
 	} else {
-		resourceName := goName(resource)
+		resourceName := annotations.GoName(resource)
 		if resourceName == "" {
 			resourceName = g.names.Public(resource.Name())
 		}
-		methodName := goName(method)
+		methodName := annotations.GoName(method)
 		if methodName == "" {
 			methodName = g.names.Public(method.Name())
 		}
@@ -1508,16 +1509,16 @@ func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) strin
 	resource := method.Owner()
 	var name string
 	if resource.IsRoot() {
-		name = goName(method)
+		name = annotations.GoName(method)
 		if name == "" {
 			name = g.names.Public(method.Name())
 		}
 	} else {
-		resourceName := goName(resource)
+		resourceName := annotations.GoName(resource)
 		if resourceName == "" {
 			resourceName = g.names.Public(resource.Name())
 		}
-		methodName := goName(method)
+		methodName := annotations.GoName(method)
 		if methodName == "" {
 			methodName = g.names.Public(method.Name())
 		}
