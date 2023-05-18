@@ -19,6 +19,7 @@ package golang
 import (
 	"fmt"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -607,7 +608,7 @@ func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReferenc
 }
 
 func (g *TypesGenerator) objectName(typ *concepts.Type) string {
-	name := goName(typ)
+	name := annotations.GoName(typ)
 	if name == "" {
 		name = g.names.Public(typ.Name())
 	}
@@ -615,11 +616,11 @@ func (g *TypesGenerator) objectName(typ *concepts.Type) string {
 }
 
 func (g *TypesGenerator) valueName(value *concepts.EnumValue) string {
-	typeName := goName(value.Type())
+	typeName := annotations.GoName(value.Type())
 	if typeName == "" {
 		typeName = g.names.Public(value.Type().Name())
 	}
-	valueName := goName(value)
+	valueName := annotations.GoName(value)
 	if valueName == "" {
 		valueName = g.names.Public(value.Name())
 	}
@@ -631,7 +632,7 @@ func (g *TypesGenerator) valueTag(value *concepts.EnumValue) string {
 }
 
 func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
-	name := goName(attribute)
+	name := annotations.GoName(attribute)
 	if name == "" {
 		name = g.names.Public(attribute.Name())
 	}
@@ -666,7 +667,7 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference
 }
 
 func (g *TypesGenerator) listName(typ *concepts.Type) string {
-	typeName := goName(typ)
+	typeName := annotations.GoName(typ)
 	if typeName == "" {
 		typeName = g.names.Public(typ.Name())
 	}

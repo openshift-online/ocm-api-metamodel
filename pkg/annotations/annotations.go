@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package http
+package annotations
 
 import (
 	"fmt"
@@ -22,9 +22,9 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 )
 
-// httpName checks if the given concept has a `http` annotation. If it does then it returns the
+// HTTPName checks if the given concept has a `http` annotation. If it does then it returns the
 // value of the `name` parameter. If it doesn't, it returns an empty string.
-func httpName(concept concepts.Annotated) string {
+func HTTPName(concept concepts.Annotated) string {
 	annotation := concept.GetAnnotation("http")
 	if annotation == nil {
 		return ""
@@ -36,10 +36,24 @@ func httpName(concept concepts.Annotated) string {
 	return fmt.Sprintf("%s", name)
 }
 
-// jsonName checks if the given concept has a `json` annotation. If it does then it returns the
+// JSONName checks if the given concept has a `json` annotation. If it does then it returns the
 // value of the `name` parameter. If it doesn't, it returns an empty string.
-func jsonName(concept concepts.Annotated) string {
+func JSONName(concept concepts.Annotated) string {
 	annotation := concept.GetAnnotation("json")
+	if annotation == nil {
+		return ""
+	}
+	name := annotation.FindParameter("name")
+	if name == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s", name)
+}
+
+// GoName checks if the given concept as a `go` annotation. If it has it then it returns the value
+// of the `name` parameter. It returns an empty string if there is no such annotation or parameter.
+func GoName(concept concepts.Annotated) string {
+	annotation := concept.GetAnnotation("go")
 	if annotation == nil {
 		return ""
 	}

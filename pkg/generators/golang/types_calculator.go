@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -137,7 +138,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 		element := typ.Element()
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(element)
-		ref.name = goName(element)
+		ref.name = annotations.GoName(element)
 		if ref.name == "" {
 			ref.name = c.names.Public(element.Name())
 		}
@@ -146,7 +147,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
+		ref.name = annotations.GoName(typ)
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
@@ -199,7 +200,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsEnum():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
+		ref.name = annotations.GoName(typ)
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
@@ -227,7 +228,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
+		ref.name = annotations.GoName(typ)
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
@@ -276,7 +277,7 @@ func (c *TypesCalculator) ListReference(typ *concepts.Type) *TypeReference {
 	element := typ.Element()
 	ref := &TypeReference{}
 	ref.imprt, ref.selector = c.Package(element)
-	ref.name = goName(element)
+	ref.name = annotations.GoName(element)
 	if ref.name == "" {
 		ref.name = c.names.Public(element.Name())
 	}
@@ -359,7 +360,7 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
-		ref.name = goName(typ)
+		ref.name = annotations.GoName(typ)
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
@@ -369,7 +370,7 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 		element := typ.Element()
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(element)
-		ref.name = goName(element)
+		ref.name = annotations.GoName(element)
 		if ref.name == "" {
 			ref.name = c.names.Public(element.Name())
 		}
