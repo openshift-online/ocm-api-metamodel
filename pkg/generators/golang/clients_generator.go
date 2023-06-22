@@ -452,7 +452,7 @@ func (g *ClientsGenerator) generateResourceClient(resource *concepts.Resource) e
 		Function("locatorSegment", g.binding.LocatorSegment).
 		Function("methodName", g.methodName).
 		Function("methodSegment", g.binding.MethodSegment).
-		Function("parameterName", g.binding.ParameterName).
+		Function("parameterName", g.binding.QueryParameterName).
 		Function("pollRequestName", g.pollRequestName).
 		Function("pollResponseName", g.pollResponseName).
 		Function("readResponseFunc", g.readResponseFunc).

@@ -809,7 +809,7 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 		Function("generateWriteValue", g.generateWriteValue).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("parameterFieldName", g.parameterFieldName).
-		Function("parameterFieldTag", g.binding.ParameterName).
+		Function("parameterQueryName", g.binding.QueryParameterName).
 		Function("readResponseFunc", g.readResponseFunc).
 		Function("readTypeFunc", g.readTypeFunc).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
@@ -1216,11 +1216,11 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 		return ""
 	}
 	field := g.parameterFieldName(parameter)
-	tag := g.binding.ParameterName(parameter)
+	tag := g.binding.QueryParameterName(parameter)
 	kind := typ.Name().Camel()
 	return g.buffer.Eval(`
 		{{ $field := parameterFieldName .Parameter }}
-		{{ $tag := parameterFieldTag .Parameter }}
+		{{ $tag := parameterQueryName .Parameter }}
 		{{ $kind := .Parameter.Type.Name.Camel }}
 
 		request.{{ $field }}, err = helpers.Parse{{ $kind }}(query, "{{ $tag }}")
@@ -1243,7 +1243,7 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 func (g *JSONSupportGenerator) generateReadBodyParameter(object string, parameter *concepts.
 	Parameter) string {
 	field := g.parameterFieldName(parameter)
-	tag := g.binding.ParameterName(parameter)
+	tag := g.binding.BodyParameterName(parameter)
 	typ := parameter.Type()
 	return g.buffer.Eval(`
 		case "{{ .Tag }}":
@@ -1336,7 +1336,7 @@ func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
 	parameter *concepts.Parameter) string {
 	typ := parameter.Type()
 	field := g.parameterFieldName(parameter)
-	tag := g.binding.ParameterName(parameter)
+	tag := g.binding.BodyParameterName(parameter)
 	var value string
 	if typ.IsScalar() && !typ.IsInterface() {
 		value = g.buffer.Eval(

@@ -527,4 +527,90 @@ var _ = Describe("Client", func() {
 		Expect(response.Status()).To(Equal(http.StatusNoContent))
 		Expect(response.Body()).To(BeNil())
 	})
+
+	It("Honors @http in query parameter", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyFormKV("dryRun", "true"),
+				RespondWith(http.StatusOK, `{}`),
+			),
+		)
+
+		// Prepare the body:
+		body, err := cmv1.NewCluster().
+			Name("my").
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		response, err := client.Add().
+			DryRun(true).
+			Body(body).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+	})
+
+	It("Honors @http in path segment", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyRequest(
+					http.MethodPost,
+					"/api/clusters_mgmt/v1/clusters/my_test",
+				),
+				RespondWith(http.StatusOK, `{}`),
+			),
+		)
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		response, err := client.TestAnnotations().Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+	})
+
+	It("Honors @json and ignores @http in request body parameter", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				VerifyJSON(`{
+					"my_json": true
+				}`),
+				RespondWith(http.StatusOK, `{}`),
+			),
+		)
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		response, err := client.TestAnnotations().
+			My(true).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+	})
+
+	It("Honors @json and ignores @http in response body parameter", func() {
+		// Prepare the server:
+		server.AppendHandlers(
+			CombineHandlers(
+				RespondWith(http.StatusOK, `{
+					"my_json": true
+				}`),
+			),
+		)
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		response, err := client.TestAnnotations().
+			My(true).
+			Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+		value, ok := response.GetMy()
+		Expect(ok).To(BeTrue())
+		Expect(value).To(BeTrue())
+	})
 })
