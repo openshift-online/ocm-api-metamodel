@@ -378,7 +378,7 @@ func (g *OpenAPIGenerator) generatePathParameter(locator *concepts.Locator) {
 
 func (g *OpenAPIGenerator) generateQueryParameter(parameter *concepts.Parameter) {
 	g.buffer.StartObject()
-	g.buffer.Field("name", g.binding.ParameterName(parameter))
+	g.buffer.Field("name", g.binding.QueryParameterName(parameter))
 	g.generateDescription(parameter.Doc())
 	g.buffer.Field("in", "query")
 	g.buffer.StartObject("schema")

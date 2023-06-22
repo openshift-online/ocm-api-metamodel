@@ -190,9 +190,27 @@ func (c *BindingCalculator) AttributeName(attribute *concepts.Attribute) string 
 	return name
 }
 
-// ParameterName returns the name of the field or query parameter corresponding to the given  model
+// QueryParameterName returns the name of the query parameter corresponding to the given model
 // method parameter.
-func (c *BindingCalculator) ParameterName(parameter *concepts.Parameter) string {
+func (c *BindingCalculator) QueryParameterName(parameter *concepts.Parameter) string {
+	name := annotations.HTTPName(parameter)
+	if name == "" {
+		// We check also the JSON annotation here for "bug compatibility". In the past we
+		// used to check only the JSON name, but that is incorrect because this is about
+		// HTTP query parameters, not JSON field names. But some models (the 'dryRun'
+		// parameter of the accounts management service, for example) are already using that
+		// bug as it was a feature.
+		name = annotations.JSONName(parameter)
+		if name == "" {
+			name = parameter.Name().Snake()
+		}
+	}
+	return name
+}
+
+// BodyParameterName returns the name of the body field corresponding to the given  model method
+// parameter.
+func (c *BindingCalculator) BodyParameterName(parameter *concepts.Parameter) string {
 	name := annotations.JSONName(parameter)
 	if name == "" {
 		name = parameter.Name().Snake()
