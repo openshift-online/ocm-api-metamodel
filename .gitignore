@@ -7,3 +7,6 @@
 /model/
 /openapi_generator
 /tests/*/generated/
+
+# Local bin directory
+bin
