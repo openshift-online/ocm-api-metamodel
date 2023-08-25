@@ -17,6 +17,14 @@
 # Disable CGO so that we always generate static binaries:
 export CGO_ENABLED=0
 
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
+LOCAL_BIN_PATH := $(PROJECT_PATH)/bin
+# Add the project-level bin directory into PATH. Needed in order
+# for `go generate` to use project-level bin directory binaries first
+export PATH := $(LOCAL_BIN_PATH):$(PATH)
+GINKGO := $(LOCAL_BIN_PATH)/ginkgo
+
 # Details of the version of 'antlr' to use:
 antlr_version:=4.9.3
 antlr_url:=https://www.antlr.org/download/antlr-$(antlr_version)-complete.jar
@@ -43,6 +51,14 @@ antlr:
 	wget --progress=dot:giga --output-document="$@" "$(antlr_url)"
 	echo "$(antlr_sum) $@" | sha256sum --check
 
+.PHONY: ginkgo_install
+ginkgo_install:
+	@GOBIN=$(LOCAL_BIN_PATH) go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3
+
+.PHONY: goimports_install
+goimports_install:
+	@GOBIN=$(LOCAL_BIN_PATH) go install golang.org/x/tools/cmd/goimports@v0.0.0-20200518194103-259583f2d8a9
+
 .PHONY: fmt
 fmt:
 	gofmt -s -l -w \
@@ -59,20 +75,20 @@ test tests:
 	$(MAKE) docs_tests
 
 .PHONY: unit_tests
-unit_tests:
-	ginkgo -r pkg
+unit_tests: ginkgo_install
+	$(GINKGO) -r pkg
 
 .PHONY: golang_tests
-go_tests: binary
+go_tests: binary ginkgo_install goimports_install
 	rm -rf tests/go/generated
 	./metamodel generate go \
 		--model=tests/model \
 		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/generated \
 		--output=tests/go/generated
-	cd tests/go && ginkgo -r
+	cd tests/go && $(GINKGO) -r
 
 .PHONY: openapi_tests
-openapi_tests: openapi_generator
+openapi_tests: openapi_generator binary
 	rm -rf tests/openapi/generated
 	./metamodel generate openapi --model=tests/model --output=tests/openapi/generated
 	for spec in $$(find tests/openapi -name '*.json'); do \
@@ -84,7 +100,7 @@ openapi_generator:
 	echo "$(openapi_generator_sum) $@" | sha256sum --check
 
 .PHONY: docs_tests
-docs_tests:
+docs_tests: binary
 	rm -rf tests/docs/generated
 	./metamodel generate docs --model=tests/model --output=tests/docs/generated
 
@@ -93,8 +109,8 @@ clean:
 	rm -rf \
 		.gobin \
 		antlr \
-		metamodel \
 		model \
+		bin \
 		openapi_generator \
 		tests/*/generated \
 		$(NULL)
