@@ -935,7 +935,11 @@ func (g *ClientsGenerator) generateResponseSource(method *concepts.Method) {
 			header http.Header
 			err    *errors.Error
 			{{ range $responseParameters }}
-				{{ fieldName . }} {{ fieldType . }}
+				{{ if and .Type.IsList .Type.Element.IsScalar }}
+					{{ fieldName . }} []{{ valueType .Type.Element }}
+				{{ else }}
+					{{ fieldName . }} {{ fieldType . }}
+				{{ end }}
 			{{ end }}
 		}
 
@@ -1086,6 +1090,8 @@ func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *TypeRefe
 	var ref *TypeReference
 	typ := parameter.Type()
 	switch {
+	case typ.IsList() && typ.Element().IsScalar():
+		ref = g.types.NullableReference(typ)
 	case parameter.IsItems():
 		ref = g.types.ListReference(typ)
 	case typ.IsScalar():
