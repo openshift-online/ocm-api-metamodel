@@ -613,4 +613,28 @@ var _ = Describe("Client", func() {
 		Expect(ok).To(BeTrue())
 		Expect(value).To(BeTrue())
 	})
+
+	It("Can get a resource list with scalar items", func() {
+		server.AppendHandlers(RespondWith(http.StatusOK, `{
+		  "kind": "LoadBalancerQuotaValueList",
+		  "size": 5,
+		  "page": 1,
+		  "total": 5,
+		  "items": [
+			 1,
+			 2,
+			 3,
+			 4,
+			 5
+		  ]
+		}
+		`))
+		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
+		response, err := client.LoadBalancerQuotaValues().List().Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+		items := response.Items()
+		Expect(items).ToNot(BeNil())
+		Expect(items[0]).To(Equal(1))
+	})
 })

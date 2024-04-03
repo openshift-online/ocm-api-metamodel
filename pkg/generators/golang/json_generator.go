@@ -979,10 +979,14 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 					{{ end }}
 				{{ end }}
 				case "items":
-					{{ generateReadValue "items" .Items.Type false }}
+				{{ generateReadValue "items" .Items.Type false }}
+				{{ if and .Items.Type.IsList .Items.Type.Element.IsScalar }}
+					response.items = items
+				{{ else }}
 					response.items = &{{ structName .Items.Type }}{
 						items: items,
 					}
+				{{ end }}
 				default:
 					iterator.ReadAny()
 				}
@@ -1107,9 +1111,13 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 				{{ end }}
 				case "items":
 					{{ generateReadValue "items" .Items.Type false }}
-					response.items = &{{ structName .Items.Type }}{
-						items: items,
-					}
+					{{ if and .Items.Type.IsList .Items.Type.Element.IsScalar }}
+						response.items = items
+					{{ else }}
+						response.items = &{{ structName .Items.Type }}{
+							items: items,
+						}
+					{{ end }}
 				default:
 					iterator.ReadAny()
 				}

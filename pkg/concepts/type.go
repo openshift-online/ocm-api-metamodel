@@ -158,6 +158,9 @@ func (t *Type) IsMap() bool {
 // IsScalar returns true iff this type is an scalar type. Note that interface types are also considered
 // scalar types due to their opaque nature in the SDK.
 func (t *Type) IsScalar() bool {
+	if t == nil {
+		return false
+	}
 	return t.kind == ScalarType || t.kind == EnumType || t.kind == InterfaceType
 }
 
