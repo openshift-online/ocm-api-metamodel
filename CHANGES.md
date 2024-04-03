@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.60 Apr 03 2024
+
+- Add capability of list resource with a scalar items.
+
 ## 0.0.59 Jun 22 2023
 
 - Honor `@json` annotation in query parameters.
