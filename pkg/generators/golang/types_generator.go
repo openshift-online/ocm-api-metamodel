@@ -456,8 +456,10 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// {{ $listName }} is a list of values of the '{{ .Type.Name }}' type.
 		type {{ $listName }} struct {
-			href  string
-			link  bool
+			{{ if .Type.IsClass }}
+				href  string
+				link  bool
+			{{ end }}
 			items []*{{ $objectName }}
 		}
 

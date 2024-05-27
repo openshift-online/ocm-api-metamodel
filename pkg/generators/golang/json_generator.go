@@ -1306,11 +1306,13 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 						break
 					}
 					switch field {
-					case "kind":
-						text := iterator.ReadString()
-						{{ .Variable }}.link = text == {{ $structName }}LinkKind
-					case "href":
-						{{ .Variable }}.href = iterator.ReadString()
+					{{ if .Type.IsClass }}
+						case "kind":
+							text := iterator.ReadString()
+							{{ .Variable }}.link = text == {{ $structName }}LinkKind
+						case "href":
+							{{ .Variable }}.href = iterator.ReadString()
+					{{ end }}
 					case "items":
 						{{ .Variable }}.items = {{ readTypeFunc .Type }}(iterator)
 					default:
