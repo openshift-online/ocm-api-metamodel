@@ -86,6 +86,11 @@ func (m *Method) IsDelete() bool {
 	return m.name.Equals(nomenclator.Delete)
 }
 
+// IsAsyncDelete return true if this is an asynchronous add method.
+func (m *Method) IsAsyncDelete() bool {
+	return m.name.Equals(nomenclator.AsyncDelete)
+}
+
 // IsGet returns true if this is a get method.
 func (m *Method) IsGet() bool {
 	return m.name.Equals(nomenclator.Get)
@@ -111,12 +116,19 @@ func (m *Method) IsUpdate() bool {
 	return m.name.Equals(nomenclator.Update)
 }
 
+// IsAsyncUpdate returns true if this is an asynchronous update method.
+func (m *Method) IsAsyncUpdate() bool {
+	return m.name.Equals(nomenclator.AsyncUpdate)
+}
+
 // IsAction determined if this method is an action instead of a regular REST method.
 func (m *Method) IsAction() bool {
 	switch {
 	case m.IsAdd():
 		return false
 	case m.IsDelete():
+		return false
+	case m.IsAsyncDelete():
 		return false
 	case m.IsGet():
 		return false
@@ -127,6 +139,8 @@ func (m *Method) IsAction() bool {
 	case m.IsSearch():
 		return false
 	case m.IsUpdate():
+		return false
+	case m.IsAsyncUpdate():
 		return false
 	default:
 		return true

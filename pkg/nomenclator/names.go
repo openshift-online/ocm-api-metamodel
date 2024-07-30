@@ -22,9 +22,11 @@ import (
 
 var (
 	// A:
-	Adapt   = names.ParseUsingCase("Adapt")
-	Adapter = names.ParseUsingCase("Adapter")
-	Add     = names.ParseUsingCase("Add")
+	Adapt       = names.ParseUsingCase("Adapt")
+	Adapter     = names.ParseUsingCase("Adapter")
+	Add         = names.ParseUsingCase("Add")
+	AsyncDelete = names.ParseUsingCase("AsyncDelete")
+	AsyncUpdate = names.ParseUsingCase("AsyncUpdate")
 
 	// B:
 	Body    = names.ParseUsingCase("Body")
