@@ -385,10 +385,10 @@ func (g *DocsGenerator) httpMethod(method *concepts.Method) string {
 	if name.Equals(nomenclator.Add) {
 		return "POST"
 	}
-	if name.Equals(nomenclator.Update) {
+	if name.Equals(nomenclator.Update) || name.Equals(nomenclator.AsyncUpdate) {
 		return "PATCH"
 	}
-	if name.Equals(nomenclator.Delete) {
+	if name.Equals(nomenclator.Delete) || name.Equals(nomenclator.AsyncDelete) {
 		return "DELETE"
 	}
 	return "POST"
