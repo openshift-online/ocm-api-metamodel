@@ -175,6 +175,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
 	g.buffer.Import("strings", "")
+	g.buffer.Import("time", "")
 	g.buffer.Import("github.com/golang/glog", "")
 	g.buffer.Import("github.com/openshift-online/ocm-api-metamodel/pkg/runtime", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
@@ -195,6 +196,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			reason      string
 			details     interface{}
 			operationID string
+			timestamp   *time.Time
 		}
 
 		// Error represents errors.
@@ -207,6 +209,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			reason      string
 			details     interface{}
 			operationID string
+			timestamp   *time.Time
 		}
 
 		// NewError creates a new builder that can then be used to create error objects.
@@ -263,6 +266,13 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return b
 		}
 
+		// Timestamp sets the moment when it happened.
+		func (b *ErrorBuilder) Timestamp(value *time.Time) *ErrorBuilder {
+			b.timestamp = value
+			b.bitmap_ |= 128
+			return b
+		}
+
 		// Copy copies the attributes of the given error into this
 		// builder, discarding any previous values.
 		func (b *ErrorBuilder) Copy(object *Error) *ErrorBuilder {
@@ -277,6 +287,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			b.reason = object.reason
 			b.details = object.details
 			b.operationID = object.operationID
+			b.timestamp = object.timestamp
 			return b
 		}
 
@@ -290,6 +301,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				reason:      b.reason,
 				details:     b.details,
 				operationID: b.operationID,
+				timestamp:   b.timestamp,
 				bitmap_:     b.bitmap_,
 			}
 			return
@@ -429,6 +441,24 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			return
 		}
 
+		// Timestamp sets the moment when it happened
+		func (e *Error) Timestamp() *time.Time {
+			if e != nil && e.bitmap_&128 != 0 {
+				return e.timestamp
+			}
+			return nil
+		}
+
+		// GetTimestamp returns the timestamp of the error and a flag 
+		// indicating if the timestamp have a value.
+		func (e *Error) GetTimestamp() (value *time.Time, ok bool) {
+			ok = e != nil && e.bitmap_&128 != 0
+			if ok {
+				value = e.timestamp
+			}
+			return
+		}
+
 		// Error is the implementation of the error interface.
 		func (e *Error) Error() string {
 			chunks := make([]string, 0, 3)
@@ -521,6 +551,14 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				case "details":
 					object.details = iterator.ReadAny().GetInterface()
 					object.bitmap_ |= 64
+				case "timestamp":
+					text := iterator.ReadString()
+					value, err := time.Parse(time.RFC3339, text)
+					if err != nil {
+						iterator.ReportError("", err.Error())
+					}
+					object.timestamp = &value
+					object.bitmap_ |= 128
 				default:
 					iterator.ReadAny()
 				}
@@ -577,6 +615,11 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 				stream.WriteMore()
 				stream.WriteObjectField("details")
 				stream.WriteVal(e.details)
+			}
+			if e.bitmap_&128 != 0 {
+				stream.WriteMore()
+				stream.WriteObjectField("timestamp")
+				stream.WriteVal(e.timestamp)
 			}
 			stream.WriteObjectEnd()
 		}

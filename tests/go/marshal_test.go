@@ -20,6 +20,7 @@ package tests
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -172,6 +173,34 @@ var _ = Describe("Marshal", func() {
 	})
 
 	It("Can write an error", func() {
+		now := time.Now().UTC()
+		object, err := errors.NewError().
+			ID("401").
+			HREF("/api/clusters_mgmt/v1/errors/401").
+			Code("CLUSTERS-MGMT-401").
+			Reason("My reason").
+			OperationID("456").
+			Details(map[string]interface{}{
+				"kind": "cluster error"}).
+			Timestamp(&now).
+			Build()
+		Expect(err).ToNot(HaveOccurred())
+		buffer := new(bytes.Buffer)
+		err = errors.MarshalError(object, buffer)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buffer).To(MatchJSON(fmt.Sprintf(`{
+			"kind": "Error",
+			"id": "401",
+			"href": "/api/clusters_mgmt/v1/errors/401",
+			"code": "CLUSTERS-MGMT-401",
+			"reason": "My reason",
+			"operation_id": "456",
+			"details": {"kind" : "cluster error"},
+			"timestamp": "%v"
+		}`, now.Format(time.RFC3339Nano))))
+	})
+
+	It("Can write an error without timestamp", func() {
 		object, err := errors.NewError().
 			ID("401").
 			HREF("/api/clusters_mgmt/v1/errors/401").
