@@ -198,6 +198,10 @@ var _ = Describe("Marshal", func() {
 			"details": {"kind" : "cluster error"},
 			"timestamp": "%v"
 		}`, now.Format(time.RFC3339Nano))))
+		Expect(object.Error()).To(Equal(
+			fmt.Sprintf(
+				"identifier is '401', code is 'CLUSTERS-MGMT-401', at '%v' and operation identifier is '456': My reason",
+				now.Format(time.RFC3339))))
 	})
 
 	It("Can write an error without timestamp", func() {
@@ -223,6 +227,8 @@ var _ = Describe("Marshal", func() {
 			"operation_id": "456",
 			"details": {"kind" : "cluster error"}
 		}`))
+		Expect(object.Error()).To(Equal(
+			"identifier is '401', code is 'CLUSTERS-MGMT-401' and operation identifier is '456': My reason"))
 	})
 
 	It("Can write empty list of booleans", func() {

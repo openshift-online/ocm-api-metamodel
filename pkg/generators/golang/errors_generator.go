@@ -460,6 +460,7 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 		}
 
 		// Error is the implementation of the error interface.
+		// Details are intentionally left out as there is no guarantee of their type
 		func (e *Error) Error() string {
 			chunks := make([]string, 0, 3)
 			if e.bitmap_&1 != 0 {
@@ -470,6 +471,9 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 			}
 			if e.bitmap_&8 != 0 {
 				chunks = append(chunks, fmt.Sprintf("code is '%s'", e.code))
+			}
+			if e.bitmap_&128 != 0 {
+				chunks = append(chunks, fmt.Sprintf("at '%v'", e.timestamp.Format(time.RFC3339)))
 			}
 			if e.bitmap_&32 != 0 {
 				chunks = append(chunks, fmt.Sprintf("operation identifier is '%s'", e.operationID))
