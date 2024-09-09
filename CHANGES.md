@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.61 Sep 06 2024
+
+- Add timestamp to error generator
+
 ## 0.0.60 Apr 03 2024
 
 - Add capability of list resource with a scalar items.
