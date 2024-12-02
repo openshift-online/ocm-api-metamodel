@@ -520,8 +520,8 @@ func (r *Reader) checkParameter(parameter *concepts.Parameter) {
 		}
 		if typ != nil && typ != parameter.Type() {
 			r.reporter.Errorf(
-				"Type of default value of parameter '%s' should be '%s'",
-				parameter, parameter.Type(),
+				"Type of default value of parameter '%s' should be '%s', instead it was %s",
+				parameter, parameter.Type(), typ.Name().String(),
 			)
 		}
 	}
