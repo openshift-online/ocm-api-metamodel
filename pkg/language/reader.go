@@ -133,7 +133,7 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 	for _, service := range r.model.Services() {
 		for _, version := range service.Versions() {
 			for _, typ := range version.Types() {
-				if typ.Kind() != concepts.ListType {
+				if typ.Kind() != concepts.ListType && typ.Owner().Name() == version.Name() {
 					listName := names.Cat(typ.Name(), nomenclator.List)
 					listType := version.FindType(listName)
 					if listType == nil {
@@ -142,6 +142,10 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 						listType.SetName(listName)
 						listType.SetElement(typ)
 						version.AddType(listType)
+					} else {
+						// The list type was previously defined from a cross reference.
+						// we thus need to redefine it.
+						listType.SetOwner(version)
 					}
 				}
 			}
@@ -409,8 +413,16 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 		typ.SetKind(concepts.ClassType)
 		r.removeUndefinedType(typ)
 	} else {
-		r.reporter.Errorf("Type '%s' is already defined", name)
-		return
+		// we would like to override the owner of any previously defined types
+		// these might come from references.
+		// e.g.
+		//      @ref(name="/some/service/foo")
+		//      Class foo {
+		//         Bar Sometype
+		//      }
+		// some_type.model - an overriding decleration.
+		// Class SomeType {...}
+		typ.SetOwner(r.version)
 	}
 
 	// Add the documentation:
@@ -431,62 +443,60 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 	}
 
 	if path := annotations.ReferencePath(typ); path != "" {
-		if len(r.inputs) > 1 {
-			panic("refernced service with multiple inputs in undefined")
-		}
+		r.handleClassRef(typ, path)
+	}
+}
 
-		if r.service.Versions().Len() > 1 {
-			panic("cannot infer which version to add reference with multiple versions")
-		}
+func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
+	if len(r.inputs) > 1 {
+		panic("referenced service with multiple inputs in undefined")
+	}
 
-		input := r.inputs[0]
-		currVersion := r.service.Versions()[0]
-		path = strings.TrimPrefix(path, "/")
-		components := strings.Split(path, "/")
-		referencedServiceName := components[0]
-		referencedVersion := components[1]
-		referencedType := components[2]
+	input := r.inputs[0]
+	path = strings.TrimPrefix(path, "/")
+	components := strings.Split(path, "/")
+	referencedServiceName := components[0]
+	referencedVersion := components[1]
+	referencedTypeName := components[2]
 
-		// Create an ad-hoc reader and model for the specific referenced service.
-		refReader := NewReader().
-			Reporter(r.reporter)
-		refReader.model = concepts.NewModel()
+	// Create an ad-hoc reader and model for the specific referenced service.
+	refReader := NewReader().
+		Reporter(r.reporter)
+	refReader.model = concepts.NewModel()
 
-		// Initialize the indexes of undefined concepts:
-		refReader.undefinedTypes = make(map[string]*concepts.Type)
-		refReader.undefinedResources = make(map[string]*concepts.Resource)
-		refReader.undefinedErrors = make(map[string]*concepts.Error)
+	// Initialize the indexes of undefined concepts:
+	refReader.undefinedTypes = make(map[string]*concepts.Type)
+	refReader.undefinedResources = make(map[string]*concepts.Resource)
+	refReader.undefinedErrors = make(map[string]*concepts.Error)
 
-		// load the ad-hoc service and version referenced and find the correct type.
-		refReader.loadService(fmt.Sprintf("%s/%s", input, referencedServiceName))
-		refVersion := refReader.service.FindVersion(names.ParseUsingSeparator(referencedVersion, "_"))
-		// Once loading the service, we find the reference type
-		// then recursively iterate the type tree and add the types to the current version.
-		for _, currType := range refVersion.Types() {
-			if strings.Compare(currType.Name().String(), referencedType) == 0 {
-				r.recursivelyAddTypeToVersion(currVersion, currType)
-			}
+	// load the ad-hoc service and version referenced and find the correct type.
+	refReader.loadService(fmt.Sprintf("%s/%s", input, referencedServiceName))
+	refVersion := refReader.service.FindVersion(names.ParseUsingSeparator(referencedVersion, "_"))
+	// Once loading the service, we find the reference type
+	// then recursively iterate the type tree and add the types to the current version.
+	for _, referencedType := range refVersion.Types() {
+		if strings.Compare(referencedType.Name().String(), referencedTypeName) == 0 {
+			r.recursivelyAddTypeToVersion(typ, referencedType)
 		}
 	}
 }
 
 // A helper function to recursively add types to a version
-func (r *Reader) recursivelyAddTypeToVersion(version *concepts.Version, typ *concepts.Type) {
-	var attributesToRemove concepts.AttributeSlice
-	for _, attribute := range typ.Attributes() {
-		// We wish to define links explicitly and not inherint them
-		// only the attribute fields.
-		if version.FindType(attribute.Type().Name()) == nil && !attribute.Link() {
-			r.recursivelyAddTypeToVersion(version, attribute.Type())
-		}
+func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
+	referencedType *concepts.Type) {
+	for _, attribute := range referencedType.Attributes() {
 		if attribute.Link() {
-			attributesToRemove = append(attributesToRemove, attribute)
+			r.version.AddTypeWithoutOwner(attribute.Type())
+		}
+		if attribute.Type().IsList() || attribute.Type().IsMap() {
+			r.version.AddTypeWithoutOwner(attribute.Type())
+			r.version.AddTypeWithoutOwner(attribute.Type().Element())
+		}
+		if r.version.FindType(attribute.Type().Name()) == nil {
+			r.recursivelyAddTypeToVersion(currType, attribute.Type())
 		}
 	}
-	for _, attribute := range attributesToRemove {
-		typ.RemoveAttribute(attribute.Name())
-	}
-	version.AddType(typ)
+	r.version.AddType(referencedType)
 }
 
 func (r *Reader) ExitStructDecl(ctx *StructDeclContext) {

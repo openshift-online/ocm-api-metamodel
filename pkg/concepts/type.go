@@ -17,7 +17,6 @@ limitations under the License.
 package concepts
 
 import (
-	"log"
 	"sort"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -183,19 +182,6 @@ func (t *Type) AddAttribute(attribute *Attribute) {
 		t.attributes = append(t.attributes, attribute)
 		sort.Sort(t.attributes)
 		attribute.SetOwner(t)
-	}
-}
-
-// Remove attribute removes an attribute with a given name.
-func (t *Type) RemoveAttribute(name *names.Name) {
-	if name == nil {
-		return
-	}
-	for i, attribute := range t.attributes {
-		if attribute.Name().Equals(name) {
-			log.Printf("---------- Deleting attribute %s", name.String())
-			t.attributes = append(t.attributes[:i], t.attributes[i+1:]...)
-		}
 	}
 }
 
