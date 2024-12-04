@@ -796,67 +796,6 @@ func (r *Reader) ExitLocatorDecl(ctx *LocatorDeclContext) {
 	// Add the annotations:
 	r.addAnnotations(locator, ctx.GetAnnotations())
 
-	if path := annotations.ReferencePath(locator); path != "" {
-		if len(r.inputs) > 1 {
-			panic("refernced service with multiple inputs in undefined")
-		}
-
-		if r.service.Versions().Len() > 1 {
-			panic("cannot infer which version to add reference with multiple versions")
-		}
-
-		input := r.inputs[0]
-		currVersion := r.service.Versions()[0]
-		path = strings.TrimPrefix(path, "/")
-		components := strings.Split(path, "/")
-		referencedServiceName := components[0]
-		referencedVersion := components[1]
-		referencedLocator := components[2]
-
-		// Create an ad-hoc reader and model for the specific referenced service.
-		refReader := NewReader().
-			Reporter(r.reporter)
-		refReader.model = concepts.NewModel()
-
-		// Initialize the indexes of undefined concepts:
-		refReader.undefinedTypes = make(map[string]*concepts.Type)
-		refReader.undefinedResources = make(map[string]*concepts.Resource)
-		refReader.undefinedErrors = make(map[string]*concepts.Error)
-
-		// load the ad-hoc service and version referenced and find the correct locator.
-		refReader.loadService(fmt.Sprintf("%s/%s", input, referencedServiceName))
-		refVersion := refReader.service.FindVersion(names.ParseUsingSeparator(referencedVersion, "_"))
-		for _, currLocator := range refVersion.Root().Locators() {
-			if strings.Compare(currLocator.Name().String(), referencedLocator) == 0 {
-				for _, resource := range refVersion.Resources() {
-					if resource.IsRoot() {
-						// We do not need to copy over the root resource.
-						continue
-					}
-
-					// Add any underlying resource to the current version.
-					currVersion.AddResource(resource)
-					// Add underlying methods.
-					for _, method := range resource.Methods() {
-						currVersion.
-							FindResource(resource.Name()).
-							AddMethod(method)
-					}
-
-					// Remove any undefined resources as
-					// This is a no-op except for the reference target added
-					// by the locator as the compiler will attempt to compile it
-					r.removeUndefinedResource(resource)
-				}
-
-				currVersion.AddTypes(refVersion.Types())
-				locator = currLocator
-				ctx.SetResult(locator)
-				return
-			}
-		}
-	}
-
 	// Add the members:
 	membersCtxs := ctx.GetMembers()
 	if len(membersCtxs) > 0 {
