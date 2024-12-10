@@ -142,10 +142,6 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 						listType.SetName(listName)
 						listType.SetElement(typ)
 						version.AddType(listType)
-					} else {
-						// The list type was previously defined from a cross reference.
-						// we thus need to redefine it.
-						listType.SetOwner(version)
 					}
 				}
 			}
@@ -422,7 +418,11 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 		//      }
 		// some_type.model - an overriding decleration.
 		// Class SomeType {...}
-		typ.SetOwner(r.version)
+		r.version.AddType(typ)
+		listName := names.Cat(typ.Name(), nomenclator.List)
+		if listType := r.version.FindType(listName); listType != nil {
+			r.version.AddType(listType)
+		}
 	}
 
 	// Add the documentation:
@@ -451,7 +451,6 @@ func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
 	if len(r.inputs) > 1 {
 		panic("referenced service with multiple inputs in undefined")
 	}
-
 	input := r.inputs[0]
 	path = strings.TrimPrefix(path, "/")
 	components := strings.Split(path, "/")
@@ -474,25 +473,37 @@ func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
 	refVersion := refReader.service.FindVersion(names.ParseUsingSeparator(referencedVersion, "_"))
 	// Once loading the service, we find the reference type
 	// then recursively iterate the type tree and add the types to the current version.
-	for _, referencedType := range refVersion.Types() {
-		if strings.Compare(referencedType.Name().String(), referencedTypeName) == 0 {
-			r.recursivelyAddTypeToVersion(typ, referencedType)
-		}
+	if referencedType := refVersion.FindType(names.ParseUsingSeparator(referencedTypeName, "_")); referencedType != nil {
+		r.recursivelyAddTypeToVersion(typ, referencedType)
 	}
 }
 
 // A helper function to recursively add types to a version
 func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 	referencedType *concepts.Type) {
+	if referencedType.IsBasicType() {
+		return
+	}
 	for _, attribute := range referencedType.Attributes() {
 		if attribute.Link() {
-			r.version.AddTypeWithoutOwner(attribute.Type())
-		}
-		if attribute.Type().IsList() || attribute.Type().IsMap() {
-			r.version.AddTypeWithoutOwner(attribute.Type())
-			r.version.AddTypeWithoutOwner(attribute.Type().Element())
-		}
-		if r.version.FindType(attribute.Type().Name()) == nil {
+			if attribute.Type().IsList() {
+				if r.version.FindType(attribute.Type().Element().Name()) == nil {
+					r.version.AddTypeWithoutOwner(attribute.Type())
+					r.version.AddTypeWithoutOwner(attribute.Type().Element())
+				} else {
+					elementOwner := r.version.FindType(attribute.Type().Element().Name()).Owner()
+					if attribute.Type().Owner() != elementOwner {
+						attribute.Type().SetOwner(elementOwner)
+						attribute.Type().Element().SetOwner(elementOwner)
+					}
+				}
+			} else if r.version.FindType(attribute.Type().Name()) == nil {
+				r.version.AddTypeWithoutOwner(attribute.Type())
+			}
+		} else if attribute.Type().IsList() || attribute.Type().IsMap() {
+			r.version.AddType(attribute.Type())
+			r.recursivelyAddTypeToVersion(currType, attribute.Type().Element())
+		} else {
 			r.recursivelyAddTypeToVersion(currType, attribute.Type())
 		}
 	}

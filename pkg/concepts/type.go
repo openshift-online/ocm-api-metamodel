@@ -164,6 +164,14 @@ func (t *Type) IsScalar() bool {
 	return t.kind == ScalarType || t.kind == EnumType || t.kind == InterfaceType
 }
 
+func (t *Type) IsBasicType() bool {
+	if t == nil {
+		return false
+	}
+
+	return t.kind == ScalarType
+}
+
 // IsStruct returns true iff this type is an struct type. Note that class types are also considered
 // struct types.
 func (t *Type) IsStruct() bool {

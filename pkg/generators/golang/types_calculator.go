@@ -239,6 +239,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 			"Don't know how to calculate value reference for type '%s'",
 			typ,
 		)
+
 		ref = &TypeReference{}
 	}
 	return ref
