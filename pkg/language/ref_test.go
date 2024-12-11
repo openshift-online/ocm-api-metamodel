@@ -207,4 +207,188 @@ var _ = Describe("Read Model with ref annotation", func() {
 		barType := version.FindType(names.ParseUsingCase("Bar"))
 		Expect(barType.Owner().Name().String()).To(Equal("v1_alpha1"))
 	})
+
+	It("Overrides class with other class definition link attribute", func() {
+		model := MakeModel(
+			"my_service/v1_alpha1/root.model",
+			`
+			resource Root {
+			}
+			`,
+			"my_service/v1_alpha1/my_class.model",
+			`
+			@ref(path="other_service/v1/my_class")
+			class MyClass {
+			}
+			`,
+			"my_service/v1_alpha1/my_attribute.model",
+			`
+			@ref(path="other_service/v1/my_attribute")
+			class MyAttribute {
+			}
+			`,
+			"other_service/v1/root.model",
+			`
+			resource Root{
+			}
+			`,
+			"other_service/v1/my_class.model",
+			`
+			class MyClass {
+				link Foo []MyAttribute
+			}`,
+			"other_service/v1/my_attribute.model",
+			`
+			class MyAttribute{
+				link Goo Bar
+			}
+			`,
+			"other_service/v1/bar.model",
+			`
+			class Bar {
+			}
+			`,
+		)
+		// Check the attribute and its owner
+		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		Expect(service).ToNot(BeNil())
+		version := service.FindVersion(names.ParseUsingSeparator("v1_alpha1", "_"))
+		Expect(version).ToNot(BeNil())
+		class := version.FindType(names.ParseUsingCase("MyClass"))
+		Expect(class).ToNot(BeNil())
+		Expect(class.Owner().Name().String()).To(Equal("v1_alpha1"))
+		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
+		Expect(attributeList).ToNot(BeNil())
+		Expect(attributeList.Type().IsList()).To(BeTrue())
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
+		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
+		Expect(myAttributeType).ToNot(BeNil())
+		Expect(myAttributeType.Owner().Name().String()).To(Equal("v1_alpha1"))
+		barType := version.FindType(names.ParseUsingCase("Bar"))
+		// Referenced classes link doesn't change the owner
+		Expect(barType.Owner().Name().String()).To(Equal("v1"))
+	})
+
+	It("Overrides class with other class definition list attribute", func() {
+		model := MakeModel(
+			"my_service/v1_alpha1/root.model",
+			`
+			resource Root {
+			}
+			`,
+			"my_service/v1_alpha1/my_class.model",
+			`
+			@ref(path="other_service/v1/my_class")
+			class MyClass {
+			}
+			`,
+			"my_service/v1_alpha1/my_attribute.model",
+			`
+			@ref(path="other_service/v1/my_attribute")
+			class MyAttribute {
+			}
+			`,
+			"other_service/v1/root.model",
+			`
+			resource Root{
+			}
+			`,
+			"other_service/v1/my_class.model",
+			`
+			class MyClass {
+				link Foo []MyAttribute
+			}`,
+			"other_service/v1/my_attribute.model",
+			`
+			class MyAttribute{
+				Goo []Bar
+			}
+			`,
+			"other_service/v1/bar.model",
+			`
+			class Bar {
+			}
+			`,
+		)
+		// Check the attribute and its owner
+		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		Expect(service).ToNot(BeNil())
+		version := service.FindVersion(names.ParseUsingSeparator("v1_alpha1", "_"))
+		Expect(version).ToNot(BeNil())
+		class := version.FindType(names.ParseUsingCase("MyClass"))
+		Expect(class).ToNot(BeNil())
+		Expect(class.Owner().Name().String()).To(Equal("v1_alpha1"))
+		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
+		Expect(attributeList).ToNot(BeNil())
+		Expect(attributeList.Type().IsList()).To(BeTrue())
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
+		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
+		Expect(myAttributeType).ToNot(BeNil())
+		Expect(myAttributeType.Owner().Name().String()).To(Equal("v1_alpha1"))
+		barType := version.FindType(names.ParseUsingCase("Bar"))
+		Expect(barType.Owner().Name().String()).To(Equal("v1_alpha1"))
+	})
+
+	It("Overrides class with other class definition link list attribute", func() {
+		model := MakeModel(
+			"my_service/v1_alpha1/root.model",
+			`
+			resource Root {
+			}
+			`,
+			"my_service/v1_alpha1/my_class.model",
+			`
+			@ref(path="other_service/v1/my_class")
+			class MyClass {
+			}
+			`,
+			"my_service/v1_alpha1/my_attribute.model",
+			`
+			@ref(path="other_service/v1/my_attribute")
+			class MyAttribute {
+			}
+			`,
+			"other_service/v1/root.model",
+			`
+			resource Root{
+			}
+			`,
+			"other_service/v1/my_class.model",
+			`
+			class MyClass {
+				link Foo []MyAttribute
+			}`,
+			"other_service/v1/my_attribute.model",
+			`
+			class MyAttribute{
+				link Goo []Bar
+			}
+			`,
+			"other_service/v1/bar.model",
+			`
+			class Bar {
+			}
+			`,
+		)
+		// Check the attribute and its owner
+		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		Expect(service).ToNot(BeNil())
+		version := service.FindVersion(names.ParseUsingSeparator("v1_alpha1", "_"))
+		Expect(version).ToNot(BeNil())
+		class := version.FindType(names.ParseUsingCase("MyClass"))
+		Expect(class).ToNot(BeNil())
+		Expect(class.Owner().Name().String()).To(Equal("v1_alpha1"))
+		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
+		Expect(attributeList).ToNot(BeNil())
+		Expect(attributeList.Type().IsList()).To(BeTrue())
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
+		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
+		Expect(myAttributeType).ToNot(BeNil())
+		Expect(myAttributeType.Owner().Name().String()).To(Equal("v1_alpha1"))
+		barType := version.FindType(names.ParseUsingCase("Bar"))
+		Expect(barType.Owner().Name().String()).To(Equal("v1"))
+	})
 })
