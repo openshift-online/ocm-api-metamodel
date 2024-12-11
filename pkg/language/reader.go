@@ -486,6 +486,9 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 	}
 	for _, attribute := range referencedType.Attributes() {
 		if attribute.Link() {
+			// We need to check if the type was previously introduced
+			// in that case we would simply changes the owner of the attribue
+			// as we had already compiled it in this version.
 			if attribute.Type().IsList() {
 				if r.version.FindType(attribute.Type().Element().Name()) == nil {
 					r.version.AddTypeWithoutOwner(attribute.Type())
