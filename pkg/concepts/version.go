@@ -106,6 +106,15 @@ func (v *Version) AddType(typ *Type) {
 	}
 }
 
+// AddTypeWithoutOwner adds the given type to the version *without* changing
+// its owner. This is crucial when were adding references to other types from different
+// versions.
+func (v *Version) AddTypeWithoutOwner(typ *Type) {
+	if typ != nil {
+		v.types[typ.Name().String()] = typ
+	}
+}
+
 // AddTypes adds the given types to the version.
 func (v *Version) AddTypes(types []*Type) {
 	for _, typ := range types {

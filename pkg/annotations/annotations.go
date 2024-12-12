@@ -63,3 +63,17 @@ func GoName(concept concepts.Annotated) string {
 	}
 	return fmt.Sprintf("%s", name)
 }
+
+// Reference checks if the given concept has a `reference` annotation. If it has it then it returns the value
+// of the `path` parameter. It returns an empty string if there is no such annotation or parameter.
+func ReferencePath(concept concepts.Annotated) string {
+	annotation := concept.GetAnnotation("ref")
+	if annotation == nil {
+		return ""
+	}
+	name := annotation.FindParameter("path")
+	if name == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s", name)
+}

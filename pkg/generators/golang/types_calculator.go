@@ -143,7 +143,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 			ref.name = c.names.Public(element.Name())
 		}
 		ref.name += "List"
-		ref.text = ref.name
+		ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
@@ -151,7 +151,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
-		ref.text = ref.name
+		ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
 	default:
 		c.reporter.Errorf(
 			"Don't know how to calculate struct type reference for type '%s'",
@@ -213,7 +213,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 			ref.text = fmt.Sprintf("[]%s", ref.text)
 		case element.IsStruct():
 			ref = c.ValueReference(element)
-			ref.text = fmt.Sprintf("[]*%s", ref.text)
+			ref.text = fmt.Sprintf("[]*%s.%s", ref.selector, ref.text)
 		}
 	case typ.IsMap():
 		element := typ.Element()
@@ -223,7 +223,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 			ref.text = fmt.Sprintf("map[string]%s", ref.text)
 		case element.IsStruct():
 			ref = c.ValueReference(element)
-			ref.text = fmt.Sprintf("map[string]*%s", ref.text)
+			ref.text = fmt.Sprintf("map[string]*%s.%s", ref.selector, ref.text)
 		}
 	case typ.IsStruct():
 		ref = &TypeReference{}
@@ -239,6 +239,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 			"Don't know how to calculate value reference for type '%s'",
 			typ,
 		)
+
 		ref = &TypeReference{}
 	}
 	return ref
@@ -248,9 +249,13 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 // the nil value.
 func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 	switch {
-	case (typ.IsScalar() && !typ.IsInterface()) || typ.IsStruct():
+	case (typ.IsScalar() && !typ.IsInterface()):
 		ref := c.ValueReference(typ)
 		ref.text = fmt.Sprintf("*%s", ref.text)
+		return ref
+	case typ.IsStruct():
+		ref := c.ValueReference(typ)
+		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
 		return ref
 	default:
 		return c.ValueReference(typ)

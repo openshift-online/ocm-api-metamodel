@@ -30,6 +30,7 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/nomenclator"
@@ -132,7 +133,7 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 	for _, service := range r.model.Services() {
 		for _, version := range service.Versions() {
 			for _, typ := range version.Types() {
-				if typ.Kind() != concepts.ListType {
+				if typ.Kind() != concepts.ListType && typ.Owner().Name() == version.Name() {
 					listName := names.Cat(typ.Name(), nomenclator.List)
 					listType := version.FindType(listName)
 					if listType == nil {
@@ -408,8 +409,20 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 		typ.SetKind(concepts.ClassType)
 		r.removeUndefinedType(typ)
 	} else {
-		r.reporter.Errorf("Type '%s' is already defined", name)
-		return
+		// we would like to override the owner of any previously defined types
+		// these might come from references.
+		// e.g.
+		//      @ref(name="/some/service/foo")
+		//      Class foo {
+		//         Bar Sometype
+		//      }
+		// some_type.model - an overriding decleration.
+		// Class SomeType {...}
+		r.version.AddType(typ)
+		listName := names.Cat(typ.Name(), nomenclator.List)
+		if listType := r.version.FindType(listName); listType != nil {
+			r.version.AddType(listType)
+		}
 	}
 
 	// Add the documentation:
@@ -428,6 +441,76 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 			typ.AddAttribute(memberCtx.GetResult())
 		}
 	}
+
+	if path := annotations.ReferencePath(typ); path != "" {
+		r.handleClassRef(typ, path)
+	}
+}
+
+func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
+	if len(r.inputs) > 1 {
+		panic("referenced service with multiple inputs in undefined")
+	}
+	input := r.inputs[0]
+	path = strings.TrimPrefix(path, "/")
+	components := strings.Split(path, "/")
+	referencedServiceName := components[0]
+	referencedVersion := components[1]
+	referencedTypeName := components[2]
+
+	// Create an ad-hoc reader and model for the specific referenced service.
+	refReader := NewReader().
+		Reporter(r.reporter)
+	refReader.model = concepts.NewModel()
+
+	// Initialize the indexes of undefined concepts:
+	refReader.undefinedTypes = make(map[string]*concepts.Type)
+	refReader.undefinedResources = make(map[string]*concepts.Resource)
+	refReader.undefinedErrors = make(map[string]*concepts.Error)
+
+	// load the ad-hoc service and version referenced and find the correct type.
+	refReader.loadService(fmt.Sprintf("%s/%s", input, referencedServiceName))
+	refVersion := refReader.service.FindVersion(names.ParseUsingSeparator(referencedVersion, "_"))
+	// Once loading the service, we find the reference type
+	// then recursively iterate the type tree and add the types to the current version.
+	if referencedType := refVersion.FindType(names.ParseUsingSeparator(referencedTypeName, "_")); referencedType != nil {
+		r.recursivelyAddTypeToVersion(typ, referencedType)
+	}
+}
+
+// A helper function to recursively add types to a version
+func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
+	referencedType *concepts.Type) {
+	if referencedType.IsBasicType() {
+		return
+	}
+	for _, attribute := range referencedType.Attributes() {
+		if attribute.Link() {
+			// We need to check if the type was previously introduced
+			// in that case we would simply changes the owner of the attribue
+			// as we had already compiled it in this version.
+			if attribute.Type().IsList() {
+				if r.version.FindType(attribute.Type().Element().Name()) == nil {
+					r.version.AddTypeWithoutOwner(attribute.Type())
+					r.version.AddTypeWithoutOwner(attribute.Type().Element())
+				} else {
+					elementOwner := r.version.FindType(attribute.Type().Element().Name()).Owner()
+					if attribute.Type().Owner() != elementOwner {
+						attribute.Type().SetOwner(elementOwner)
+						attribute.Type().Element().SetOwner(elementOwner)
+					}
+				}
+			} else if r.version.FindType(attribute.Type().Name()) == nil {
+				r.version.AddTypeWithoutOwner(attribute.Type())
+			}
+		} else if attribute.Type().IsList() || attribute.Type().IsMap() {
+			r.version.AddType(attribute.Type())
+			r.recursivelyAddTypeToVersion(currType, attribute.Type().Element())
+		} else {
+			r.recursivelyAddTypeToVersion(currType, attribute.Type())
+		}
+	}
+	r.version.AddType(referencedType)
 }
 
 func (r *Reader) ExitStructDecl(ctx *StructDeclContext) {

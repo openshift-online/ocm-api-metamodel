@@ -189,6 +189,7 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 		Function("builderName", g.builderName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
+		Function("selectorType", g.selectorType).
 		Function("objectName", g.objectName).
 		Function("setterName", g.setterName).
 		Function("setterType", g.setterType).
@@ -274,6 +275,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ $setterName := setterName . }}
 			{{ $setterType := setterType . }}
 			{{ $fieldMask := bitMask . }}
+			{{ $selectorType := selectorType . }}
 
 			{{ if .Type.IsList }}
 				// {{ $setterName }} sets the value of the '{{ .Name }}' attribute to the given values.
@@ -296,8 +298,8 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 						}
 					{{ else }}
 						{{ $elementBuilderName := builderName .Type.Element }}
-						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ $elementBuilderName }}) *{{ $builderName }} {
-							b.{{ $fieldName }} = make([]*{{ $elementBuilderName }}, len(values))
+						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ selectorType . }}{{ $elementBuilderName }}) *{{ $builderName }} {
+							b.{{ $fieldName }} = make([]*{{ selectorType . }}{{ $elementBuilderName }}, len(values))
 							copy(b.{{ $fieldName }}, values)
 							b.bitmap_ |= {{ $fieldMask }}
 							return b
@@ -337,26 +339,27 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ range .Type.Attributes }}
 				{{ $fieldName := fieldName . }}
 				{{ $fieldType := fieldType . }}
+				{{ $selectorType := selectorType . }}
 				{{ if .Type.IsScalar }}
 					b.{{ $fieldName }} = object.{{ $fieldName }}
 				{{ else if .Type.IsStruct }}
 					if object.{{ $fieldName }} != nil {
-						b.{{ $fieldName }} = {{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
+						b.{{ $fieldName }} = {{ selectorType . }}{{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
 					} else {
 						b.{{ $fieldName }} = nil
 					}
 				{{ else if .Type.IsList }}
 					if object.{{ $fieldName }} != nil {
 						{{ if .Link }}
-							b.{{ $fieldName }} = {{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
+							b.{{ $fieldName }} = {{ selectorType . }}{{ builderCtor .Type }}().Copy(object.{{ $fieldName }})
 						{{ else }}
 							{{ if .Type.Element.IsScalar }}
 								b.{{ $fieldName }} = make({{ $fieldType }}, len(object.{{ $fieldName }}))
 								copy(b.{{ $fieldName }}, object.{{ $fieldName }})
 							{{ else if .Type.Element.IsStruct }}
-								b.{{ $fieldName }} = make([]*{{ builderName .Type.Element }}, len(object.{{ $fieldName }}))
+								b.{{ $fieldName }} = make([]*{{ selectorType . }}{{ builderName .Type.Element }}, len(object.{{ $fieldName }}))
 								for i, v := range object.{{ $fieldName }} {
-									b.{{ $fieldName }}[i] = {{ builderCtor .Type.Element }}().Copy(v)
+									b.{{ $fieldName }}[i] = {{ selectorType . }}{{ builderCtor .Type.Element }}().Copy(v)
 								}
 							{{ end }}
 						{{ end }}
@@ -371,9 +374,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 								b.{{ $fieldName }}[k] = v
 							}
 						{{ else if .Type.Element.IsStruct }}
-							b.{{ $fieldName }} = map[string]*{{ builderName .Type.Element }}{}
+							b.{{ $fieldName }} = map[string]*{{ selectorType . }}{{ builderName .Type.Element }}{}
 							for k, v := range object.{{ $fieldName }} {
-								b.{{ $fieldName }}[k] = {{ builderCtor .Type.Element }}().Copy(v)
+								b.{{ $fieldName }}[k] = {{ selectorType . }}{{ builderCtor .Type.Element }}().Copy(v)
 							}
 						{{ end }}
 					} else {
@@ -416,7 +419,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 								object.{{ $fieldName }} = make({{ $fieldType }}, len(b.{{ $fieldName }}))
 								copy(object.{{ $fieldName }}, b.{{ $fieldName }})
 							{{ else if .Type.Element.IsStruct }}
-								object.{{ $fieldName }} = make([]*{{ objectName .Type.Element }}, len(b.{{ $fieldName }}))
+								object.{{ $fieldName }} = make([]*{{ selectorType . }}{{ objectName .Type.Element }}, len(b.{{ $fieldName }}))
 								for i, v := range b.{{ $fieldName }} {
 									object.{{ $fieldName }}[i], err = v.Build()
 									if err != nil {
@@ -434,7 +437,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 								object.{{ $fieldName }}[k] = v
 							}
 						{{ else if .Type.Element.IsStruct }}
-							object.{{ $fieldName }}  = make(map[string]*{{ objectName .Type.Element }})
+							object.{{ $fieldName }}  = make(map[string]*{{ selectorType . }}{{ objectName .Type.Element }})
 							for k, v := range b.{{ $fieldName }} {
 								object.{{ $fieldName }}[k], err = v.Build()
 								if err != nil {
@@ -683,6 +686,15 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 		ref = &TypeReference{}
 	}
 	return ref
+}
+
+func (g *BuildersGenerator) selectorType(attribute *concepts.Attribute) string {
+	ref := g.fieldType(attribute)
+	pkgName := g.packages.VersionSelector(attribute.Owner().Owner())
+	if pkgName != ref.selector {
+		return fmt.Sprintf("%s.", ref.selector)
+	}
+	return ""
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
