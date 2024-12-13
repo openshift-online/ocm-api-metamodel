@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.62 Dec 13 2024
+
+- Add support for `ref` annotation
+
 ## 0.0.61 Sep 06 2024
 
 - Add timestamp to error generator
