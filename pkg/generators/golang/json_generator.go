@@ -877,7 +877,7 @@ func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method, ver
 	switch {
 	case method.IsAdd():
 		g.generateAddMethodSource(method)
-	case method.IsDelete():
+	case method.IsDelete() || method.IsAsyncDelete():
 		g.generateDeleteMethodSource(method)
 	case method.IsGet():
 		g.generateGetMethodSource(method)
@@ -887,7 +887,7 @@ func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method, ver
 		g.generatePostMethodSource(method)
 	case method.IsSearch():
 		g.generateSearchMethodSource(method)
-	case method.IsUpdate():
+	case method.IsUpdate() || method.IsAsyncUpdate():
 		g.generateUpdateMethodSource(method)
 	case method.IsAction():
 		g.generateActionMethodSource(method, version)
