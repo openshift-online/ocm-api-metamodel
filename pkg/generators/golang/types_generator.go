@@ -508,19 +508,16 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		// Items sets the items of the list.
 		func (l *{{ $listName }}) SetLink(link bool) {
 			l.link = link
-			return
 		}
 
 		// Items sets the items of the list.
 		func (l *{{ $listName }}) SetHREF(href string) {
 			l.href = href
-			return
 		}
 
 		// Items sets the items of the list.
 		func (l *{{ $listName }}) SetItems(items []*{{ $objectName }}) {
 			l.items = items
-			return
 		}
 
 		// Items returns the items of the list.
