@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+
+## 0.0.63 Dec 16 2024
+
+- Remove redundunt return statements.
+
 ## 0.0.62 Dec 13 2024
 
 - Add support for `ref` annotation
