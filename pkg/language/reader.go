@@ -474,6 +474,7 @@ func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
 	// Once loading the service, we find the reference type
 	// then recursively iterate the type tree and add the types to the current version.
 	if referencedType := refVersion.FindType(names.ParseUsingSeparator(referencedTypeName, "_")); referencedType != nil {
+		r.version.AddType(referencedType)
 		r.recursivelyAddTypeToVersion(typ, referencedType)
 	}
 }
@@ -486,23 +487,9 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 	}
 	for _, attribute := range referencedType.Attributes() {
 		if attribute.Link() {
-			// We need to check if the type was previously introduced
-			// in that case we would simply changes the owner of the attribue
-			// as we had already compiled it in this version.
-			if attribute.Type().IsList() {
-				if r.version.FindType(attribute.Type().Element().Name()) == nil {
-					r.version.AddTypeWithoutOwner(attribute.Type())
-					r.version.AddTypeWithoutOwner(attribute.Type().Element())
-				} else {
-					elementOwner := r.version.FindType(attribute.Type().Element().Name()).Owner()
-					if attribute.Type().Owner() != elementOwner {
-						attribute.Type().SetOwner(elementOwner)
-						attribute.Type().Element().SetOwner(elementOwner)
-					}
-				}
-			} else if r.version.FindType(attribute.Type().Name()) == nil {
-				r.version.AddTypeWithoutOwner(attribute.Type())
-			}
+			// If the attribute is a Link set the LinkOwner
+			// to the attribute type Owner
+			attribute.SetLinkOwner(attribute.Type().Owner())
 		} else if attribute.Type().IsList() || attribute.Type().IsMap() {
 			r.version.AddType(attribute.Type())
 			r.recursivelyAddTypeToVersion(currType, attribute.Type().Element())
@@ -510,7 +497,9 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 			r.recursivelyAddTypeToVersion(currType, attribute.Type())
 		}
 	}
-	r.version.AddType(referencedType)
+	if r.version.FindType(referencedType.Name()) == nil {
+		r.version.AddType(referencedType)
+	}
 }
 
 func (r *Reader) ExitStructDecl(ctx *StructDeclContext) {

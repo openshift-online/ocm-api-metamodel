@@ -173,25 +173,24 @@ func (g *JSONSupportGenerator) Run() error {
 			}
 			for _, typ := range version.Types() {
 				for _, att := range typ.Attributes() {
-					if att.Type().Owner().Name() != version.Name() ||
-						(att.Type().IsList() && att.Type().Element().Owner().Name() != version.Name()) {
+					if att.LinkOwner() != nil {
 						importRefs = append(importRefs,
 							struct {
 								path     string
 								selector string
 							}{
-								path:     g.packages.VersionImport(att.Type().Owner()),
-								selector: g.packages.VersionSelector(att.Type().Owner()),
+								path:     g.packages.VersionImport(att.LinkOwner()),
+								selector: g.packages.VersionSelector(att.LinkOwner()),
 							})
 					}
 				}
 				switch {
 				case typ.IsStruct():
-					err = g.generateStructTypeSupport(typ, importRefs, version)
+					err = g.generateStructTypeSupport(typ, importRefs)
 				case typ.IsList():
 					element := typ.Element()
 					if element.IsScalar() || element.IsStruct() {
-						err = g.generateListTypeSupport(typ, importRefs, version)
+						err = g.generateListTypeSupport(typ, importRefs)
 					}
 				}
 				if err != nil {
@@ -201,7 +200,7 @@ func (g *JSONSupportGenerator) Run() error {
 
 			// Generate the code for the model methods:
 			for _, resource := range version.Resources() {
-				err = g.generateResourceSupport(resource, version)
+				err = g.generateResourceSupport(resource)
 				if err != nil {
 					return err
 				}
@@ -451,8 +450,11 @@ func (g *JSONSupportGenerator) generateVersionMetadataSupport(version *concepts.
 		Function("enumName", g.types.EnumName).
 		Function("structName", g.types.StructReference).
 		Function("generateReadValue", g.generateReadValue).
+		Function("selectorFromLinkOwner", g.selectorFromLinkOwner).
 		Function("generateWriteValue", g.generateWriteValue).
+		Function("writeRefTypeFunc", g.writeRefTypeFunc).
 		Function("readTypeFunc", g.readTypeFunc).
+		Function("readRefTypeFunc", g.readRefTypeFunc).
 		Function("writeTypeFunc", g.writeTypeFunc).
 		Function("valueReference", g.types.ValueReference).
 		Build()
@@ -532,8 +534,7 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 	importRefs []struct {
 		path     string
 		selector string
-	},
-	version *concepts.Version) error {
+	}) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -552,9 +553,12 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.binding.AttributeName).
 		Function("generateReadValue", g.generateReadValue).
+		Function("selectorFromLinkOwner", g.selectorFromLinkOwner).
 		Function("generateWriteValue", g.generateWriteValue).
+		Function("writeRefTypeFunc", g.writeRefTypeFunc).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("readTypeFunc", g.readTypeFunc).
+		Function("readRefTypeFunc", g.readRefTypeFunc).
 		Function("structName", g.types.StructReference).
 		Function("unmarshalTypeFunc", g.unmarshalTypeFunc).
 		Function("valueReference", g.types.ValueReference).
@@ -569,14 +573,13 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 	}
 
 	// Generate the code:
-	g.generateStructTypeSource(typ, version)
+	g.generateStructTypeSource(typ)
 
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
-func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type,
-	version *concepts.Version) {
+func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 	g.buffer.Import("fmt", "")
 	g.buffer.Import("io", "")
 	g.buffer.Import("time", "")
@@ -585,10 +588,9 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type,
 	g.buffer.Emit(`
 		{{ $structName := structName .Type }}
 		{{ $marshalTypeFunc := marshalTypeFunc .Type }}
-		{{ $writeTypeFunc := writeTypeFunc .Type .Version }}
+		{{ $writeTypeFunc := writeTypeFunc .Type }}
 		{{ $unmarshalTypeFunc := unmarshalTypeFunc .Type }}
-		{{ $readTypeFunc := readTypeFunc .Type .Version }}
-		{{ $version := .Version }}
+		{{ $readTypeFunc := readTypeFunc .Type }}
 
 		// {{ $marshalTypeFunc }} writes a value of the '{{ .Type.Name }}' type to the given writer.
 		func {{ $marshalTypeFunc }}(object *{{ $structName }}, writer io.Writer) error {
@@ -649,7 +651,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type,
 							stream.WriteMore()
 						}
 						stream.WriteObjectField("{{ $fieldTag }}")
-						{{ generateWriteValue (print "object." $fieldName) $version $v.Type $v.Link }}
+						{{ generateWriteValue (print "object." $fieldName) $v.Type $v.Link $v.LinkOwner }}
 						{{ if lt $i (sub $n 1) }}
 							count++
 						{{ end }}
@@ -698,7 +700,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type,
 					{{ $fieldTag := fieldTag . }}
 					{{ $fieldMask := bitMask . }}
 					case "{{ $fieldTag }}":
-						{{ generateReadValue "value" .Type $version .Link }}
+						{{ generateReadValue "value" .Type .Link .LinkOwner}}
 						object.{{ $fieldName }} = value
 						object.bitmap_ |= {{ $fieldMask }}
 				{{ end }}
@@ -710,7 +712,6 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type,
 		}
 		`,
 		"Type", typ,
-		"Version", version,
 	)
 }
 
@@ -718,8 +719,7 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type,
 	importRefs []struct {
 		path     string
 		selector string
-	},
-	version *concepts.Version) error {
+	}) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -735,9 +735,12 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type,
 		File(fileName).
 		Function("enumName", g.types.EnumName).
 		Function("generateReadValue", g.generateReadValue).
+		Function("selectorFromLinkOwner", g.selectorFromLinkOwner).
 		Function("generateWriteValue", g.generateWriteValue).
+		Function("writeRefTypeFunc", g.writeRefTypeFunc).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("readTypeFunc", g.readTypeFunc).
+		Function("readRefTypeFunc", g.readRefTypeFunc).
 		Function("structName", g.types.StructReference).
 		Function("unmarshalTypeFunc", g.unmarshalTypeFunc).
 		Function("valueReference", g.types.ValueReference).
@@ -747,17 +750,20 @@ func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type,
 		return err
 	}
 
-	// Generate the code:
-	g.generateListTypeSource(typ, version)
+	for _, ref := range importRefs {
+		g.buffer.Import(ref.path, ref.selector)
+	}
 
+	// Generate the code:
+	g.generateListTypeSource(typ)
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
 func (g *JSONSupportGenerator) generateListTypeSource(
 	typ *concepts.Type,
-	version *concepts.Version,
 ) {
+	var linkOwner *concepts.Version
 	g.buffer.Import("fmt", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
@@ -765,9 +771,9 @@ func (g *JSONSupportGenerator) generateListTypeSource(
 		{{ $structName := structName .Type }}
 		{{ $sliceType := valueReference .Type }}
 		{{ $marshalTypeFunc := marshalTypeFunc .Type }}
-		{{ $writeTypeFunc := writeTypeFunc .Type .Version }}
+		{{ $writeTypeFunc := writeTypeFunc .Type }}
 		{{ $unmarshalTypeFunc := unmarshalTypeFunc .Type }}
-		{{ $readTypeFunc := readTypeFunc .Type .Version }}
+		{{ $readTypeFunc := readTypeFunc .Type }}
 
 		// {{ $marshalTypeFunc }} writes a list of values of the '{{ .Type.Element.Name }}' type to
 		// the given writer.
@@ -789,7 +795,7 @@ func (g *JSONSupportGenerator) generateListTypeSource(
 				if i > 0 {
 					stream.WriteMore()
 				}
-				{{ generateWriteValue "value" .Version .Type.Element false }}
+				{{ generateWriteValue "value" .Type.Element false .linkOwner }}
 			}
 			stream.WriteArrayEnd()
 		}
@@ -811,19 +817,18 @@ func (g *JSONSupportGenerator) generateListTypeSource(
 		func {{ $readTypeFunc }}(iterator *jsoniter.Iterator) {{ $sliceType }} {
 			list := {{ valueReference .Type }}{}
 			for iterator.ReadArray() {
-				{{ generateReadValue "item" .Type.Element .Version false }}
+				{{ generateReadValue "item" .Type.Element false .linkOwner }}
 				list = append(list, item)
 			}
 			return list
 		}
 		`,
 		"Type", typ,
-		"Version", version,
+		"linkOwner", linkOwner,
 	)
 }
 
-func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resource,
-	version *concepts.Version) error {
+func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resource) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -844,13 +849,16 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 		Function("generateReadBodyParameter", g.generateReadBodyParameter).
 		Function("generateReadQueryParameter", g.generateReadQueryParameter).
 		Function("generateReadValue", g.generateReadValue).
+		Function("selectorFromLinkOwner", g.selectorFromLinkOwner).
 		Function("generateWriteBodyParameter", g.generateWriteBodyParameter).
 		Function("generateWriteValue", g.generateWriteValue).
+		Function("writeRefTypeFunc", g.writeRefTypeFunc).
 		Function("marshalTypeFunc", g.marshalTypeFunc).
 		Function("parameterFieldName", g.parameterFieldName).
 		Function("parameterQueryName", g.binding.QueryParameterName).
 		Function("readResponseFunc", g.readResponseFunc).
 		Function("readTypeFunc", g.readTypeFunc).
+		Function("readRefTypeFunc", g.readRefTypeFunc).
 		Function("requestBodyParameters", g.binding.RequestBodyParameters).
 		Function("requestQueryParameters", g.binding.RequestQueryParameters).
 		Function("responseBodyParameters", g.binding.ResponseParameters).
@@ -866,14 +874,14 @@ func (g *JSONSupportGenerator) generateResourceSupport(resource *concepts.Resour
 
 	// Generate the code:
 	for _, method := range resource.Methods() {
-		g.generateMethodSource(method, version)
+		g.generateMethodSource(method)
 	}
 
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
-func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method, version *concepts.Version) {
+func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method) {
 	switch {
 	case method.IsAdd():
 		g.generateAddMethodSource(method)
@@ -890,7 +898,7 @@ func (g *JSONSupportGenerator) generateMethodSource(method *concepts.Method, ver
 	case method.IsUpdate():
 		g.generateUpdateMethodSource(method)
 	case method.IsAction():
-		g.generateActionMethodSource(method, version)
+		g.generateActionMethodSource(method)
 	default:
 		g.reporter.Errorf(
 			"Don't know how to generate encoding/decoding code for method '%s'",
@@ -969,6 +977,7 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 	var total *concepts.Parameter
 	var items *concepts.Parameter
 	var other []*concepts.Parameter
+	var linkOwner *concepts.Version
 	for _, parameter := range method.Parameters() {
 		switch {
 		case parameter.Name().Equals(nomenclator.Page):
@@ -1004,21 +1013,21 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 				}
 				switch field {
 				{{ if .Page }}
-					{{ generateReadBodyParameter "response" .Version .Page }}
+					{{ generateReadBodyParameter "response" .Page }}
 				{{ end }}
 				{{ if .Size }}
-					{{ generateReadBodyParameter "response" .Version .Size }}
+					{{ generateReadBodyParameter "response" .Size }}
 				{{ end }}
 				{{ if .Total }}
-					{{ generateReadBodyParameter "response" .Version .Total }}
+					{{ generateReadBodyParameter "response" .Total }}
 				{{ end }}
 				{{ range .Other }}
 					{{ if .Out }}
-						{{ generateReadBodyParameter "response" .Version . }}
+						{{ generateReadBodyParameter "response" . }}
 					{{ end }}
 				{{ end }}
 				case "items":
-				{{ generateReadValue "items" .Items.Type .Version false }}
+				{{ generateReadValue "items" .Items.Type false .LinkOwner }}
 				{{ if and .Items.Type.IsList .Items.Type.Element.IsScalar }}
 					response.items = items
 				{{ else }}
@@ -1033,13 +1042,13 @@ func (g *JSONSupportGenerator) generateListMethodSource(method *concepts.Method)
 			return iterator.Error
 		}
 		`,
-		"Version", method.Owner().Owner(),
 		"Method", method,
 		"Page", page,
 		"Size", size,
 		"Total", total,
 		"Items", items,
 		"Other", other,
+		"LinkOwner", linkOwner,
 	)
 }
 
@@ -1094,6 +1103,7 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 	var body *concepts.Parameter
 	var items *concepts.Parameter
 	var other []*concepts.Parameter
+	var linkOwner *concepts.Version
 	for _, parameter := range method.Parameters() {
 		switch {
 		case parameter.Name().Equals(nomenclator.Page):
@@ -1115,7 +1125,6 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
-		{{ $version := .Version }}
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			{{ if .Body }}
 				return {{ marshalTypeFunc .Body.Type }}(request.{{ parameterFieldName .Body }}, writer)
@@ -1136,21 +1145,21 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 				}
 				switch field {
 				{{ if .Page }}
-					{{ generateReadBodyParameter "response" $version .Page }}
+					{{ generateReadBodyParameter "response" .Page }}
 				{{ end }}
 				{{ if .Size }}
-					{{ generateReadBodyParameter "response" $version .Size }}
+					{{ generateReadBodyParameter "response" .Size }}
 				{{ end }}
 				{{ if .Total }}
-					{{ generateReadBodyParameter "response" $version .Total }}
+					{{ generateReadBodyParameter "response" .Total }}
 				{{ end }}
 				{{ range .Other }}
 					{{ if .Out }}
-						{{ generateReadBodyParameter "response" $version . }}
+						{{ generateReadBodyParameter "response" . }}
 					{{ end }}
 				{{ end }}
 				case "items":
-					{{ generateReadValue "items" .Items.Type $version false }}
+					{{ generateReadValue "items" .Items.Type false .LinkOwner }}
 					{{ if and .Items.Type.IsList .Items.Type.Element.IsScalar }}
 						response.items = items
 					{{ else }}
@@ -1173,6 +1182,7 @@ func (g *JSONSupportGenerator) generateSearchMethodSource(method *concepts.Metho
 		"Body", body,
 		"Items", items,
 		"Other", other,
+		"LinkOwner", linkOwner,
 	)
 }
 
@@ -1199,21 +1209,19 @@ func (g *JSONSupportGenerator) generateUpdateMethodSource(method *concepts.Metho
 	)
 }
 
-func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Method,
-	version *concepts.Version) {
+func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Method) {
 	g.buffer.Import("net/http", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
 	g.buffer.Emit(`
 		{{ $requestBodyParameters := requestBodyParameters .Method }}
 		{{ $responseBodyParameters := responseBodyParameters .Method }}
-		{{ $version := .Version }}
 		func {{ writeRequestFunc .Method }}(request *{{ clientRequestName .Method }}, writer io.Writer) error {
 			{{ if $requestBodyParameters }} 
 				count := 0
 				stream := helpers.NewStream(writer)
 				stream.WriteObjectStart()
 				{{ range $requestBodyParameters }}
-					{{ generateWriteBodyParameter "request" $version . }}
+					{{ generateWriteBodyParameter "request" . }}
 				{{ end }}
 				stream.WriteObjectEnd()
 				err := stream.Flush()
@@ -1239,7 +1247,7 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 					}
 					switch field {
 					{{ range $responseBodyParameters }}
-						{{ generateReadBodyParameter "response" $version . }}
+						{{ generateReadBodyParameter "response" . }}
 					{{ end }}
 					default:
 						iterator.ReadAny()
@@ -1252,7 +1260,6 @@ func (g *JSONSupportGenerator) generateActionMethodSource(method *concepts.Metho
 		}
 		`,
 		"Method", method,
-		"Version", version,
 	)
 }
 
@@ -1291,14 +1298,14 @@ func (g *JSONSupportGenerator) generateReadQueryParameter(parameter *concepts.Pa
 }
 
 func (g *JSONSupportGenerator) generateReadBodyParameter(object string,
-	version *concepts.Version,
 	parameter *concepts.Parameter) string {
 	field := g.parameterFieldName(parameter)
 	tag := g.binding.BodyParameterName(parameter)
 	typ := parameter.Type()
+	var linkOwner *concepts.Version
 	return g.buffer.Eval(`
 		case "{{ .Tag }}":
-			{{ generateReadValue "value" .Type .Version false }}
+			{{ generateReadValue "value" .Type false .LinkOwner }}
 			{{ if .Type.IsScalar }}
 				{{ .Object }}.{{ .Field }} = &value
 			{{ else }}
@@ -1309,13 +1316,13 @@ func (g *JSONSupportGenerator) generateReadBodyParameter(object string,
 		"Field", field,
 		"Tag", tag,
 		"Type", typ,
-		"Version", version,
+		"LinkOwner", linkOwner,
 	)
 }
 
 func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.Type,
-	version *concepts.Version,
-	link bool) string {
+	link bool,
+	linkOwner *concepts.Version) string {
 	g.buffer.Import("time", "")
 	return g.buffer.Eval(`
 		{{ if .Type.IsBoolean }}
@@ -1341,11 +1348,12 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 			text := iterator.ReadString()
 			{{ .Variable }} := {{ enumName .Type }}(text)
 		{{ else if .Type.IsStruct }}
-			{{ .Variable }} := {{ readTypeFunc .Type .Version }}(iterator)
+			{{ .Variable }} := {{ readRefTypeFunc .Type .LinkOwner }}(iterator)
 		{{ else if .Type.IsList }}
 			{{ if .Link }}
+			 	{{ $selectorFromLinkOwner := selectorFromLinkOwner .LinkOwner}}
 				{{ $structName := structName .Type }}
-				{{ .Variable }} := &{{ $structName }}{}
+				{{ .Variable }} := &{{ $selectorFromLinkOwner }}{{ $structName }}{}
 				for {
 					field := iterator.ReadObject()
 					if field == "" {
@@ -1354,17 +1362,17 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 					switch field {
 					case "kind":
 						text := iterator.ReadString()
-						{{ .Variable }}.SetLink(text == {{ $structName }}LinkKind)
+						{{ .Variable }}.SetLink(text == {{ $selectorFromLinkOwner }}{{ $structName }}LinkKind)
 					case "href":
 						{{ .Variable }}.SetHREF(iterator.ReadString())
 					case "items":
-						{{ .Variable }}.SetItems({{ readTypeFunc .Type .Version }}(iterator))
+						{{ .Variable }}.SetItems({{ readRefTypeFunc .Type .LinkOwner }}(iterator))
 					default:
 						iterator.ReadAny()
 					}
 				}
 			{{ else }}
-				{{ .Variable }} := {{ readTypeFunc .Type .Version }}(iterator)
+				{{ .Variable }} := {{ readTypeFunc .Type }}(iterator)
 			{{ end }}
 		{{ else if .Type.IsMap }}
 			{{ .Variable }} := {{ valueReference .Type }}{}
@@ -1373,7 +1381,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 				if key == "" {
 					break
 				}
-				{{ generateReadValue "item" .Type.Element .Version false }}
+				{{ generateReadValue "item" .Type.Element false .LinkOwner }}
 				{{ .Variable }}[key] = item
 			}
 		{{ else }}
@@ -1383,18 +1391,18 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 		"Variable", variable,
 		"Type", typ,
 		"Link", link,
-		"Version", version,
+		"LinkOwner", linkOwner,
 	)
 }
 
 func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
-	version *concepts.Version,
 	parameter *concepts.Parameter,
 ) string {
 	typ := parameter.Type()
 	field := g.parameterFieldName(parameter)
 	tag := g.binding.BodyParameterName(parameter)
 	var value string
+	var linkOwner *concepts.Version
 	if typ.IsScalar() && !typ.IsInterface() {
 		value = g.buffer.Eval(
 			`*{{ .Object }}.{{ .Field }}`,
@@ -1414,7 +1422,7 @@ func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
 				stream.WriteMore()
 			}
 			stream.WriteObjectField("{{ .Tag }}")
-			{{ generateWriteValue .Value .Version .Type false }}
+			{{ generateWriteValue .Value .Type false .LinkOwner }}
 			count++
 		}
 		`,
@@ -1423,14 +1431,14 @@ func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
 		"Tag", tag,
 		"Value", value,
 		"Type", typ,
-		"Version", version,
+		"LinkOwner", linkOwner,
 	)
 }
 
 func (g *JSONSupportGenerator) generateWriteValue(value string,
-	version *concepts.Version,
 	typ *concepts.Type,
-	link bool) string {
+	link bool,
+	linkOwner *concepts.Version) string {
 	g.buffer.Import("sort", "")
 	g.buffer.Import("time", "")
 	return g.buffer.Eval(`
@@ -1451,15 +1459,15 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 		{{ else if .Type.IsInterface }}
 			stream.WriteVal({{ .Value }})
 		{{ else if .Type.IsStruct }}
-			{{ writeTypeFunc .Type .Version  }}({{ .Value }}, stream)
+			{{ writeRefTypeFunc .Type .LinkOwner }}({{ .Value}}, stream)
 		{{ else if .Type.IsList }}
 			{{ if .Link }}
 				stream.WriteObjectStart()
 				stream.WriteObjectField("items")
-				{{ writeTypeFunc .Type .Version }}({{ .Value }}.Items(), stream)
+				{{ writeRefTypeFunc .Type .LinkOwner }}({{ .Value }}.Items(), stream)
 				stream.WriteObjectEnd()
 			{{ else }}
-				{{ writeTypeFunc .Type .Version }}({{ .Value }}, stream)
+				{{ writeTypeFunc .Type }}({{ .Value }}, stream)
 			{{ end }}
 		{{ else if .Type.IsMap }}
 			if {{ .Value }} != nil {
@@ -1477,7 +1485,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 					}
 					item := {{ .Value }}[key]
 					stream.WriteObjectField(key)
-					{{ generateWriteValue "item" .Version .Type.Element false }}
+					{{ generateWriteValue "item" .Type.Element false .LinkOwner}}
 				}
 				stream.WriteObjectEnd()
 			} else {
@@ -1488,7 +1496,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 		"Value", value,
 		"Type", typ,
 		"Link", link,
-		"Version", version,
+		"LinkOwner", linkOwner,
 	)
 }
 
@@ -1517,11 +1525,16 @@ func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
 	return name
 }
 
-func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type, version *concepts.Version) string {
-	_, selector := g.types.Package(typ)
+func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
 	name := names.Cat(nomenclator.Write, typ.Name())
-	if selector != g.types.packages.VersionSelector(version) {
-		return fmt.Sprintf("%s.%s", selector, g.names.Public(name))
+	return g.names.Public(name)
+}
+
+func (g *JSONSupportGenerator) writeRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version) string {
+	name := names.Cat(nomenclator.Write, typ.Name())
+	if refVersion != nil {
+		version := g.packages.VersionSelector(refVersion)
+		return fmt.Sprintf("%s.%s", version, g.names.Public(name))
 	}
 	return g.names.Public(name)
 }
@@ -1535,11 +1548,16 @@ func (g *JSONSupportGenerator) unmarshalTypeFunc(typ *concepts.Type) string {
 	return name
 }
 
-func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type, version *concepts.Version) string {
-	_, selector := g.types.Package(typ)
+func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type) string {
 	name := names.Cat(nomenclator.Read, typ.Name())
-	if selector != g.types.packages.VersionSelector(version) {
-		return fmt.Sprintf("%s.%s", selector, g.names.Public(name))
+	return g.names.Public(name)
+}
+
+func (g *JSONSupportGenerator) readRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version) string {
+	name := names.Cat(nomenclator.Read, typ.Name())
+	if refVersion != nil {
+		version := g.packages.VersionSelector(refVersion)
+		return fmt.Sprintf("%s.%s", version, g.names.Public(name))
 	}
 	return g.names.Public(name)
 }
@@ -1655,4 +1673,11 @@ func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) strin
 		)
 		return ""
 	}
+}
+
+func (g JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version) string {
+	if linkOwner == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s.", g.packages.VersionSelector(linkOwner))
 }

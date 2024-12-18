@@ -27,8 +27,17 @@ type Attribute struct {
 	namedSupport
 	typedSupport
 
-	owner *Type
-	link  bool
+	owner     *Type
+	link      bool
+	linkOwner *Version
+}
+
+func (a *Attribute) SetLinkOwner(v *Version) {
+	a.linkOwner = v
+}
+
+func (a *Attribute) LinkOwner() *Version {
+	return a.linkOwner
 }
 
 // NewAttribute creates a new attribute.

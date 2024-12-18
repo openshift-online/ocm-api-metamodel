@@ -642,20 +642,24 @@ func (g *BuildersGenerator) fieldName(attribute *concepts.Attribute) string {
 func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
 	typ := attribute.Type()
 	var ref *TypeReference
+	referencedVersion := ""
+	if attribute.LinkOwner() != nil {
+		referencedVersion = attribute.LinkOwner().Name().String()
+	}
 	switch {
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
 	case typ.IsStruct():
-		ref = g.types.BuilderReference(typ)
+		ref = g.types.BuilderReference(typ, referencedVersion)
 	case typ.IsList():
 		if attribute.Link() {
-			ref = g.types.BuilderReference(typ)
+			ref = g.types.BuilderReference(typ, referencedVersion)
 		} else {
 			element := typ.Element()
 			if element.IsScalar() {
-				ref = g.types.NullableReference(typ)
+				ref = g.types.NullableReference(typ, referencedVersion)
 			} else {
-				ref = g.types.BuilderReference(element)
+				ref = g.types.BuilderReference(element, referencedVersion)
 				ref = g.types.Reference(
 					ref.Import(),
 					ref.Selector(),
@@ -667,9 +671,9 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 	case typ.IsMap():
 		element := typ.Element()
 		if element.IsScalar() {
-			ref = g.types.NullableReference(typ)
+			ref = g.types.NullableReference(typ, referencedVersion)
 		} else {
-			ref = g.types.BuilderReference(element)
+			ref = g.types.BuilderReference(element, referencedVersion)
 			ref = g.types.Reference(
 				ref.Import(),
 				ref.Selector(),
@@ -689,12 +693,10 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 }
 
 func (g *BuildersGenerator) selectorType(attribute *concepts.Attribute) string {
-	ref := g.fieldType(attribute)
-	pkgName := g.packages.VersionSelector(attribute.Owner().Owner())
-	if pkgName != ref.selector {
-		return fmt.Sprintf("%s.", ref.selector)
+	if attribute.LinkOwner() == nil {
+		return ""
 	}
-	return ""
+	return fmt.Sprintf("%s.", g.packages.VersionSelector(attribute.LinkOwner()))
 }
 
 func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
@@ -708,20 +710,24 @@ func (g *BuildersGenerator) setterName(attribute *concepts.Attribute) string {
 func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeReference {
 	typ := attribute.Type()
 	var ref *TypeReference
+	referencedVersion := ""
+	if attribute.LinkOwner() != nil {
+		referencedVersion = attribute.LinkOwner().Name().String()
+	}
 	switch {
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
 	case typ.IsStruct():
-		ref = g.types.BuilderReference(typ)
+		ref = g.types.BuilderReference(typ, referencedVersion)
 	case typ.IsList():
 		if attribute.Link() {
-			ref = g.types.BuilderReference(typ)
+			ref = g.types.BuilderReference(typ, referencedVersion)
 		} else {
 			element := typ.Element()
 			if element.IsScalar() {
 				ref = g.types.ValueReference(typ)
 			} else {
-				ref = g.types.BuilderReference(element)
+				ref = g.types.BuilderReference(element, referencedVersion)
 				ref = g.types.Reference(
 					ref.Import(),
 					ref.Selector(),
@@ -735,7 +741,7 @@ func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeRefer
 		if element.IsScalar() {
 			ref = g.types.ValueReference(typ)
 		} else {
-			ref = g.types.BuilderReference(element)
+			ref = g.types.BuilderReference(element, referencedVersion)
 			ref = g.types.Reference(
 				ref.Import(),
 				ref.Selector(),
