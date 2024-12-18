@@ -707,10 +707,3 @@ func (g *TypesGenerator) listName(typ *concepts.Type) string {
 	}
 	return typeName + "List"
 }
-
-func (g *TypesGenerator) versionSelector(attribute *concepts.Attribute) string {
-	if attribute.LinkOwner() == nil {
-		return ""
-	}
-	return fmt.Sprintf("*%s.", g.packages.VersionSelector(attribute.LinkOwner()))
-}

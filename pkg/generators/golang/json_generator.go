@@ -173,17 +173,6 @@ func (g *JSONSupportGenerator) Run() error {
 			}
 			for _, typ := range version.Types() {
 				for _, att := range typ.Attributes() {
-					// if att.Type().Owner().Name() != version.Name() ||
-					// 	(att.Type().IsList() && att.Type().Element().Owner().Name() != version.Name()) {
-					// 	importRefs = append(importRefs,
-					// 		struct {
-					// 			path     string
-					// 			selector string
-					// 		}{
-					// 			path:     g.packages.VersionImport(att.Type().Owner()),
-					// 			selector: g.packages.VersionSelector(att.Type().Owner()),
-					// 		})
-					// }
 					if att.LinkOwner() != nil {
 						importRefs = append(importRefs,
 							struct {

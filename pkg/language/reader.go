@@ -487,23 +487,8 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 	}
 	for _, attribute := range referencedType.Attributes() {
 		if attribute.Link() {
-			// We need to check if the type was previously introduced
-			// in that case we would simply changes the owner of the attribue
-			// as we had already compiled it in this version.
-			// if attribute.Type().IsList() {
-			// 	if r.version.FindType(attribute.Type().Element().Name()) == nil {
-			// 		r.version.AddTypeWithoutOwner(attribute.Type())
-			// 		r.version.AddTypeWithoutOwner(attribute.Type().Element())
-			// 	} else {
-			// 		elementOwner := r.version.FindType(attribute.Type().Element().Name()).Owner()
-			// 		if attribute.Type().Owner() != elementOwner {
-			// 			attribute.Type().SetOwner(elementOwner)
-			// 			attribute.Type().Element().SetOwner(elementOwner)
-			// 		}
-			// 	}
-			// } else if r.version.FindType(attribute.Type().Name()) == nil {
-			// 	r.version.AddTypeWithoutOwner(attribute.Type())
-			// }
+			// If the attribute is a Link set the LinkOwner
+			// to the attribute type Owner
 			attribute.SetLinkOwner(attribute.Type().Owner())
 		} else if attribute.Type().IsList() || attribute.Type().IsMap() {
 			r.version.AddType(attribute.Type())
