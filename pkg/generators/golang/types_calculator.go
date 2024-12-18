@@ -143,7 +143,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 			ref.name = c.names.Public(element.Name())
 		}
 		ref.name += "List"
-		ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
+		ref.text = ref.name
 	case typ.IsStruct():
 		ref = &TypeReference{}
 		ref.imprt, ref.selector = c.Package(typ)
@@ -151,7 +151,7 @@ func (c *TypesCalculator) StructReference(typ *concepts.Type) *TypeReference {
 		if ref.name == "" {
 			ref.name = c.names.Public(typ.Name())
 		}
-		ref.text = fmt.Sprintf("%s.%s", ref.selector, ref.name)
+		ref.text = ref.name
 	default:
 		c.reporter.Errorf(
 			"Don't know how to calculate struct type reference for type '%s'",
@@ -247,7 +247,7 @@ func (c *TypesCalculator) ValueReference(typ *concepts.Type) *TypeReference {
 
 // NullableReference calculates a type reference for a value of the given type that can be assigned
 // the nil value.
-func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
+func (c *TypesCalculator) NullableReference(typ *concepts.Type, referencedVersion string) *TypeReference {
 	switch {
 	case (typ.IsScalar() && !typ.IsInterface()):
 		ref := c.ValueReference(typ)
@@ -255,7 +255,11 @@ func (c *TypesCalculator) NullableReference(typ *concepts.Type) *TypeReference {
 		return ref
 	case typ.IsStruct():
 		ref := c.ValueReference(typ)
-		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		if referencedVersion != "" {
+			ref.text = fmt.Sprintf("*%s.%s", referencedVersion, ref.name)
+		} else {
+			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		}
 		return ref
 	default:
 		return c.ValueReference(typ)
@@ -297,12 +301,12 @@ func (c *TypesCalculator) JSONTypeReference(typ *concepts.Type) *TypeReference {
 	var ref *TypeReference
 	switch {
 	case typ.IsScalar():
-		ref = c.NullableReference(typ)
+		ref = c.NullableReference(typ, "")
 	case typ.IsList():
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			ref = c.NullableReference(typ)
+			ref = c.NullableReference(typ, "")
 		case element.IsStruct():
 			ref = c.JSONTypeReference(element)
 			ref.text = fmt.Sprintf("[]%s", ref.text)
@@ -311,7 +315,7 @@ func (c *TypesCalculator) JSONTypeReference(typ *concepts.Type) *TypeReference {
 		element := typ.Element()
 		switch {
 		case element.IsScalar():
-			ref = c.NullableReference(typ)
+			ref = c.NullableReference(typ, "")
 		case element.IsStruct():
 			ref = c.JSONTypeReference(element)
 			ref.text = fmt.Sprintf("map[string]%s", ref.text)
@@ -359,7 +363,7 @@ func (c *TypesCalculator) JSONStructReference(typ *concepts.Type) *TypeReference
 }
 
 // Builder reference calculates a reference for the type used build objects of the given type.
-func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
+func (c *TypesCalculator) BuilderReference(typ *concepts.Type, refVersion string) *TypeReference {
 	var ref *TypeReference
 	switch {
 	case typ.IsStruct():
@@ -370,7 +374,11 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 			ref.name = c.names.Public(typ.Name())
 		}
 		ref.name += "Builder"
-		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		if refVersion == "" {
+			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		} else {
+			ref.text = fmt.Sprintf("*%s.%s", refVersion, ref.name)
+		}
 	case typ.IsList():
 		element := typ.Element()
 		ref = &TypeReference{}
@@ -380,7 +388,11 @@ func (c *TypesCalculator) BuilderReference(typ *concepts.Type) *TypeReference {
 			ref.name = c.names.Public(element.Name())
 		}
 		ref.name += "ListBuilder"
-		ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		if refVersion == "" {
+			ref.text = fmt.Sprintf("*%s.%s", ref.selector, ref.name)
+		} else {
+			ref.text = fmt.Sprintf("*%s.%s", refVersion, ref.name)
+		}
 	default:
 		c.reporter.Errorf(
 			"Don't know how to calculate builder reference for type '%s'",

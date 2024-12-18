@@ -1049,7 +1049,7 @@ func (g *ClientsGenerator) fieldType(parameter *concepts.Parameter) *TypeReferen
 	case parameter.IsItems():
 		ref = g.types.ListReference(typ)
 	case typ.IsScalar() || typ.IsStruct() || typ.IsList() || typ.IsMap():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, "")
 	}
 	if ref == nil {
 		g.reporter.Errorf(
@@ -1091,13 +1091,13 @@ func (g *ClientsGenerator) accessorType(parameter *concepts.Parameter) *TypeRefe
 	typ := parameter.Type()
 	switch {
 	case typ.IsList() && typ.Element().IsScalar():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, "")
 	case parameter.IsItems():
 		ref = g.types.ListReference(typ)
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
 	case typ.IsStruct() || typ.IsList() || typ.IsMap():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, "")
 	}
 	if ref == nil {
 		g.reporter.Errorf(

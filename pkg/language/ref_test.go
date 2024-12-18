@@ -202,7 +202,7 @@ var _ = Describe("Read Model with ref annotation", func() {
 		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
 		Expect(attributeList).ToNot(BeNil())
 		Expect(attributeList.Type().IsList()).To(BeTrue())
-		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1"))
 		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
 		barType := version.FindType(names.ParseUsingCase("Bar"))
 		Expect(barType.Owner().Name().String()).To(Equal("v1_alpha1"))
@@ -260,7 +260,7 @@ var _ = Describe("Read Model with ref annotation", func() {
 		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
 		Expect(attributeList).ToNot(BeNil())
 		Expect(attributeList.Type().IsList()).To(BeTrue())
-		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1"))
 		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
 		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
 		Expect(myAttributeType).ToNot(BeNil())
@@ -322,7 +322,7 @@ var _ = Describe("Read Model with ref annotation", func() {
 		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
 		Expect(attributeList).ToNot(BeNil())
 		Expect(attributeList.Type().IsList()).To(BeTrue())
-		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1"))
 		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
 		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
 		Expect(myAttributeType).ToNot(BeNil())
@@ -383,12 +383,69 @@ var _ = Describe("Read Model with ref annotation", func() {
 		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
 		Expect(attributeList).ToNot(BeNil())
 		Expect(attributeList.Type().IsList()).To(BeTrue())
-		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1"))
+		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1"))
+		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
+		Expect(myAttributeType).ToNot(BeNil())
+		Expect(myAttributeType.Owner().Name().String()).To(Equal("v1_alpha1"))
+		attributeGoo := class.FindAttribute(names.ParseUsingCase("Goo"))
+		Expect(attributeGoo).ToNot(BeNil())
+		Expect(attributeGoo.LinkOwner().Name().String).To(Equal("v1"))
+		barType := version.FindType(names.ParseUsingCase("Bar"))
+		Expect(barType.Owner().Name().String()).To(Equal("v1"))
+	})
+
+	It("Link referenced should point to the version referenced", func() {
+		model := MakeModel(
+			"my_service/v1_alpha1/root.model",
+			`
+			resource Root {
+			}
+			`,
+			"my_service/v1_alpha1/my_class.model",
+			`
+			@ref(path="other_service/v1/my_class")
+			class MyClass {
+			}
+			`,
+			"other_service/v1/root.model",
+			`
+			resource Root{
+			}
+			`,
+			"other_service/v1/my_class.model",
+			`
+			class MyClass {
+				link Foo []MyAttribute
+				Loo MyAttribute
+			}`,
+			"other_service/v1/my_attribute.model",
+			`
+			class MyAttribute{
+				Goo []String
+			}
+			`,
+		)
+		// Check the attribute and its owner
+		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		Expect(service).ToNot(BeNil())
+		version := service.FindVersion(names.ParseUsingSeparator("v1_alpha1", "_"))
+		Expect(version).ToNot(BeNil())
+		class := version.FindType(names.ParseUsingCase("MyClass"))
+		Expect(class).ToNot(BeNil())
+		Expect(class.Owner().Name().String()).To(Equal("v1_alpha1"))
+		attributeList := class.FindAttribute(names.ParseUsingCase("Foo"))
+		Expect(attributeList).ToNot(BeNil())
+		Expect(attributeList.Type().IsList()).To(BeTrue())
+		Expect(attributeList.LinkOwner().Name().String()).To(Equal("v1"))
+		Expect(attributeList.Type().Owner().Name().String()).To(Equal("v1"))
 		Expect(attributeList.Type().Element().Owner().Name().String()).To(Equal("v1_alpha1"))
 		myAttributeType := version.FindType(names.ParseUsingCase("MyAttribute"))
 		Expect(myAttributeType).ToNot(BeNil())
 		Expect(myAttributeType.Owner().Name().String()).To(Equal("v1_alpha1"))
-		barType := version.FindType(names.ParseUsingCase("Bar"))
-		Expect(barType.Owner().Name().String()).To(Equal("v1"))
+		myAttribute := class.FindAttribute(names.ParseUsingCase("Loo"))
+		Expect(myAttribute.LinkOwner()).To(BeNil())
+		Expect(myAttribute.Type().Owner().Name().String()).To(Equal("v1_alpha1"))
 	})
+
 })

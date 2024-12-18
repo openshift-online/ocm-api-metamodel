@@ -360,7 +360,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 				return {{ $objectName }}Kind
 			}
 
-			// Link returns true iif this is a link.
+			// Link returns true if this is a link.
 			func (o *{{ $objectName }}) Link() bool {
 				return o != nil && o.bitmap_&1 != 0
 			}
@@ -609,19 +609,23 @@ func (g *TypesGenerator) fieldName(attribute *concepts.Attribute) string {
 func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReference {
 	var ref *TypeReference
 	typ := attribute.Type()
+	referencedVersion := ""
+	if attribute.LinkOwner() != nil {
+		referencedVersion = attribute.LinkOwner().Name().String()
+	}
 	switch {
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
 	case typ.IsStruct():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, referencedVersion)
 	case typ.IsList():
 		if attribute.Link() {
 			ref = g.types.ListReference(typ)
 		} else {
-			ref = g.types.NullableReference(typ)
+			ref = g.types.NullableReference(typ, referencedVersion)
 		}
 	case typ.IsMap():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, referencedVersion)
 	}
 	if ref == nil {
 		g.reporter.Errorf(
@@ -668,19 +672,23 @@ func (g *TypesGenerator) getterName(attribute *concepts.Attribute) string {
 func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference {
 	var ref *TypeReference
 	typ := attribute.Type()
+	referencedVersion := ""
+	if attribute.LinkOwner() != nil {
+		referencedVersion = attribute.LinkOwner().Name().String()
+	}
 	switch {
 	case typ.IsScalar():
 		ref = g.types.ValueReference(typ)
 	case typ.IsStruct():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, referencedVersion)
 	case typ.IsList():
 		if attribute.Link() {
 			ref = g.types.ListReference(typ)
 		} else {
-			ref = g.types.NullableReference(typ)
+			ref = g.types.NullableReference(typ, referencedVersion)
 		}
 	case typ.IsMap():
-		ref = g.types.NullableReference(typ)
+		ref = g.types.NullableReference(typ, referencedVersion)
 	}
 	if ref == nil {
 		g.reporter.Errorf(
@@ -698,4 +706,11 @@ func (g *TypesGenerator) listName(typ *concepts.Type) string {
 		typeName = g.names.Public(typ.Name())
 	}
 	return typeName + "List"
+}
+
+func (g *TypesGenerator) versionSelector(attribute *concepts.Attribute) string {
+	if attribute.LinkOwner() == nil {
+		return ""
+	}
+	return fmt.Sprintf("*%s.", g.packages.VersionSelector(attribute.LinkOwner()))
 }
