@@ -133,7 +133,7 @@ func (r *Reader) Read() (model *concepts.Model, err error) {
 	for _, service := range r.model.Services() {
 		for _, version := range service.Versions() {
 			for _, typ := range version.Types() {
-				if typ.Kind() != concepts.ListType && typ.Owner().Name() == version.Name() {
+				if typ.Kind() != concepts.ListType {
 					listName := names.Cat(typ.Name(), nomenclator.List)
 					listType := version.FindType(listName)
 					if listType == nil {
@@ -409,20 +409,8 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 		typ.SetKind(concepts.ClassType)
 		r.removeUndefinedType(typ)
 	} else {
-		// we would like to override the owner of any previously defined types
-		// these might come from references.
-		// e.g.
-		//      @ref(name="/some/service/foo")
-		//      Class foo {
-		//         Bar Sometype
-		//      }
-		// some_type.model - an overriding decleration.
-		// Class SomeType {...}
-		r.version.AddType(typ)
-		listName := names.Cat(typ.Name(), nomenclator.List)
-		if listType := r.version.FindType(listName); listType != nil {
-			r.version.AddType(listType)
-		}
+		r.reporter.Errorf("Type '%s' is already defined", name)
+		return
 	}
 
 	// Add the documentation:
