@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.64 Dec 19 2024
+
+- Revert redundunt code changes.
+- Fix ownership issue
 
 ## 0.0.63 Dec 16 2024
 
