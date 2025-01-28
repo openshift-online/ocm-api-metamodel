@@ -431,7 +431,29 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 	}
 
 	if path := annotations.ReferencePath(typ); path != "" {
+		// If the type has a reference set ExplicitDeclared
+		typ.SetExplicitDeclared(true)
+		r.removeLinkedAttributes(typ)
 		r.handleClassRef(typ, path)
+	}
+}
+
+func (r *Reader) removeLinkedAttributes(typ *concepts.Type) {
+	for _, types := range r.version.Types() {
+		for _, attribute := range types.Attributes() {
+			// It could be that the type is already in an attribute of the service
+			// It needs to add the SetExplicitDeclared to it. {
+			if attribute.Type().Name() == typ.Name() {
+				attribute.Type().SetExplicitDeclared(true)
+			}
+			if attribute.Type().IsList() || attribute.Type().IsMap() {
+				if attribute.Type().Element().Name().String() == typ.Name().String() {
+					attribute.Type().SetExplicitDeclared(true)
+					attribute.Type().Element().SetExplicitDeclared(true)
+					attribute.Type().Element().SetOwner(typ.Owner())
+				}
+			}
+		}
 	}
 }
 
@@ -462,7 +484,9 @@ func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
 	// Once loading the service, we find the reference type
 	// then recursively iterate the type tree and add the types to the current version.
 	if referencedType := refVersion.FindType(names.ParseUsingSeparator(referencedTypeName, "_")); referencedType != nil {
-		r.version.AddType(referencedType)
+		if !typ.ExplicitDeclared() {
+			r.version.AddType(referencedType)
+		}
 		r.recursivelyAddTypeToVersion(typ, referencedType)
 	}
 }
@@ -474,9 +498,25 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 		return
 	}
 	for _, attribute := range referencedType.Attributes() {
+		// If attribute is explicitDeclared, it needs to change it's owner to be the same as currType
 		if attribute.Link() {
 			// If the attribute is a Link set the LinkOwner
-			// to the attribute type Owner
+			// to the attribute type Owner, if it is also a list it should change the owner of the
+			// element type
+			existingAttType := r.version.FindType(attribute.Type().Name())
+			if existingAttType != nil && existingAttType.ExplicitDeclared() {
+				attribute.Type().SetOwner(r.version)
+				// Stop the iteration over the attributes of this type
+				continue
+			} else if attribute.Type().IsList() || attribute.Type().IsMap() {
+				existingAttType = r.version.FindType(attribute.Type().Element().Name())
+				if existingAttType != nil && existingAttType.ExplicitDeclared() {
+					attribute.Type().SetOwner(r.version)
+					attribute.Type().Element().SetOwner(r.version)
+					continue
+				}
+			}
+			// Otherwise add the setLinkOwner to the attribute
 			attribute.SetLinkOwner(attribute.Type().Owner())
 		} else if attribute.Type().IsList() || attribute.Type().IsMap() {
 			r.version.AddType(attribute.Type())
@@ -485,9 +525,14 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 			r.recursivelyAddTypeToVersion(currType, attribute.Type())
 		}
 	}
-	if r.version.FindType(referencedType.Name()) == nil {
-		r.version.AddType(referencedType)
+
+	existingType := r.version.FindType(referencedType.Name())
+	if existingType != nil && existingType.ExplicitDeclared() {
+		//r.version.AddExplicitDeclaredType(referencedType)
+		referencedType.SetExplicitDeclared(true)
 	}
+	r.version.AddType(referencedType)
+
 }
 
 func (r *Reader) ExitStructDecl(ctx *StructDeclContext) {

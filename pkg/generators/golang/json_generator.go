@@ -173,7 +173,7 @@ func (g *JSONSupportGenerator) Run() error {
 			}
 			for _, typ := range version.Types() {
 				for _, att := range typ.Attributes() {
-					if att.LinkOwner() != nil {
+					if att.LinkOwner() != nil && !att.Type().ExplicitDeclared() {
 						importRefs = append(importRefs,
 							struct {
 								path     string
@@ -700,7 +700,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					{{ $fieldTag := fieldTag . }}
 					{{ $fieldMask := bitMask . }}
 					case "{{ $fieldTag }}":
-						{{ generateReadValue "value" .Type .Link .LinkOwner}}
+						{{ generateReadValue "value" .Type .Link .LinkOwner }}
 						object.{{ $fieldName }} = value
 						object.bitmap_ |= {{ $fieldMask }}
 				{{ end }}
@@ -712,6 +712,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 		}
 		`,
 		"Type", typ,
+		"ExplicitDeclared", typ.ExplicitDeclared(),
 	)
 }
 
@@ -825,6 +826,7 @@ func (g *JSONSupportGenerator) generateListTypeSource(
 		`,
 		"Type", typ,
 		"linkOwner", linkOwner,
+		"ExplicitDeclared", typ.ExplicitDeclared(),
 	)
 }
 
@@ -1348,10 +1350,10 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 			text := iterator.ReadString()
 			{{ .Variable }} := {{ enumName .Type }}(text)
 		{{ else if .Type.IsStruct }}
-			{{ .Variable }} := {{ readRefTypeFunc .Type .LinkOwner }}(iterator)
+			{{ .Variable }} := {{ readRefTypeFunc .Type .LinkOwner .ExplicitDeclared}}(iterator)
 		{{ else if .Type.IsList }}
 			{{ if .Link }}
-			 	{{ $selectorFromLinkOwner := selectorFromLinkOwner .LinkOwner}}
+			 	{{ $selectorFromLinkOwner := selectorFromLinkOwner .LinkOwner .ExplicitDeclared}}
 				{{ $structName := structName .Type }}
 				{{ .Variable }} := &{{ $selectorFromLinkOwner }}{{ $structName }}{}
 				for {
@@ -1366,7 +1368,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 					case "href":
 						{{ .Variable }}.SetHREF(iterator.ReadString())
 					case "items":
-						{{ .Variable }}.SetItems({{ readRefTypeFunc .Type .LinkOwner }}(iterator))
+						{{ .Variable }}.SetItems({{ readRefTypeFunc .Type .LinkOwner .ExplicitDeclared}}(iterator))
 					default:
 						iterator.ReadAny()
 					}
@@ -1392,6 +1394,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 		"Type", typ,
 		"Link", link,
 		"LinkOwner", linkOwner,
+		"ExplicitDeclared", typ.ExplicitDeclared(),
 	)
 }
 
@@ -1432,6 +1435,7 @@ func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
 		"Value", value,
 		"Type", typ,
 		"LinkOwner", linkOwner,
+		"ExplicitDeclared", typ.ExplicitDeclared(),
 	)
 }
 
@@ -1459,12 +1463,12 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 		{{ else if .Type.IsInterface }}
 			stream.WriteVal({{ .Value }})
 		{{ else if .Type.IsStruct }}
-			{{ writeRefTypeFunc .Type .LinkOwner }}({{ .Value}}, stream)
+			{{ writeRefTypeFunc .Type .LinkOwner .ExplicitDeclared }}({{ .Value}}, stream)
 		{{ else if .Type.IsList }}
 			{{ if .Link }}
 				stream.WriteObjectStart()
 				stream.WriteObjectField("items")
-				{{ writeRefTypeFunc .Type .LinkOwner }}({{ .Value }}.Items(), stream)
+				{{ writeRefTypeFunc .Type .LinkOwner .ExplicitDeclared }}({{ .Value }}.Items(), stream)
 				stream.WriteObjectEnd()
 			{{ else }}
 				{{ writeTypeFunc .Type }}({{ .Value }}, stream)
@@ -1485,7 +1489,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 					}
 					item := {{ .Value }}[key]
 					stream.WriteObjectField(key)
-					{{ generateWriteValue "item" .Type.Element false .LinkOwner}}
+					{{ generateWriteValue "item" .Type.Element false .LinkOwner }}
 				}
 				stream.WriteObjectEnd()
 			} else {
@@ -1497,6 +1501,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 		"Type", typ,
 		"Link", link,
 		"LinkOwner", linkOwner,
+		"ExplicitDeclared", typ.ExplicitDeclared(),
 	)
 }
 
@@ -1530,9 +1535,9 @@ func (g *JSONSupportGenerator) writeTypeFunc(typ *concepts.Type) string {
 	return g.names.Public(name)
 }
 
-func (g *JSONSupportGenerator) writeRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version) string {
+func (g *JSONSupportGenerator) writeRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version, explicitDeclared bool) string {
 	name := names.Cat(nomenclator.Write, typ.Name())
-	if refVersion != nil {
+	if refVersion != nil && !explicitDeclared {
 		version := g.packages.VersionSelector(refVersion)
 		return fmt.Sprintf("%s.%s", version, g.names.Public(name))
 	}
@@ -1553,9 +1558,9 @@ func (g *JSONSupportGenerator) readTypeFunc(typ *concepts.Type) string {
 	return g.names.Public(name)
 }
 
-func (g *JSONSupportGenerator) readRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version) string {
+func (g *JSONSupportGenerator) readRefTypeFunc(typ *concepts.Type, refVersion *concepts.Version, explicitDeclared bool) string {
 	name := names.Cat(nomenclator.Read, typ.Name())
-	if refVersion != nil {
+	if refVersion != nil && !explicitDeclared {
 		version := g.packages.VersionSelector(refVersion)
 		return fmt.Sprintf("%s.%s", version, g.names.Public(name))
 	}
@@ -1675,8 +1680,8 @@ func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) strin
 	}
 }
 
-func (g JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version) string {
-	if linkOwner == nil {
+func (g JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version, explicitDeclared bool) string {
+	if linkOwner == nil || explicitDeclared {
 		return ""
 	}
 	return fmt.Sprintf("%s.", g.packages.VersionSelector(linkOwner))

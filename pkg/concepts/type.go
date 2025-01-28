@@ -72,12 +72,24 @@ type Type struct {
 	annotatedSupport
 	namedSupport
 
-	owner      *Version
-	kind       TypeKind
-	attributes AttributeSlice
-	values     EnumValueSlice
-	element    *Type
-	index      *Type
+	owner            *Version
+	kind             TypeKind
+	attributes       AttributeSlice
+	values           EnumValueSlice
+	element          *Type
+	index            *Type
+	explicitDeclared bool
+}
+
+// ExplicitDeclared returns true if this type is explicitDeclared
+// with a reference
+func (t *Type) ExplicitDeclared() bool {
+	return t.explicitDeclared
+}
+
+// SetExplicitDeclared sets ExplicitDeclared
+func (t *Type) SetExplicitDeclared(value bool) {
+	t.explicitDeclared = value
 }
 
 // Owner returns the version that owns this type.
@@ -190,6 +202,14 @@ func (t *Type) AddAttribute(attribute *Attribute) {
 		t.attributes = append(t.attributes, attribute)
 		sort.Sort(t.attributes)
 		attribute.SetOwner(t)
+	}
+}
+
+func (t *Type) AddAttributes(attributes AttributeSlice) {
+	if attributes.Len() > 0 {
+		for _, att := range attributes {
+			t.AddAttribute(att)
+		}
 	}
 }
 
