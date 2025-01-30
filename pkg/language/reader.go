@@ -444,10 +444,12 @@ func (r *Reader) removeLinkedAttributes(typ *concepts.Type) {
 			// It could be that the type is already in an attribute of the service
 			// It needs to add the SetExplicitDeclared to it. {
 			if attribute.Type().Name() == typ.Name() {
+				attribute.SetLinkOwner(nil)
 				attribute.Type().SetExplicitDeclared(true)
 			}
 			if attribute.Type().IsList() || attribute.Type().IsMap() {
 				if attribute.Type().Element().Name().String() == typ.Name().String() {
+					attribute.SetLinkOwner(nil)
 					attribute.Type().SetExplicitDeclared(true)
 					attribute.Type().Element().SetExplicitDeclared(true)
 					attribute.Type().Element().SetOwner(typ.Owner())

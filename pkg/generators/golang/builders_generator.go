@@ -643,7 +643,7 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 	typ := attribute.Type()
 	var ref *TypeReference
 	referencedVersion := ""
-	if attribute.LinkOwner() != nil && !typ.ExplicitDeclared() {
+	if attribute.LinkOwner() != nil {
 		referencedVersion = attribute.LinkOwner().Name().String()
 	}
 	switch {
@@ -693,7 +693,7 @@ func (g *BuildersGenerator) fieldType(attribute *concepts.Attribute) *TypeRefere
 }
 
 func (g *BuildersGenerator) selectorType(attribute *concepts.Attribute) string {
-	if attribute.LinkOwner() == nil || attribute.Type().ExplicitDeclared() {
+	if attribute.LinkOwner() == nil {
 		return ""
 	}
 	return fmt.Sprintf("%s.", g.packages.VersionSelector(attribute.LinkOwner()))
@@ -711,7 +711,7 @@ func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeRefer
 	typ := attribute.Type()
 	var ref *TypeReference
 	referencedVersion := ""
-	if attribute.LinkOwner() != nil && !typ.ExplicitDeclared() {
+	if attribute.LinkOwner() != nil {
 		referencedVersion = attribute.LinkOwner().Name().String()
 	}
 	switch {

@@ -607,7 +607,7 @@ func (g *TypesGenerator) getterType(attribute *concepts.Attribute) *TypeReferenc
 	var ref *TypeReference
 	typ := attribute.Type()
 	referencedVersion := ""
-	if attribute.LinkOwner() != nil && !typ.ExplicitDeclared() {
+	if attribute.LinkOwner() != nil {
 		referencedVersion = attribute.LinkOwner().Name().String()
 	}
 	switch {
@@ -670,7 +670,7 @@ func (g *TypesGenerator) fieldType(attribute *concepts.Attribute) *TypeReference
 	var ref *TypeReference
 	typ := attribute.Type()
 	referencedVersion := ""
-	if attribute.LinkOwner() != nil && !attribute.Type().ExplicitDeclared() {
+	if attribute.LinkOwner() != nil {
 		referencedVersion = attribute.LinkOwner().Name().String()
 	}
 	switch {
