@@ -700,7 +700,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					{{ $fieldTag := fieldTag . }}
 					{{ $fieldMask := bitMask . }}
 					case "{{ $fieldTag }}":
-						{{ generateReadValue "value" .Type .Link .LinkOwner}}
+						{{ generateReadValue "value" .Type .Link .LinkOwner }}
 						object.{{ $fieldName }} = value
 						object.bitmap_ |= {{ $fieldMask }}
 				{{ end }}
@@ -1351,7 +1351,7 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 			{{ .Variable }} := {{ readRefTypeFunc .Type .LinkOwner }}(iterator)
 		{{ else if .Type.IsList }}
 			{{ if .Link }}
-			 	{{ $selectorFromLinkOwner := selectorFromLinkOwner .LinkOwner}}
+			 	{{ $selectorFromLinkOwner := selectorFromLinkOwner .LinkOwner }}
 				{{ $structName := structName .Type }}
 				{{ .Variable }} := &{{ $selectorFromLinkOwner }}{{ $structName }}{}
 				for {
@@ -1485,7 +1485,7 @@ func (g *JSONSupportGenerator) generateWriteValue(value string,
 					}
 					item := {{ .Value }}[key]
 					stream.WriteObjectField(key)
-					{{ generateWriteValue "item" .Type.Element false .LinkOwner}}
+					{{ generateWriteValue "item" .Type.Element false .LinkOwner }}
 				}
 				stream.WriteObjectEnd()
 			} else {
