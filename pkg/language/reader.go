@@ -486,9 +486,6 @@ func (r *Reader) handleClassRef(typ *concepts.Type, path string) {
 	// Once loading the service, we find the reference type
 	// then recursively iterate the type tree and add the types to the current version.
 	if referencedType := refVersion.FindType(names.ParseUsingSeparator(referencedTypeName, "_")); referencedType != nil {
-		if !typ.ExplicitDeclared() {
-			r.version.AddType(referencedType)
-		}
 		r.recursivelyAddTypeToVersion(typ, referencedType)
 	}
 }
@@ -530,7 +527,6 @@ func (r *Reader) recursivelyAddTypeToVersion(currType *concepts.Type,
 
 	existingType := r.version.FindType(referencedType.Name())
 	if existingType != nil && existingType.ExplicitDeclared() {
-		//r.version.AddExplicitDeclaredType(referencedType)
 		referencedType.SetExplicitDeclared(true)
 	}
 	r.version.AddType(referencedType)
