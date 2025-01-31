@@ -3,6 +3,11 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.65 Jan 31 2025
+
+- Enhancement of 'ref' mechanism
+- Change the tests for ref subresources
+
 ## 0.0.64 Dec 19 2024
 
 - Revert redundunt code changes.
