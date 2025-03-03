@@ -50,15 +50,16 @@ var args struct {
 }
 
 var knownGenerators = map[string]bool{
-	"*":        true,
-	"builders": true,
-	"clients":  true,
-	"errors":   true,
-	"helpers":  true,
-	"json":     true,
-	"metrics":  true,
-	"openapi":  true,
-	"types":    true,
+	"*":            true,
+	"builders":     true,
+	"clients":      true,
+	"errors":       true,
+	"helpers":      true,
+	"json":         true,
+	"request-json": true,
+	"metrics":      true,
+	"openapi":      true,
+	"types":        true,
 }
 
 func init() {
@@ -285,6 +286,24 @@ func run(cmd *cobra.Command, argv []string) {
 	if shouldRunGenerator("json") {
 		// Create the JSON support generator:
 		gen, err = golang.NewJSONSupportGenerator().
+			Reporter(reporter).
+			Model(model).
+			Output(args.output).
+			Packages(goPackagesCalculator).
+			Names(goNamesCalculator).
+			Types(goTypesCalculator).
+			Binding(bindingCalculator).
+			Build()
+		if err != nil {
+			reporter.Errorf("Can't create JSON support generator: %v", err)
+			os.Exit(1)
+		}
+		gens = append(gens, gen)
+	}
+
+	if shouldRunGenerator("request-json") {
+		// Create the JSON support generator:
+		gen, err = golang.NewRequestJSONSupportGenerator().
 			Reporter(reporter).
 			Model(model).
 			Output(args.output).

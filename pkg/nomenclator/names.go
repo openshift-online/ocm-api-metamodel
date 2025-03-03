@@ -92,13 +92,14 @@ var (
 	Post  = names.ParseUsingCase("Post")
 
 	// R:
-	Read     = names.ParseUsingCase("Read")
-	Reader   = names.ParseUsingCase("Reader")
-	Readers  = names.ParseUsingCase("Readers")
-	Request  = names.ParseUsingCase("Request")
-	Resource = names.ParseUsingCase("Resource")
-	Response = names.ParseUsingCase("Response")
-	Root     = names.ParseUsingCase("Root")
+	Read        = names.ParseUsingCase("Read")
+	Reader      = names.ParseUsingCase("Reader")
+	Readers     = names.ParseUsingCase("Readers")
+	Request     = names.ParseUsingCase("Request")
+	RequestJSON = names.ParseUsingCase("RequestJSON")
+	Resource    = names.ParseUsingCase("Resource")
+	Response    = names.ParseUsingCase("Response")
+	Root        = names.ParseUsingCase("Root")
 
 	// S:
 	Search  = names.ParseUsingCase("Search")
