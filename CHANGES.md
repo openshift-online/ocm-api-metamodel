@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.66 Mar 4 2025
+
+- Add interface type to the basic type
+
 ## 0.0.65 Jan 31 2025
 
 - Enhancement of 'ref' mechanism
