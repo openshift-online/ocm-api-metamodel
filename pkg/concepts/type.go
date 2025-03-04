@@ -181,7 +181,7 @@ func (t *Type) IsBasicType() bool {
 		return false
 	}
 
-	return t.kind == ScalarType
+	return t.kind == ScalarType || t.kind == InterfaceType
 }
 
 // IsStruct returns true iff this type is an struct type. Note that class types are also considered
