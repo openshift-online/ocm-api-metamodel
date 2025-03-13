@@ -148,7 +148,7 @@ func (c *BindingCalculator) Method(method *concepts.Method) string {
 	switch {
 	case name.Equals(nomenclator.Add):
 		return http.MethodPost
-	case name.Equals(nomenclator.Delete):
+	case name.Equals(nomenclator.Delete) || name.Equals(nomenclator.AsyncDelete):
 		return http.MethodDelete
 	case name.Equals(nomenclator.Get):
 		return http.MethodGet
@@ -156,7 +156,7 @@ func (c *BindingCalculator) Method(method *concepts.Method) string {
 		return http.MethodGet
 	case name.Equals(nomenclator.Post):
 		return http.MethodPost
-	case name.Equals(nomenclator.Update):
+	case name.Equals(nomenclator.Update) || name.Equals(nomenclator.AsyncUpdate):
 		return http.MethodPatch
 	default:
 		return http.MethodPost
@@ -173,10 +173,14 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 		status = http.StatusCreated
 	case name.Equals(nomenclator.Add):
 		status = http.StatusCreated
+	case name.Equals(nomenclator.AsyncUpdate):
+		status = http.StatusAccepted
 	case name.Equals(nomenclator.Update):
 		status = http.StatusOK
 	case name.Equals(nomenclator.Delete):
 		status = http.StatusNoContent
+	case name.Equals(nomenclator.AsyncDelete):
+		status = http.StatusAccepted
 	}
 	return strconv.Itoa(status)
 }

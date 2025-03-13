@@ -62,7 +62,7 @@ func (r *Reader) checkMethod(method *concepts.Method) {
 	switch {
 	case method.IsAdd():
 		r.checkAdd(method)
-	case method.IsDelete():
+	case method.IsDelete() || method.IsAsyncDelete():
 		r.checkDelete(method)
 	case method.IsGet():
 		r.checkGet(method)
@@ -72,7 +72,7 @@ func (r *Reader) checkMethod(method *concepts.Method) {
 		r.checkPost(method)
 	case method.IsSearch():
 		r.checkSearch(method)
-	case method.IsUpdate():
+	case method.IsUpdate() || method.IsAsyncUpdate():
 		r.checkUpdate(method)
 	case method.IsAction():
 		r.checkAction(method)
