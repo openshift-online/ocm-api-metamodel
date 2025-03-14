@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.67 Mar 13 2025
+
+- Add async methods (update and delete)
+
 ## 0.0.66 Mar 4 2025
 
 - Add interface type to the basic type
