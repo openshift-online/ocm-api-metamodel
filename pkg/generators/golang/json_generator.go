@@ -524,9 +524,9 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 
 func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 	importRefs []struct {
-	path     string
-	selector string
-}) error {
+		path     string
+		selector string
+	}) error {
 	var err error
 
 	// Calculate the package and file name:
@@ -709,9 +709,9 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 func (g *JSONSupportGenerator) generateListTypeSupport(typ *concepts.Type,
 	importRefs []struct {
-	path     string
-	selector string
-}) error {
+		path     string
+		selector string
+	}) error {
 	var err error
 
 	// Calculate the package and file name:
