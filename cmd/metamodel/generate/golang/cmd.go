@@ -107,6 +107,20 @@ func shouldRunGenerator(generator string) bool {
 	if _, known := knownGenerators[generator]; !known {
 		panic(fmt.Sprintf("coding error: generator '%s' not known", generator))
 	}
+	if len(args.apiBase) == 0 {
+		for _, currGenerator := range args.generators {
+			switch currGenerator {
+			case "builders-alias", "json-alias", "types-alias":
+				panic(fmt.Sprintf("cannot specify generator %q without setting --apiBase", generator))
+			}
+		}
+
+		switch generator {
+		case "builders-alias", "json-alias", "types-alias":
+			return false
+		}
+	}
+
 	for _, currGenerator := range args.generators {
 		if currGenerator == "*" {
 			return true
