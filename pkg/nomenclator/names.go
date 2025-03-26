@@ -29,9 +29,10 @@ var (
 	AsyncUpdate = names.ParseUsingCase("AsyncUpdate")
 
 	// B:
-	Body    = names.ParseUsingCase("Body")
-	Boolean = names.ParseUsingCase("Boolean")
-	Builder = names.ParseUsingCase("Builder")
+	Body         = names.ParseUsingCase("Body")
+	Boolean      = names.ParseUsingCase("Boolean")
+	Builder      = names.ParseUsingCase("Builder")
+	BuilderAlias = names.ParseUsingCase("BuilderAlias")
 
 	// C:
 	Client  = names.ParseUsingCase("Client")
@@ -66,7 +67,8 @@ var (
 	Items     = names.ParseUsingCase("Items")
 
 	// J:
-	JSON = names.ParseUsingCase("JSON")
+	JSON      = names.ParseUsingCase("JSON")
+	JSONAlias = names.ParseUsingCase("JSONAlias")
 
 	// K:
 	Kind = names.ParseUsingCase("Kind")
@@ -94,13 +96,14 @@ var (
 	Post  = names.ParseUsingCase("Post")
 
 	// R:
-	Read     = names.ParseUsingCase("Read")
-	Reader   = names.ParseUsingCase("Reader")
-	Readers  = names.ParseUsingCase("Readers")
-	Request  = names.ParseUsingCase("Request")
-	Resource = names.ParseUsingCase("Resource")
-	Response = names.ParseUsingCase("Response")
-	Root     = names.ParseUsingCase("Root")
+	Read        = names.ParseUsingCase("Read")
+	Reader      = names.ParseUsingCase("Reader")
+	Readers     = names.ParseUsingCase("Readers")
+	Request     = names.ParseUsingCase("Request")
+	RequestJSON = names.ParseUsingCase("RequestJSON")
+	Resource    = names.ParseUsingCase("Resource")
+	Response    = names.ParseUsingCase("Response")
+	Root        = names.ParseUsingCase("Root")
 
 	// S:
 	Search  = names.ParseUsingCase("Search")
@@ -114,9 +117,10 @@ var (
 	String  = names.ParseUsingCase("String")
 
 	// T:
-	Total = names.ParseUsingCase("Total")
-	Tree  = names.ParseUsingCase("Tree")
-	Type  = names.ParseUsingCase("Type")
+	Total     = names.ParseUsingCase("Total")
+	Tree      = names.ParseUsingCase("Tree")
+	Type      = names.ParseUsingCase("Type")
+	TypeAlias = names.ParseUsingCase("TypeAlias")
 
 	// U:
 	Unmarshal = names.ParseUsingCase("Unmarshal")
