@@ -35,6 +35,12 @@ openapi_generator_version:=3.3.4
 openapi_generator_url:=https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/$(openapi_generator_version)/openapi-generator-cli-$(openapi_generator_version).jar
 openapi_generator_sum:=24cb04939110cffcdd7062d2f50c6f61159dc3e0ca3b8aecbae6ade53ad3dc8c
 
+# Verifies that source passes standard checks.
+verify:
+	go vet ./pkg/... ./cmd/...
+	hack/verify-gofmt.sh
+.PHONY: verify
+
 .PHONY: binary
 binary: generate
 	go build ./cmd/metamodel
