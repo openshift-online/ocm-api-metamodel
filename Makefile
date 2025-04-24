@@ -91,7 +91,11 @@ go_tests: binary ginkgo_install goimports_install
 		--model=tests/model \
 		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/generated \
 		--output=tests/go/generated
+ifndef JUNITFILE
 	cd tests/go && $(GINKGO) -r
+else
+	cd tests/go && $(GINKGO) -r --junit-report=junit_golang_tests_junit.xml --output-dir=${ARTIFACT_DIR}
+endif
 
 .PHONY: openapi_tests
 openapi_tests: openapi_generator binary
