@@ -409,8 +409,18 @@ func (r *Reader) ExitClassDecl(ctx *ClassDeclContext) {
 		typ.SetKind(concepts.ClassType)
 		r.removeUndefinedType(typ)
 	} else {
-		r.reporter.Errorf("Type '%s' is already defined", name)
-		return
+		r.reporter.Infof("Annotation: %s", ctx.GetAnnotations()[0].GetName().GetText())
+		if ctx.GetAnnotations()[0].GetName().GetText() == "ref" {
+			// This type is already in the version.
+			// Set that is explicit declared and remove the linked attributes.
+			r.addAnnotations(typ, ctx.GetAnnotations())
+			typ.SetExplicitDeclared(true)
+			typ.SetOwner(r.version)
+			r.removeLinkedAttributes(typ)
+		} else {
+			r.reporter.Errorf("Type '%s' is already defined reading class", name)
+			return
+		}
 	}
 
 	// Add the documentation:
@@ -442,10 +452,12 @@ func (r *Reader) removeLinkedAttributes(typ *concepts.Type) {
 	for _, types := range r.version.Types() {
 		for _, attribute := range types.Attributes() {
 			// It could be that the type is already in an attribute of the service
-			// It needs to add the SetExplicitDeclared to it. {
-			if attribute.Type().Name() == typ.Name() {
+			// It needs to add the SetExplicitDeclared to it.
+			r.reporter.Infof("Attribute type %s - Type %s", attribute.Type().Name(), typ.Name())
+			if attribute.Type().Name().Equals(typ.Name()) {
 				attribute.SetLinkOwner(nil)
 				attribute.Type().SetExplicitDeclared(true)
+				attribute.Type().SetOwner(typ.Owner())
 			}
 			if attribute.Type().IsList() || attribute.Type().IsMap() {
 				if attribute.Type().Element().Name().String() == typ.Name().String() {
