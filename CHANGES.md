@@ -3,6 +3,10 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.68 Jun 03 2025
+
+- Fix reference class already defined
+
 ## 0.0.67 Mar 13 2025
 
 - Add async methods (update and delete)
