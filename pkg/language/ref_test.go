@@ -337,6 +337,66 @@ var _ = Describe("Read Model with ref annotation", func() {
 		Expect(barType.Owner().Name().String()).To(Equal("v1_alpha1"))
 	})
 
+	// In this test is to test the behavior when a type is read twice, one for the reference
+	// reader and then is redefined.
+	// In this test, is the new_attribute class what it is first read as the attribute
+	// of the referenced cluster. In this moment, it is added to a type for the service
+	// my_service/v2. Then, the reader, reads the NewAtribute class, that referenced to
+	// other_service/v1. At this point, this type already exists in my_service/v2.
+	// The reader should not fail, and it should treat the type as it is explicit referenced.
+	It("Overrides class with a referenced class", func() {
+		model := MakeModel(
+			"my_service/v2/root.model",
+			`
+			resource Root {
+			}
+			`,
+			"my_service/v2/my_class.model",
+			`
+			@ref(path="other_service/v1/my_class")
+			class MyClass {
+			}
+			`,
+			"my_service/v2/new_attribute.model",
+			`
+			@ref(path="other_service/v1/new_attribute")
+			class NewAttribute {
+			}
+			`,
+			"other_service/v1/root.model",
+			`
+			resource Root{
+			}
+			`,
+			"other_service/v1/my_class.model",
+			`
+			class MyClass {
+				Foo NewAttribute
+			}`,
+			"other_service/v1/new_attribute.model",
+			`
+			class NewAttribute{
+				Goo String
+			}
+			`,
+		)
+		// Check the attribute and its owner
+		service := model.FindService(names.ParseUsingSeparator("my_service", "_"))
+		Expect(service).ToNot(BeNil())
+		version := service.FindVersion(names.ParseUsingSeparator("v2", "_"))
+		Expect(version).ToNot(BeNil())
+		class := version.FindType(names.ParseUsingCase("MyClass"))
+		Expect(class).ToNot(BeNil())
+		Expect(class.Owner().Name().String()).To(Equal("v2"))
+		attributeFoo := class.FindAttribute(names.ParseUsingCase("Foo"))
+		Expect(attributeFoo).ToNot(BeNil())
+		Expect(attributeFoo.Type().Owner().Name().String()).To(Equal("v2"))
+		typeMyAttribute := attributeFoo.Type()
+		Expect(typeMyAttribute).ToNot(BeNil())
+		Expect(typeMyAttribute.Owner().Name().String()).To(Equal("v2"))
+		Expect(typeMyAttribute.ExplicitDeclared()).To(Equal(true))
+	})
+
 	It("Link referenced should point to the version referenced", func() {
 		model := MakeModel(
 			"my_service/v1_alpha1/root.model",
