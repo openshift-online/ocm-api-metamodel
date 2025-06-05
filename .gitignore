@@ -10,3 +10,4 @@
 
 # Local bin directory
 bin
+/tests/go/separately_generated/
