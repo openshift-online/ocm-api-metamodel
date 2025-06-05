@@ -18,6 +18,7 @@ package golang
 
 import (
 	"fmt"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -257,6 +258,18 @@ func (g *TypesAliasGenerator) generateStructTypeAliasSource(typ *concepts.Type) 
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $objectName }} = {{ apiVersionPackage }}.{{ $objectName }}
+
+		// {{ $listName }}Kind is the name of the type used to represent list of objects of
+		// type '{{ .Type.Name }}'.
+		const {{ $listName }}Kind = {{ apiVersionPackage }}.{{ $listName }}Kind
+
+		// {{ $listName }}LinkKind is the name of the type used to represent links to list
+		// of objects of type '{{ .Type.Name }}'.
+		const {{ $listName }}LinkKind = {{ apiVersionPackage }}.{{ $listName }}LinkKind
+
+		// {{ $objectName }}NilKind is the name of the type used to nil lists of objects of
+		// type '{{ .Type.Name }}'.
+		const {{ $listName }}NilKind = {{ apiVersionPackage }}.{{ $listName }}NilKind
 
 		type  {{ $listName }} = {{ apiVersionPackage }}.{{ $listName }}
 		`,
