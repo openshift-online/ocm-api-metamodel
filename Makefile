@@ -91,6 +91,18 @@ go_tests: binary ginkgo_install goimports_install
 		--model=tests/model \
 		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/generated \
 		--output=tests/go/generated
+	rm -rf tests/go/separately_generated
+	./metamodel generate go \
+		--model=tests/model \
+		--generators=types,builders,json \
+		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/separately_generated/clientapi \
+		--output=tests/go/separately_generated/clientapi
+	./metamodel generate go \
+		--model=tests/model \
+		--apiBase=github.com/openshift-online/ocm-api-metamodel/tests/go/separately_generated/clientapi \
+		--generators=builders-alias,clients,errors,helpers,json-alias,request-json,metrics,openapi,types-alias \
+		--base=github.com/openshift-online/ocm-api-metamodel/tests/go/separately_generated/sdk-go \
+		--output=tests/go/separately_generated/sdk-go
 ifndef JUNITFILE
 	cd tests/go && $(GINKGO) -r
 else

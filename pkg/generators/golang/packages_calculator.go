@@ -30,6 +30,7 @@ import (
 type PackagesCalculatorBuilder struct {
 	reporter *reporter.Reporter
 	base     string
+	apiBase  string
 }
 
 // PackagesCalculator is an object used to calculate Go packages. Don't create instances directly,
@@ -37,6 +38,7 @@ type PackagesCalculatorBuilder struct {
 type PackagesCalculator struct {
 	reporter *reporter.Reporter
 	base     string
+	apiBase  string
 }
 
 // NewPackagesCalculator creates a Go packages calculator builder.
@@ -57,6 +59,12 @@ func (b *PackagesCalculatorBuilder) Base(value string) *PackagesCalculatorBuilde
 	return b
 }
 
+// Base sets the import path of the base package were the code will be generated.
+func (b *PackagesCalculatorBuilder) APIBase(value string) *PackagesCalculatorBuilder {
+	b.apiBase = value
+	return b
+}
+
 // Build checks the configuration stored in the builder and, if it is correct, creates a new
 // calculator using it.
 func (b *PackagesCalculatorBuilder) Build() (calculator *PackagesCalculator, err error) {
@@ -69,11 +77,16 @@ func (b *PackagesCalculatorBuilder) Build() (calculator *PackagesCalculator, err
 		err = fmt.Errorf("base package is mandatory")
 		return
 	}
+	apiBase := b.base
+	if len(b.apiBase) > 0 {
+		apiBase = b.apiBase
+	}
 
 	// Create the calculator:
 	calculator = &PackagesCalculator{
 		reporter: b.reporter,
 		base:     b.base,
+		apiBase:  apiBase,
 	}
 
 	return
@@ -145,4 +158,27 @@ func (g *PackagesCalculator) ErrorsImport() string {
 // BasePackage returns the import path of the base package.
 func (g *PackagesCalculator) BasePackage() string {
 	return g.base
+}
+
+// BasePackage returns the import path of the base package.
+func (g *PackagesCalculator) APIBasePackage() string {
+	return g.apiBase
+}
+
+// VersionPackage returns the name of the package for the given version.
+func (g *PackagesCalculator) APIVersionPackage(version *concepts.Version) string {
+	return path.Join(
+		version.Owner().Name().LowerJoined(""),
+		version.Name().LowerJoined(""),
+	)
+}
+
+// VersionImport returns the complete import path of the package for the given version.
+func (g *PackagesCalculator) APIVersionImport(version *concepts.Version) string {
+	return path.Join(g.apiBase, g.VersionPackage(version))
+}
+
+// VersionSelector returns the selector of the package for the given service.
+func (g *PackagesCalculator) APIVersionSelector(version *concepts.Version) string {
+	return "api_" + path.Base(g.VersionPackage(version))
 }

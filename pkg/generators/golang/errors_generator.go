@@ -176,9 +176,11 @@ func (g *ErrorsGenerator) generateCommonErrors() error {
 	g.buffer.Import("io", "")
 	g.buffer.Import("strings", "")
 	g.buffer.Import("time", "")
+	g.buffer.Import("net/http", "")
+	g.buffer.Import("strconv", "")
 	g.buffer.Import("github.com/golang/glog", "")
-	g.buffer.Import("github.com/openshift-online/ocm-api-metamodel/pkg/runtime", "")
 	g.buffer.Import(g.packages.HelpersImport(), "")
+	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Emit(`
 		// Error kind is the name of the type used to represent errors.
 		const ErrorKind = "Error"
