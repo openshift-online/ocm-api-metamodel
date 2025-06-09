@@ -115,6 +115,10 @@ func shouldRunGenerator(generator string) bool {
 			}
 		}
 
+		// In a case where "*" is used, we want compatibility with previous behavior.
+		// Previous behavior has apiBase="" (default) and all generators, but these new generators did not exist.
+		// To be compatible, we skip these here.
+		// Once all consumers are updated, a future refinement could be to disallow "*".
 		switch generator {
 		case "builders-alias", "json-alias", "types-alias":
 			return false
