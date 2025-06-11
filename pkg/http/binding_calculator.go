@@ -146,7 +146,7 @@ func (c *BindingCalculator) ResponseBodyParameters(method *concepts.Method) []*c
 func (c *BindingCalculator) Method(method *concepts.Method) string {
 	name := method.Name()
 	switch {
-	case name.Equals(nomenclator.Add):
+	case name.Equals(nomenclator.Add) || name.Equals(nomenclator.AsyncAdd):
 		return http.MethodPost
 	case name.Equals(nomenclator.Delete) || name.Equals(nomenclator.AsyncDelete):
 		return http.MethodDelete
@@ -154,7 +154,7 @@ func (c *BindingCalculator) Method(method *concepts.Method) string {
 		return http.MethodGet
 	case name.Equals(nomenclator.List):
 		return http.MethodGet
-	case name.Equals(nomenclator.Post):
+	case name.Equals(nomenclator.Post) || name.Equals(nomenclator.AsyncPost):
 		return http.MethodPost
 	case name.Equals(nomenclator.Update) || name.Equals(nomenclator.AsyncUpdate):
 		return http.MethodPatch
@@ -171,8 +171,12 @@ func (c *BindingCalculator) DefaultStatus(method *concepts.Method) string {
 	switch {
 	case name.Equals(nomenclator.Post):
 		status = http.StatusCreated
+	case name.Equals(nomenclator.AsyncPost):
+		status = http.StatusAccepted
 	case name.Equals(nomenclator.Add):
 		status = http.StatusCreated
+	case name.Equals(nomenclator.AsyncAdd):
+		status = http.StatusAccepted
 	case name.Equals(nomenclator.AsyncUpdate):
 		status = http.StatusAccepted
 	case name.Equals(nomenclator.Update):

@@ -89,7 +89,7 @@ func (p *Parameter) IsBody() bool {
 	if p.owner == nil {
 		return false
 	}
-	isRest := p.owner.IsAdd() || p.owner.IsGet() || p.owner.IsSearch() || p.owner.IsUpdate() || p.owner.IsAsyncUpdate()
+	isRest := p.owner.IsAdd() || p.owner.IsAsyncAdd() || p.owner.IsGet() || p.owner.IsSearch() || p.owner.IsUpdate() || p.owner.IsAsyncUpdate()
 	if isRest && p.name.Equals(nomenclator.Body) {
 		return true
 	}

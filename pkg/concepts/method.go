@@ -81,6 +81,11 @@ func (m *Method) IsAdd() bool {
 	return m.name.Equals(nomenclator.Add)
 }
 
+// IsAsyncAdd return true if this is an asynchronous add method.
+func (m *Method) IsAsyncAdd() bool {
+	return m.name.Equals(nomenclator.AsyncAdd)
+}
+
 // IsDelete returns true if this is a delete method.
 func (m *Method) IsDelete() bool {
 	return m.name.Equals(nomenclator.Delete)
@@ -106,6 +111,11 @@ func (m *Method) IsPost() bool {
 	return m.name.Equals(nomenclator.Post)
 }
 
+// IsAsyncPost return true if this is an asynchronous post method.
+func (m *Method) IsAsyncPost() bool {
+	return m.name.Equals(nomenclator.AsyncPost)
+}
+
 // IsSearch returns true if this is a search method.
 func (m *Method) IsSearch() bool {
 	return m.name.Equals(nomenclator.Search)
@@ -126,6 +136,8 @@ func (m *Method) IsAction() bool {
 	switch {
 	case m.IsAdd():
 		return false
+	case m.IsAsyncAdd():
+		return false
 	case m.IsDelete():
 		return false
 	case m.IsAsyncDelete():
@@ -135,6 +147,8 @@ func (m *Method) IsAction() bool {
 	case m.IsList():
 		return false
 	case m.IsPost():
+		return false
+	case m.IsAsyncPost():
 		return false
 	case m.IsSearch():
 		return false

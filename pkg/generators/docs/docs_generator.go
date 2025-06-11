@@ -382,7 +382,7 @@ func (g *DocsGenerator) httpMethod(method *concepts.Method) string {
 	if name.Equals(nomenclator.Get) || name.Equals(nomenclator.List) {
 		return "GET"
 	}
-	if name.Equals(nomenclator.Add) {
+	if name.Equals(nomenclator.Add) || name.Equals(nomenclator.AsyncAdd) || name.Equals(nomenclator.Post) || name.Equals(nomenclator.AsyncPost) {
 		return "POST"
 	}
 	if name.Equals(nomenclator.Update) || name.Equals(nomenclator.AsyncUpdate) {

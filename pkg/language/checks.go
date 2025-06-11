@@ -60,7 +60,7 @@ func (r *Reader) checkResource(resource *concepts.Resource) {
 func (r *Reader) checkMethod(method *concepts.Method) {
 	// Run specific checks according tot he type of method:
 	switch {
-	case method.IsAdd():
+	case method.IsAdd() || method.IsAsyncAdd():
 		r.checkAdd(method)
 	case method.IsDelete() || method.IsAsyncDelete():
 		r.checkDelete(method)
@@ -68,7 +68,7 @@ func (r *Reader) checkMethod(method *concepts.Method) {
 		r.checkGet(method)
 	case method.IsList():
 		r.checkList(method)
-	case method.IsPost():
+	case method.IsPost() || method.IsAsyncPost():
 		r.checkPost(method)
 	case method.IsSearch():
 		r.checkSearch(method)
