@@ -164,7 +164,11 @@ func (g *BuildersAliasGenerator) generateStructBuilderAliasSource(typ *concepts.
 		{{ $builderName := builderName .Type }}
 		{{ $builderCtor := builderCtor .Type }}
 
+		// {{ $builderName }} contains the data and logic needed to build '{{ .Type.Name }}' objects.
+		//
+		{{ lineComment .Type.Doc }}
 		type  {{ $builderName }} = {{ apiVersionPackage }}.{{ $builderName }}
+		// {{ $builderCtor }} creates a new builder of '{{ .Type.Name }}' objects.
 		var {{ $builderCtor }} = {{ apiVersionPackage }}.{{ $builderCtor }}
 		`,
 		"Type", typ,
@@ -212,7 +216,10 @@ func (g *BuildersAliasGenerator) generateStructListBuilderAliasSource(typ *conce
 		{{ $builderName := builderName .Type }}
 		{{ $builderCtor := builderCtor .Type }}
 
+		// {{ $builderName }} contains the data and logic needed to build
+		// '{{ .Type.Element.Name }}' objects.
 		type  {{ $builderName }} = {{ apiVersionPackage }}.{{ $builderName }}
+		// {{ $builderCtor }} creates a new builder of '{{ .Type.Element.Name }}' objects.
 		var {{ $builderCtor }} = {{ apiVersionPackage }}.{{ $builderCtor }}
 		`,
 		"Type", typ,
