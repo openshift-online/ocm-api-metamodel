@@ -25,7 +25,9 @@ var (
 	Adapt       = names.ParseUsingCase("Adapt")
 	Adapter     = names.ParseUsingCase("Adapter")
 	Add         = names.ParseUsingCase("Add")
+	AsyncAdd    = names.ParseUsingCase("AsyncAdd")
 	AsyncDelete = names.ParseUsingCase("AsyncDelete")
+	AsyncPost   = names.ParseUsingCase("AsyncPost")
 	AsyncUpdate = names.ParseUsingCase("AsyncUpdate")
 
 	// B:

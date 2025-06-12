@@ -450,7 +450,7 @@ func (g *RequestJSONSupportGenerator) generateResourceSupport(resource *concepts
 
 func (g *RequestJSONSupportGenerator) generateMethodSource(method *concepts.Method) {
 	switch {
-	case method.IsAdd():
+	case method.IsAdd() || method.IsAsyncAdd():
 		g.generateAddMethodSource(method)
 	case method.IsDelete() || method.IsAsyncDelete():
 		g.generateDeleteMethodSource(method)
@@ -458,7 +458,7 @@ func (g *RequestJSONSupportGenerator) generateMethodSource(method *concepts.Meth
 		g.generateGetMethodSource(method)
 	case method.IsList():
 		g.generateListMethodSource(method)
-	case method.IsPost():
+	case method.IsPost() || method.IsAsyncPost():
 		g.generatePostMethodSource(method)
 	case method.IsSearch():
 		g.generateSearchMethodSource(method)
