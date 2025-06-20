@@ -3,6 +3,12 @@
 This document describes the relevant changes between releases of the
 API metamodel.
 
+## 0.0.69 Jun 18 2025
+
+- New async methods (add and post)
+- Splitted generators
+- Add a new generators alias generators
+
 ## 0.0.68 Jun 03 2025
 
 - Fix reference class already defined
