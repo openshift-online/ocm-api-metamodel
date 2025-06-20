@@ -198,7 +198,10 @@ func (g *JSONSupportAliasGenerator) generateVersionMetadataAliasSource(version *
 	g.buffer.Import("github.com/json-iterator/go", "jsoniter")
 	g.buffer.Import(g.packages.APIVersionImport(version), g.packages.APIVersionSelector(version))
 	g.buffer.Emit(`
+		// MarshalMetadata writes a value of the metadata type to the given target, which
 		var MarshalMetadata = {{ apiVersionPackage }}.MarshalMetadata
+		// UnmarshalMetadata reads a value of the metadata type from the given source, which
+		// which can be a reader, a slice of byte or a string.
 		var UnmarshalMetadata = {{ apiVersionPackage }}.UnmarshalMetadata
 		`,
 		"Version", version,
@@ -257,9 +260,14 @@ func (g *JSONSupportAliasGenerator) generateStructTypeAliasSource(version *conce
 		{{ $unmarshalTypeFunc := unmarshalTypeFunc .Type }}
 		{{ $readTypeFunc := readTypeFunc .Type }}
 
+		// {{ $marshalTypeFunc }} writes a value of the '{{ .Type.Name }}' type to the given writer.
 		var {{ $marshalTypeFunc }} = {{ apiVersionPackage }}.{{ $marshalTypeFunc }}
+		// {{ $writeTypeFunc }} writes a value of the '{{ .Type.Name }}' type to the given stream.
 		var {{ $writeTypeFunc }} = {{ apiVersionPackage }}.{{ $writeTypeFunc }}
+		// {{ $unmarshalTypeFunc }} reads a value of the '{{ .Type.Name }}' type from the given
+		// source, which can be an slice of bytes, a string or a reader.
 		var {{ $unmarshalTypeFunc }} = {{ apiVersionPackage }}.{{ $unmarshalTypeFunc }}
+		// {{ $readTypeFunc }} reads a value of the '{{ .Type.Name }}' type from the given iterator.
 		var {{ $readTypeFunc }} = {{ apiVersionPackage }}.{{ $readTypeFunc }}
 		`,
 		"Type", typ,
@@ -319,9 +327,17 @@ func (g *JSONSupportAliasGenerator) generateListTypeAliasSource(
 		{{ $unmarshalTypeFunc := unmarshalTypeFunc .Type }}
 		{{ $readTypeFunc := readTypeFunc .Type }}
 
+		// {{ $marshalTypeFunc }} writes a list of values of the '{{ .Type.Element.Name }}' type to
+		// the given writer.
 		var {{ $marshalTypeFunc }} = {{ apiVersionPackage }}.{{ $marshalTypeFunc }}
+		// {{ $writeTypeFunc }} writes a list of value of the '{{ .Type.Element.Name }}' type to
+		// the given stream.
 		var {{ $writeTypeFunc }} = {{ apiVersionPackage }}.{{ $writeTypeFunc }}
+		// {{ $unmarshalTypeFunc }} reads a list of values of the '{{ .Type.Element.Name }}' type
+		// from the given source, which can be a slice of bytes, a string or a reader.
 		var {{ $unmarshalTypeFunc }} = {{ apiVersionPackage }}.{{ $unmarshalTypeFunc }}
+		// {{ $readTypeFunc }} reads list of values of the ''{{ .Type.Element.Name }}' type from
+		// the given iterator.
 		var {{ $readTypeFunc }} = {{ apiVersionPackage }}.{{ $readTypeFunc }}
 		`,
 		"Type", typ,
