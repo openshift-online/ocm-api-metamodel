@@ -541,6 +541,14 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 		Package(pkgName).
 		File(fileName).
 		Function("bitMask", g.types.BitMask).
+		Function("bitIndex", g.types.BitIndex).
+		Function("bitmapFieldCount", g.types.BitmapFieldCount).
+		Function("bitmapFieldName", g.types.BitmapFieldName).
+		Function("bitmapCheckExpression", g.types.BitmapCheckExpression).
+		Function("bitmapSetExpression", g.types.BitmapSetExpression).
+		Function("bitmapClearExpression", g.types.BitmapClearExpression).
+		Function("bitmapEmptyCheckExpression", g.types.BitmapEmptyCheckExpression).
+		Function("intRange", g.intRange).
 		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.binding.AttributeName).
@@ -601,13 +609,13 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 			stream.WriteObjectStart()
 			{{ if .Type.IsClass }}
 				stream.WriteObjectField("kind")
-				if object.bitmap_&1 != 0 {
+				if {{ bitmapCheckExpression .Type 0 "object" }} {
 					stream.WriteString({{ $structName }}LinkKind)
 				} else {
 					stream.WriteString({{ $structName }}Kind)
 				}
 				count++
-				if object.bitmap_&2 != 0 {
+				if {{ bitmapCheckExpression .Type 1 "object" }} {
 					if count > 0 {
 						stream.WriteMore()
 					}
@@ -615,7 +623,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					stream.WriteString(object.id)
 					count++
 				}
-				if object.bitmap_&4 != 0 {
+				if {{ bitmapCheckExpression .Type 2 "object" }} {
 					if count > 0 {
 						stream.WriteMore()
 					}
@@ -633,10 +641,11 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					{{ $fieldName := fieldName $v }}
 					{{ $fieldTag := fieldTag $v }}
 					{{ $fieldMask := bitMask $v }}
+					{{ $bitIndex := bitIndex $v }}
 					{{ if .Type.IsScalar }}
-						present_ = object.bitmap_&{{ $fieldMask }} != 0
+						present_ = {{ bitmapCheckExpression $v.Owner $bitIndex "object" }}
 					{{ else }}
-						present_ = object.bitmap_&{{ $fieldMask }} != 0 && object.{{ $fieldName }} != nil
+						present_ = {{ bitmapCheckExpression $v.Owner $bitIndex "object" }} && object.{{ $fieldName }} != nil
 					{{ end }}
 					if present_ {
 						if count > 0 {
@@ -676,25 +685,27 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 				switch field {
 				{{ if .Type.IsClass }}
 					case "kind":
-						value := iterator.ReadString()
-						if value == {{ $structName }}LinkKind {
-							object.bitmap_ |= 1
+						// Check if this is a link based on the kind value
+						kind := iterator.ReadString()
+						if strings.HasSuffix(kind, "Link") {
+							{{ bitmapSetExpression .Type 0 "object" }}
 						}
 					case "id":
 						object.id = iterator.ReadString()
-						object.bitmap_ |= 2
+						{{ bitmapSetExpression .Type 1 "object" }}
 					case "href":
 						object.href = iterator.ReadString()
-						object.bitmap_ |= 4
+						{{ bitmapSetExpression .Type 2 "object" }}
 				{{ end }}
 				{{ range .Type.Attributes }}
 					{{ $fieldName := fieldName . }}
 					{{ $fieldTag := fieldTag . }}
 					{{ $fieldMask := bitMask . }}
+					{{ $bitIndex := bitIndex . }}
 					case "{{ $fieldTag }}":
 						{{ generateReadValue "value" .Type .Link .LinkOwner }}
 						object.{{ $fieldName }} = value
-						object.bitmap_ |= {{ $fieldMask }}
+						{{ bitmapSetExpression .Owner $bitIndex "object" }}
 				{{ end }}
 				default:
 					iterator.ReadAny()
@@ -1175,9 +1186,18 @@ func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) strin
 	}
 }
 
-func (g JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version) string {
+func (g *JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version) string {
 	if linkOwner == nil {
 		return ""
 	}
 	return fmt.Sprintf("%s.", g.packages.VersionSelector(linkOwner))
+}
+
+// intRange creates a slice of integers from 0 to n-1 for use in templates.
+func (g *JSONSupportGenerator) intRange(n int) []int {
+	result := make([]int, n)
+	for i := range result {
+		result[i] = i
+	}
+	return result
 }

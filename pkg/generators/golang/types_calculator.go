@@ -469,6 +469,14 @@ func (c *TypesCalculator) Package(typ *concepts.Type) (imprt, selector string) {
 
 // BitMask calculates the bit mask used to check presence of the given attribute.
 func (c *TypesCalculator) BitMask(attribute *concepts.Attribute) string {
+	index := c.BitIndex(attribute)
+	// Calculate the mask:
+	mask := 1 << index
+	return fmt.Sprintf("%d", mask)
+}
+
+// BitIndex calculates the bit index for the given attribute.
+func (c *TypesCalculator) BitIndex(attribute *concepts.Attribute) int {
 	// Calculate the index taking into account that the the builtin `link`, `id` and `href`
 	// fields of class types:
 	var index int
@@ -482,10 +490,7 @@ func (c *TypesCalculator) BitMask(attribute *concepts.Attribute) string {
 		}
 		index++
 	}
-
-	// Calculate the mask:
-	mask := 1 << index
-	return fmt.Sprintf("%d", mask)
+	return index
 }
 
 // BitmapType calculates the reference for the type that will be used to implement the attribute
@@ -502,23 +507,7 @@ func (c *TypesCalculator) BitmapType(typ *concepts.Type) *TypeReference {
 		return ref
 	}
 
-	// Check that there are no more than the maximum number of attributes that can fit in the
-	// bitmap:
-	max := 64
-	if typ.IsClass() {
-		max -= 3
-	}
-	count := len(typ.Attributes())
-	if count > max {
-		c.reporter.Errorf(
-			"Struct type '%s' has more %d attributes, but at most %d attributes "+
-				"are supported",
-			typ, count, max,
-		)
-		return ref
-	}
-
-	// Select the smaller usigned integer tha thas room for all the attributes:
+	// Select the appropriate bitmap type based on the number of attributes:
 	size := c.bitmapSize(typ)
 	name := fmt.Sprintf("uint%d", size)
 	ref.name = name
@@ -537,6 +526,7 @@ func (c *TypesCalculator) bitmapSize(typ *concepts.Type) int {
 	}
 
 	// Use a normal unsigned integer if possible, or a long one if more than 32 bits are needed:
+	// For types that need multiple bitmap fields, always use 64-bit fields for consistency
 	if count <= 32 {
 		return 32
 	}
@@ -569,4 +559,114 @@ func (r *TypeReference) Name() string {
 // Text returns the text of the reference.
 func (r *TypeReference) Text() string {
 	return r.text
+}
+
+// BitmapFieldCount calculates the number of bitmap fields needed for the given type.
+func (c *TypesCalculator) BitmapFieldCount(typ *concepts.Type) int {
+	// For classes the first bit is reserved to indicate if the object is a link, and the second
+	// and third bits are used for the built-in `id` and `href` attributes:
+	count := len(typ.Attributes())
+	if typ.IsClass() {
+		count += 3
+	}
+
+	// Calculate how many 64-bit fields we need
+	return (count + 63) / 64
+}
+
+// BitmapFieldName returns the name of the bitmap field at the given index.
+func (c *TypesCalculator) BitmapFieldName(index int) string {
+	if index == 0 {
+		return "bitmap_"
+	}
+	return fmt.Sprintf("bitmap%d_", index+1)
+}
+
+// BitmapFieldIndex calculates which bitmap field contains the given bit index.
+func (c *TypesCalculator) BitmapFieldIndex(bitIndex int) int {
+	return bitIndex / 64
+}
+
+// BitmapBitIndex calculates the bit position within a bitmap field for the given global bit index.
+func (c *TypesCalculator) BitmapBitIndex(bitIndex int) int {
+	return bitIndex % 64
+}
+
+// BitmapCheckExpression generates a Go expression to check if a bit is set in the appropriate bitmap field.
+func (c *TypesCalculator) BitmapCheckExpression(typ *concepts.Type, bitIndex int, objectName string) string {
+	fieldCount := c.BitmapFieldCount(typ)
+	if fieldCount == 1 {
+		// Single bitmap field - use the original logic with nil check
+		return fmt.Sprintf("%s != nil && %s.bitmap_&%d != 0", objectName, objectName, 1<<bitIndex)
+	}
+
+	// Multiple bitmap fields with nil check
+	fieldIndex := c.BitmapFieldIndex(bitIndex)
+	bitIndex = c.BitmapBitIndex(bitIndex)
+	fieldName := c.BitmapFieldName(fieldIndex)
+	return fmt.Sprintf("%s != nil && %s.%s&%d != 0", objectName, objectName, fieldName, 1<<bitIndex)
+}
+
+// BitmapSetExpression generates a Go expression to set a bit in the appropriate bitmap field.
+func (c *TypesCalculator) BitmapSetExpression(typ *concepts.Type, bitIndex int, objectName string) string {
+	fieldCount := c.BitmapFieldCount(typ)
+	if fieldCount == 1 {
+		// Single bitmap field - use the original logic
+		return fmt.Sprintf("%s.bitmap_ |= %d", objectName, 1<<bitIndex)
+	}
+
+	// Multiple bitmap fields
+	fieldIndex := c.BitmapFieldIndex(bitIndex)
+	bitIndex = c.BitmapBitIndex(bitIndex)
+	fieldName := c.BitmapFieldName(fieldIndex)
+	return fmt.Sprintf("%s.%s |= %d", objectName, fieldName, 1<<bitIndex)
+}
+
+// BitmapClearExpression generates a Go expression to clear a bit in the appropriate bitmap field.
+func (c *TypesCalculator) BitmapClearExpression(typ *concepts.Type, bitIndex int, objectName string) string {
+	fieldCount := c.BitmapFieldCount(typ)
+	if fieldCount == 1 {
+		// Single bitmap field - use the original logic
+		return fmt.Sprintf("%s.bitmap_ &^= %d", objectName, 1<<bitIndex)
+	}
+
+	// Multiple bitmap fields
+	fieldIndex := c.BitmapFieldIndex(bitIndex)
+	bitIndex = c.BitmapBitIndex(bitIndex)
+	fieldName := c.BitmapFieldName(fieldIndex)
+	return fmt.Sprintf("%s.%s &^= %d", objectName, fieldName, 1<<bitIndex)
+}
+
+// BitmapEmptyCheckExpression generates a Go expression to check if all bitmap fields are empty.
+func (c *TypesCalculator) BitmapEmptyCheckExpression(typ *concepts.Type, objectName string) string {
+	fieldCount := c.BitmapFieldCount(typ)
+	if fieldCount == 1 {
+		// Single bitmap field - use the original logic
+		if typ.IsClass() {
+			return fmt.Sprintf("%s == nil || %s.bitmap_&^1 == 0", objectName, objectName)
+		}
+		return fmt.Sprintf("%s == nil || %s.bitmap_ == 0", objectName, objectName)
+	}
+
+	// Multiple bitmap fields - check all are zero
+	expressions := make([]string, fieldCount)
+	for i := 0; i < fieldCount; i++ {
+		fieldName := c.BitmapFieldName(i)
+		if i == 0 && typ.IsClass() {
+			// For the first field of a class, ignore the link bit
+			expressions[i] = fmt.Sprintf("%s.%s&^1 == 0", objectName, fieldName)
+		} else {
+			expressions[i] = fmt.Sprintf("%s.%s == 0", objectName, fieldName)
+		}
+	}
+
+	result := fmt.Sprintf("%s == nil || (", objectName)
+	for i, expr := range expressions {
+		if i > 0 {
+			result += " && "
+		}
+		result += expr
+	}
+	result += ")"
+	return result
 }

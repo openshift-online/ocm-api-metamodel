@@ -257,7 +257,15 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 		Package(pkgName).
 		File(fileName).
 		Function("bitMask", g.types.BitMask).
+		Function("bitIndex", g.types.BitIndex).
 		Function("bitmapType", g.types.BitmapType).
+		Function("bitmapFieldCount", g.types.BitmapFieldCount).
+		Function("bitmapFieldName", g.types.BitmapFieldName).
+		Function("bitmapCheckExpression", g.types.BitmapCheckExpression).
+		Function("bitmapSetExpression", g.types.BitmapSetExpression).
+		Function("bitmapClearExpression", g.types.BitmapClearExpression).
+		Function("bitmapEmptyCheckExpression", g.types.BitmapEmptyCheckExpression).
+		Function("intRange", g.intRange).
 		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldType", g.fieldType).
@@ -331,7 +339,14 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $objectName }} struct {
-			bitmap_ {{ bitmapType .Type }}
+			{{ $fieldCount := bitmapFieldCount .Type }}
+			{{ if eq $fieldCount 1 }}
+				bitmap_ {{ bitmapType .Type }}
+			{{ else }}
+				{{ range $i := intRange $fieldCount }}
+					{{ bitmapFieldName $i }} {{ bitmapType $.Type }}
+				{{ end }}
+			{{ end }}
 			{{ if .Type.IsClass }}
 				id   string
 				href string
@@ -362,12 +377,12 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 			// Link returns true if this is a link.
 			func (o *{{ $objectName }}) Link() bool {
-				return o != nil && o.bitmap_&1 != 0
+				return {{ bitmapCheckExpression .Type 0 "o" }}
 			}
 
 			// ID returns the identifier of the object.
 			func (o *{{ $objectName }}) ID() string {
-				if o != nil && o.bitmap_&2 != 0 {
+				if {{ bitmapCheckExpression .Type 1 "o" }} {
 					return o.id
 				}
 				return ""
@@ -376,7 +391,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetID returns the identifier of the object and a flag indicating if the
 			// identifier has a value.
 			func (o *{{ $objectName }}) GetID() (value string, ok bool) {
-				ok = o != nil && o.bitmap_&2 != 0
+				ok = {{ bitmapCheckExpression .Type 1 "o" }}
 				if ok {
 					value = o.id
 				}
@@ -385,7 +400,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 			// HREF returns the link to the object.
 			func (o *{{ $objectName }}) HREF() string {
-				if o != nil && o.bitmap_&4 != 0 {
+				if {{ bitmapCheckExpression .Type 2 "o" }} {
 					return o.href
 				}
 				return ""
@@ -394,7 +409,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetHREF returns the link of the object and a flag indicating if the
 			// link has a value.
 			func (o *{{ $objectName }}) GetHREF() (value string, ok bool) {
-				ok = o != nil && o.bitmap_&4 != 0
+				ok = {{ bitmapCheckExpression .Type 2 "o" }}
 				if ok {
 					value = o.href
 				}
@@ -404,17 +419,14 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// Empty returns true if the object is empty, i.e. no attribute has a value.
 		func (o *{{ $objectName }}) Empty() bool {
-			{{ if .Type.IsClass }}
-				return o == nil || o.bitmap_&^1 == 0
-			{{ else }}
-				return o == nil || o.bitmap_ == 0
-			{{ end }}
+			return {{ bitmapEmptyCheckExpression .Type "o" }}
 		}
 
 		{{ range .Type.Attributes }}
 			{{ $attributeType := .Type.Name.String }}
 			{{ $fieldName := fieldName . }}
 			{{ $fieldMask := bitMask . }}
+			{{ $bitIndex := bitIndex . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
 
@@ -423,7 +435,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) {{ $getterName }}() {{ $getterType }} {
-				if o != nil && o.bitmap_&{{ $fieldMask }} != 0 {
+				if {{ bitmapCheckExpression .Owner $bitIndex "o" }} {
 					return o.{{ $fieldName }}
 				}
 				return {{ zeroValue .Type }}
@@ -434,7 +446,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
-				ok = o != nil && o.bitmap_&{{ $fieldMask }} != 0
+				ok = {{ bitmapCheckExpression .Owner $bitIndex "o" }}
 				if ok {
 					value = o.{{ $fieldName }}
 				}
@@ -703,4 +715,13 @@ func (g *TypesGenerator) listName(typ *concepts.Type) string {
 		typeName = g.names.Public(typ.Name())
 	}
 	return typeName + "List"
+}
+
+// intRange creates a slice of integers from 0 to n-1 for use in templates.
+func (g *TypesGenerator) intRange(n int) []int {
+	result := make([]int, n)
+	for i := range result {
+		result[i] = i
+	}
+	return result
 }

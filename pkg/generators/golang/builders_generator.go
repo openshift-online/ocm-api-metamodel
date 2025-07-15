@@ -184,7 +184,15 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 		Package(pkgName).
 		File(fileName).
 		Function("bitMask", g.types.BitMask).
+		Function("bitIndex", g.types.BitIndex).
 		Function("bitmapType", g.types.BitmapType).
+		Function("bitmapFieldCount", g.types.BitmapFieldCount).
+		Function("bitmapFieldName", g.types.BitmapFieldName).
+		Function("bitmapCheckExpression", g.types.BitmapCheckExpression).
+		Function("bitmapSetExpression", g.types.BitmapSetExpression).
+		Function("bitmapClearExpression", g.types.BitmapClearExpression).
+		Function("bitmapEmptyCheckExpression", g.types.BitmapEmptyCheckExpression).
+		Function("intRange", g.intRange).
 		Function("builderCtor", g.builderCtor).
 		Function("builderName", g.builderName).
 		Function("fieldName", g.fieldName).
@@ -217,7 +225,14 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $builderName }} struct {
-			bitmap_ {{ bitmapType .Type }}
+			{{ $fieldCount := bitmapFieldCount .Type }}
+			{{ if eq $fieldCount 1 }}
+				bitmap_ {{ bitmapType .Type }}
+			{{ else }}
+				{{ range $i := intRange $fieldCount }}
+					{{ bitmapFieldName $i }} {{ bitmapType $.Type }}
+				{{ end }}
+			{{ end }}
 			{{ if .Type.IsClass }}
 				id   string
 				href string
@@ -242,32 +257,28 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 		{{ if .Type.IsClass }}
 			// Link sets the flag that indicates if this is a link.
 			func (b *{{ $builderName }}) Link(value bool) *{{ $builderName }} {
-				b.bitmap_ |= 1
+				{{ bitmapSetExpression .Type 0 "b" }}
 				return b
 			}
 
 			// ID sets the identifier of the object.
 			func (b *{{ $builderName }}) ID(value string) *{{ $builderName }} {
 				b.id = value
-				b.bitmap_ |= 2
+				{{ bitmapSetExpression .Type 1 "b" }}
 				return b
 			}
 
 			// HREF sets the link to the object.
 			func (b *{{ $builderName }}) HREF(value string) *{{ $builderName }} {
 				b.href = value
-				b.bitmap_ |= 4
+				{{ bitmapSetExpression .Type 2 "b" }}
 				return b
 			}
 		{{ end }}
 
 		// Empty returns true if the builder is empty, i.e. no attribute has a value.
 		func (b *{{ $builderName }}) Empty() bool {
-			{{ if .Type.IsClass }}
-				return b == nil || b.bitmap_&^1 == 0
-			{{ else }}
-				return b == nil || b.bitmap_ == 0
-			{{ end }}
+			return {{ bitmapEmptyCheckExpression .Type "b" }}
 		}
 
 		{{ range .Type.Attributes }}
@@ -275,6 +286,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ $setterName := setterName . }}
 			{{ $setterType := setterType . }}
 			{{ $fieldMask := bitMask . }}
+			{{ $bitIndex := bitIndex . }}
 			{{ $selectorType := selectorType . }}
 
 			{{ if .Type.IsList }}
@@ -284,7 +296,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				{{ if .Link }}
 					func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
 						b.{{ $fieldName }} = value
-						b.bitmap_ |= {{ $fieldMask }}
+						{{ bitmapSetExpression .Owner $bitIndex "b" }}
 						return b
 					}
 				{{ else }}
@@ -293,7 +305,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...{{ $elementType }}) *{{ $builderName }} {
 							b.{{ $fieldName }} = make([]{{ $elementType }}, len(values))
 							copy(b.{{ $fieldName }}, values)
-							b.bitmap_ |= {{ $fieldMask }}
+							{{ bitmapSetExpression .Owner $bitIndex "b" }}
 							return b
 						}
 					{{ else }}
@@ -301,7 +313,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ selectorType . }}{{ $elementBuilderName }}) *{{ $builderName }} {
 							b.{{ $fieldName }} = make([]*{{ selectorType . }}{{ $elementBuilderName }}, len(values))
 							copy(b.{{ $fieldName }}, values)
-							b.bitmap_ |= {{ $fieldMask }}
+							{{ bitmapSetExpression .Owner $bitIndex "b" }}
 							return b
 						}
 					{{ end }}
@@ -313,12 +325,12 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
 					b.{{ $fieldName }} = value
 					{{ if .Type.IsScalar }}
-						b.bitmap_ |= {{ $fieldMask }}
+						{{ bitmapSetExpression .Owner $bitIndex "b" }}
 					{{ else }}
 						if value != nil {
-							b.bitmap_ |= {{ $fieldMask }}
+							{{ bitmapSetExpression .Owner $bitIndex "b" }}
 						} else {
-							b.bitmap_ &^= {{ $fieldMask }}
+							{{ bitmapClearExpression .Owner $bitIndex "b" }}
 						}
 					{{ end }}
 					return b
@@ -331,7 +343,14 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			if object == nil {
 				return b
 			}
-			b.bitmap_ = object.bitmap_
+			{{ $fieldCount := bitmapFieldCount .Type }}
+			{{ if eq $fieldCount 1 }}
+				b.bitmap_ = object.bitmap_
+			{{ else }}
+				{{ range $i := intRange $fieldCount }}
+					b.{{ bitmapFieldName $i }} = object.{{ bitmapFieldName $i }}
+				{{ end }}
+			{{ end }}
 			{{ if .Type.IsClass }}
 				b.id = object.id
 				b.href = object.href
@@ -394,7 +413,14 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				object.id = b.id
 				object.href = b.href
 			{{ end }}
-			object.bitmap_ = b.bitmap_
+			{{ $fieldCount := bitmapFieldCount .Type }}
+			{{ if eq $fieldCount 1 }}
+				object.bitmap_ = b.bitmap_
+			{{ else }}
+				{{ range $i := intRange $fieldCount }}
+					object.{{ bitmapFieldName $i }} = b.{{ bitmapFieldName $i }}
+				{{ end }}
+			{{ end }}
 			{{ range .Type.Attributes }}
 				{{ $fieldName := fieldName . }}
 				{{ $fieldType := fieldType . }}
@@ -762,4 +788,13 @@ func (g *BuildersGenerator) setterType(attribute *concepts.Attribute) *TypeRefer
 
 func (g *BuildersGenerator) valueType(typ *concepts.Type) *TypeReference {
 	return g.types.ValueReference(typ)
+}
+
+// intRange creates a slice of integers from 0 to n-1 for use in templates.
+func (g *BuildersGenerator) intRange(n int) []int {
+	result := make([]int, n)
+	for i := range result {
+		result[i] = i
+	}
+	return result
 }
