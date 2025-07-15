@@ -201,6 +201,20 @@ func (g *TypesGenerator) generateVersionMetadataTypeFile(version *concepts.Versi
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
+		Function("fieldIndex", g.types.FieldIndex).
+		Function("bitMask", g.types.BitMask).
+		Function("fieldSetType", g.types.FieldSetType).
+		Function("bitmapType", g.types.BitmapType).
+		Function("enumName", g.types.EnumName).
+		Function("fieldName", g.fieldName).
+		Function("fieldType", g.fieldType).
+		Function("getterName", g.getterName).
+		Function("getterType", g.getterType).
+		Function("listName", g.listName).
+		Function("objectName", g.objectName).
+		Function("valueName", g.valueName).
+		Function("valueTag", g.valueTag).
+		Function("zeroValue", g.types.ZeroValue).
 		Build()
 	if err != nil {
 		return err
@@ -217,13 +231,13 @@ func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Ver
 	g.buffer.Emit(`
 		// Metadata contains the version metadata.
 		type Metadata struct {
-			bitmap_       uint32
+			fieldSet_       []bool
 			serverVersion string
 		}
 
 		// ServerVersion returns the version of the server.
 		func (m *Metadata) ServerVersion() string {
-			if m != nil && m.bitmap_&1 != 0 {
+			if m != nil && len(m.fieldSet_) > 0 && m.fieldSet_[0] {
 				return m.serverVersion
 			}
 			return ""
@@ -232,7 +246,7 @@ func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Ver
 		// GetServerVersion returns the value of the server version and a flag indicating if
 		// the attribute has a value.
 		func (m *Metadata) GetServerVersion() (value string, ok bool) {
-			ok = m != nil && m.bitmap_&1 != 0
+			ok = m != nil && len(m.fieldSet_) > 0 && m.fieldSet_[0]
 			if ok {
 				value = m.serverVersion
 			}
@@ -256,7 +270,9 @@ func (g *TypesGenerator) generateTypeFile(typ *concepts.Type) error {
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
+		Function("fieldIndex", g.types.FieldIndex).
 		Function("bitMask", g.types.BitMask).
+		Function("fieldSetType", g.types.FieldSetType).
 		Function("bitmapType", g.types.BitmapType).
 		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
@@ -331,7 +347,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $objectName }} struct {
-			bitmap_ {{ bitmapType .Type }}
+			fieldSet_ []bool
 			{{ if .Type.IsClass }}
 				id   string
 				href string
@@ -354,7 +370,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 				if o == nil {
 					return {{ $objectName }}NilKind
 				}
-				if o.bitmap_&1 != 0 {
+				if len(o.fieldSet_) > 0 && o.fieldSet_[0] {
 					return {{ $objectName }}LinkKind
 				}
 				return {{ $objectName }}Kind
@@ -362,12 +378,12 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 			// Link returns true if this is a link.
 			func (o *{{ $objectName }}) Link() bool {
-				return o != nil && o.bitmap_&1 != 0
+				return o != nil && len(o.fieldSet_) > 0 && o.fieldSet_[0]
 			}
 
 			// ID returns the identifier of the object.
 			func (o *{{ $objectName }}) ID() string {
-				if o != nil && o.bitmap_&2 != 0 {
+				if o != nil && len(o.fieldSet_) > 1 && o.fieldSet_[1] {
 					return o.id
 				}
 				return ""
@@ -376,7 +392,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetID returns the identifier of the object and a flag indicating if the
 			// identifier has a value.
 			func (o *{{ $objectName }}) GetID() (value string, ok bool) {
-				ok = o != nil && o.bitmap_&2 != 0
+				ok = o != nil && len(o.fieldSet_) > 1 && o.fieldSet_[1]
 				if ok {
 					value = o.id
 				}
@@ -385,7 +401,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 			// HREF returns the link to the object.
 			func (o *{{ $objectName }}) HREF() string {
-				if o != nil && o.bitmap_&4 != 0 {
+				if o != nil && len(o.fieldSet_) > 2 && o.fieldSet_[2] {
 					return o.href
 				}
 				return ""
@@ -394,7 +410,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			// GetHREF returns the link of the object and a flag indicating if the
 			// link has a value.
 			func (o *{{ $objectName }}) GetHREF() (value string, ok bool) {
-				ok = o != nil && o.bitmap_&4 != 0
+				ok = o != nil && len(o.fieldSet_) > 2 && o.fieldSet_[2]
 				if ok {
 					value = o.href
 				}
@@ -404,17 +420,31 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// Empty returns true if the object is empty, i.e. no attribute has a value.
 		func (o *{{ $objectName }}) Empty() bool {
+			if o == nil || len(o.fieldSet_) == 0 {
+				return true
+			}
 			{{ if .Type.IsClass }}
-				return o == nil || o.bitmap_&^1 == 0
+				// Check all fields except the link flag (index 0)
+				for i := 1; i < len(o.fieldSet_); i++ {
+					if o.fieldSet_[i] {
+						return false
+					}
+				}
+				return true
 			{{ else }}
-				return o == nil || o.bitmap_ == 0
+				for _, set := range o.fieldSet_ {
+					if set {
+						return false
+					}
+				}
+				return true
 			{{ end }}
 		}
 
 		{{ range .Type.Attributes }}
 			{{ $attributeType := .Type.Name.String }}
 			{{ $fieldName := fieldName . }}
-			{{ $fieldMask := bitMask . }}
+			{{ $fieldIndex := fieldIndex . }}
 			{{ $getterName := getterName . }}
 			{{ $getterType := getterType . }}
 
@@ -423,7 +453,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) {{ $getterName }}() {{ $getterType }} {
-				if o != nil && o.bitmap_&{{ $fieldMask }} != 0 {
+				if o != nil && len(o.fieldSet_) > {{ $fieldIndex }} && o.fieldSet_[{{ $fieldIndex }}] {
 					return o.{{ $fieldName }}
 				}
 				return {{ zeroValue .Type }}
@@ -434,7 +464,7 @@ func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
 			//
 			{{ lineComment .Doc }}
 			func (o *{{ $objectName }}) Get{{ $getterName }}() (value {{ $getterType }}, ok bool) {
-				ok = o != nil && o.bitmap_&{{ $fieldMask }} != 0
+				ok = o != nil && len(o.fieldSet_) > {{ $fieldIndex }} && o.fieldSet_[{{ $fieldIndex }}]
 				if ok {
 					value = o.{{ $fieldName }}
 				}

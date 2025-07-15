@@ -183,8 +183,11 @@ func (g *BuildersGenerator) generateStructBuilderFile(typ *concepts.Type) error 
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
+		Function("fieldIndex", g.types.FieldIndex).
 		Function("bitMask", g.types.BitMask).
+		Function("fieldSetType", g.types.FieldSetType).
 		Function("bitmapType", g.types.BitmapType).
+		Function("fieldSetSize", g.types.FieldSetSize).
 		Function("builderCtor", g.builderCtor).
 		Function("builderName", g.builderName).
 		Function("fieldName", g.fieldName).
@@ -213,11 +216,11 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 		{{ $builderCtor := builderCtor .Type }}
 		{{ $objectName := objectName .Type }}
 
-		// {{ $builderName }} contains the data and logic needed to build '{{ .Type.Name }}' objects.
+	
 		//
 		{{ lineComment .Type.Doc }}
 		type  {{ $builderName }} struct {
-			bitmap_ {{ bitmapType .Type }}
+			fieldSet_ {{ fieldSetType .Type }}
 			{{ if .Type.IsClass }}
 				id   string
 				href string
@@ -236,37 +239,53 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 
 		// {{ $builderCtor }} creates a new builder of '{{ .Type.Name }}' objects.
 		func {{ $builderCtor }}() *{{ $builderName }} {
-			return &{{ $builderName }}{}
+			return &{{ $builderName }}{
+				fieldSet_: make([]bool, {{ fieldSetSize .Type }}),
+			}
 		}
 
 		{{ if .Type.IsClass }}
 			// Link sets the flag that indicates if this is a link.
 			func (b *{{ $builderName }}) Link(value bool) *{{ $builderName }} {
-				b.bitmap_ |= 1
+				b.fieldSet_[0] = true
 				return b
 			}
 
 			// ID sets the identifier of the object.
 			func (b *{{ $builderName }}) ID(value string) *{{ $builderName }} {
 				b.id = value
-				b.bitmap_ |= 2
+				b.fieldSet_[1] = true
 				return b
 			}
 
 			// HREF sets the link to the object.
 			func (b *{{ $builderName }}) HREF(value string) *{{ $builderName }} {
 				b.href = value
-				b.bitmap_ |= 4
+				b.fieldSet_[2] = true
 				return b
 			}
 		{{ end }}
 
 		// Empty returns true if the builder is empty, i.e. no attribute has a value.
 		func (b *{{ $builderName }}) Empty() bool {
+			if b == nil || len(b.fieldSet_) == 0 {
+				return true
+			}
 			{{ if .Type.IsClass }}
-				return b == nil || b.bitmap_&^1 == 0
+				// Check all fields except the link flag (index 0)
+				for i := 1; i < len(b.fieldSet_); i++ {
+					if b.fieldSet_[i] {
+						return false
+					}
+				}
+				return true
 			{{ else }}
-				return b == nil || b.bitmap_ == 0
+				for _, set := range b.fieldSet_ {
+					if set {
+						return false
+					}
+				}
+				return true
 			{{ end }}
 		}
 
@@ -274,7 +293,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			{{ $fieldName := fieldName . }}
 			{{ $setterName := setterName . }}
 			{{ $setterType := setterType . }}
-			{{ $fieldMask := bitMask . }}
+			{{ $fieldIndex := fieldIndex . }}
 			{{ $selectorType := selectorType . }}
 
 			{{ if .Type.IsList }}
@@ -284,7 +303,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				{{ if .Link }}
 					func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
 						b.{{ $fieldName }} = value
-						b.bitmap_ |= {{ $fieldMask }}
+						b.fieldSet_[{{ $fieldIndex }}] = true
 						return b
 					}
 				{{ else }}
@@ -293,7 +312,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...{{ $elementType }}) *{{ $builderName }} {
 							b.{{ $fieldName }} = make([]{{ $elementType }}, len(values))
 							copy(b.{{ $fieldName }}, values)
-							b.bitmap_ |= {{ $fieldMask }}
+							b.fieldSet_[{{ $fieldIndex }}] = true
 							return b
 						}
 					{{ else }}
@@ -301,7 +320,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ selectorType . }}{{ $elementBuilderName }}) *{{ $builderName }} {
 							b.{{ $fieldName }} = make([]*{{ selectorType . }}{{ $elementBuilderName }}, len(values))
 							copy(b.{{ $fieldName }}, values)
-							b.bitmap_ |= {{ $fieldMask }}
+							b.fieldSet_[{{ $fieldIndex }}] = true
 							return b
 						}
 					{{ end }}
@@ -313,12 +332,12 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
 					b.{{ $fieldName }} = value
 					{{ if .Type.IsScalar }}
-						b.bitmap_ |= {{ $fieldMask }}
+						b.fieldSet_[{{ $fieldIndex }}] = true
 					{{ else }}
 						if value != nil {
-							b.bitmap_ |= {{ $fieldMask }}
+							b.fieldSet_[{{ $fieldIndex }}] = true
 						} else {
-							b.bitmap_ &^= {{ $fieldMask }}
+							b.fieldSet_[{{ $fieldIndex }}] = false
 						}
 					{{ end }}
 					return b
@@ -331,7 +350,10 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			if object == nil {
 				return b
 			}
-			b.bitmap_ = object.bitmap_
+			if len(object.fieldSet_) > 0 {
+				b.fieldSet_ = make([]bool, len(object.fieldSet_))
+				copy(b.fieldSet_, object.fieldSet_)
+			}
 			{{ if .Type.IsClass }}
 				b.id = object.id
 				b.href = object.href
@@ -394,7 +416,10 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				object.id = b.id
 				object.href = b.href
 			{{ end }}
-			object.bitmap_ = b.bitmap_
+			if len(b.fieldSet_) > 0 {
+				object.fieldSet_ = make([]bool, len(b.fieldSet_))
+				copy(object.fieldSet_, b.fieldSet_)
+			}
 			{{ range .Type.Attributes }}
 				{{ $fieldName := fieldName . }}
 				{{ $fieldType := fieldType . }}
