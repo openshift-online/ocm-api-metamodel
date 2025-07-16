@@ -481,7 +481,7 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 
 		func writeMetadata(object *Metadata, stream *jsoniter.Stream) {
 			stream.WriteObjectStart()
-			if object.bitmap_&1 != 0 {
+			if len(object.fieldSet_) > 0 && object.fieldSet_[0] {
 				stream.WriteObjectField("server_version")
 				stream.WriteString(object.serverVersion)
 			}
@@ -510,7 +510,10 @@ func (g *JSONSupportGenerator) generateVersionMetadataSource(version *concepts.V
 				switch field {
 				case "server_version":
 					object.serverVersion = iterator.ReadString()
-					object.bitmap_ |= 1
+					if len(object.fieldSet_) <= 0 {
+						object.fieldSet_ = make([]bool, 1)
+					}
+					object.fieldSet_[0] = true
 				default:
 					iterator.ReadAny()
 				}
@@ -540,7 +543,9 @@ func (g *JSONSupportGenerator) generateStructTypeSupport(typ *concepts.Type,
 		Packages(g.packages).
 		Package(pkgName).
 		File(fileName).
+		Function("fieldIndex", g.types.FieldIndex).
 		Function("bitMask", g.types.BitMask).
+		Function("fieldSetSize", g.types.FieldSetSize).
 		Function("enumName", g.types.EnumName).
 		Function("fieldName", g.fieldName).
 		Function("fieldTag", g.binding.AttributeName).
@@ -601,13 +606,13 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 			stream.WriteObjectStart()
 			{{ if .Type.IsClass }}
 				stream.WriteObjectField("kind")
-				if object.bitmap_&1 != 0 {
+				if len(object.fieldSet_) > 0 && object.fieldSet_[0] {
 					stream.WriteString({{ $structName }}LinkKind)
 				} else {
 					stream.WriteString({{ $structName }}Kind)
 				}
 				count++
-				if object.bitmap_&2 != 0 {
+				if len(object.fieldSet_) > 1 && object.fieldSet_[1] {
 					if count > 0 {
 						stream.WriteMore()
 					}
@@ -615,7 +620,7 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					stream.WriteString(object.id)
 					count++
 				}
-				if object.bitmap_&4 != 0 {
+				if len(object.fieldSet_) > 2 && object.fieldSet_[2] {
 					if count > 0 {
 						stream.WriteMore()
 					}
@@ -632,11 +637,11 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 				{{ range $i, $v := .Type.Attributes }}
 					{{ $fieldName := fieldName $v }}
 					{{ $fieldTag := fieldTag $v }}
-					{{ $fieldMask := bitMask $v }}
+					{{ $fieldIndex := fieldIndex $v }}
 					{{ if .Type.IsScalar }}
-						present_ = object.bitmap_&{{ $fieldMask }} != 0
+						present_ = len(object.fieldSet_) > {{ $fieldIndex }} && object.fieldSet_[{{ $fieldIndex }}]
 					{{ else }}
-						present_ = object.bitmap_&{{ $fieldMask }} != 0 && object.{{ $fieldName }} != nil
+						present_ = len(object.fieldSet_) > {{ $fieldIndex }} && object.fieldSet_[{{ $fieldIndex }}] && object.{{ $fieldName }} != nil
 					{{ end }}
 					if present_ {
 						if count > 0 {
@@ -667,7 +672,9 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 
 		// {{ $readTypeFunc }} reads a value of the '{{ .Type.Name }}' type from the given iterator.
 		func {{ $readTypeFunc }}(iterator *jsoniter.Iterator) *{{ $structName }} {
-			object := &{{ $structName }}{}
+			object := &{{ $structName }}{
+				fieldSet_: make([]bool, {{ fieldSetSize .Type }}),
+			}
 			for {
 				field := iterator.ReadObject()
 				if field == "" {
@@ -678,23 +685,23 @@ func (g *JSONSupportGenerator) generateStructTypeSource(typ *concepts.Type) {
 					case "kind":
 						value := iterator.ReadString()
 						if value == {{ $structName }}LinkKind {
-							object.bitmap_ |= 1
+							object.fieldSet_[0] = true
 						}
 					case "id":
 						object.id = iterator.ReadString()
-						object.bitmap_ |= 2
+						object.fieldSet_[1] = true
 					case "href":
 						object.href = iterator.ReadString()
-						object.bitmap_ |= 4
+						object.fieldSet_[2] = true
 				{{ end }}
 				{{ range .Type.Attributes }}
 					{{ $fieldName := fieldName . }}
 					{{ $fieldTag := fieldTag . }}
-					{{ $fieldMask := bitMask . }}
+					{{ $fieldIndex := fieldIndex . }}
 					case "{{ $fieldTag }}":
 						{{ generateReadValue "value" .Type .Link .LinkOwner }}
 						object.{{ $fieldName }} = value
-						object.bitmap_ |= {{ $fieldMask }}
+						object.fieldSet_[{{ $fieldIndex }}] = true
 				{{ end }}
 				default:
 					iterator.ReadAny()
