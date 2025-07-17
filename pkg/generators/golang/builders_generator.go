@@ -247,12 +247,18 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 		{{ if .Type.IsClass }}
 			// Link sets the flag that indicates if this is a link.
 			func (b *{{ $builderName }}) Link(value bool) *{{ $builderName }} {
+				if len(b.fieldSet_) == 0 {
+					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+				}
 				b.fieldSet_[0] = true
 				return b
 			}
 
 			// ID sets the identifier of the object.
 			func (b *{{ $builderName }}) ID(value string) *{{ $builderName }} {
+				if len(b.fieldSet_) == 0 {
+					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+				}
 				b.id = value
 				b.fieldSet_[1] = true
 				return b
@@ -260,6 +266,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 
 			// HREF sets the link to the object.
 			func (b *{{ $builderName }}) HREF(value string) *{{ $builderName }} {
+				if len(b.fieldSet_) == 0 {
+					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+				}
 				b.href = value
 				b.fieldSet_[2] = true
 				return b
@@ -302,6 +311,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				{{ lineComment .Type.Doc }}
 				{{ if .Link }}
 					func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
+						if len(b.fieldSet_) == 0 {
+							b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
+						}
 						b.{{ $fieldName }} = value
 						b.fieldSet_[{{ $fieldIndex }}] = true
 						return b
@@ -310,6 +322,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 					{{ $elementType := valueType .Type.Element }}
 					{{ if .Type.Element.IsScalar }}
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...{{ $elementType }}) *{{ $builderName }} {
+							if len(b.fieldSet_) == 0 {
+								b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
+							}
 							b.{{ $fieldName }} = make([]{{ $elementType }}, len(values))
 							copy(b.{{ $fieldName }}, values)
 							b.fieldSet_[{{ $fieldIndex }}] = true
@@ -318,6 +333,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 					{{ else }}
 						{{ $elementBuilderName := builderName .Type.Element }}
 						func (b *{{ $builderName }}) {{ $setterName }}(values ...*{{ selectorType . }}{{ $elementBuilderName }}) *{{ $builderName }} {
+							if len(b.fieldSet_) == 0 {
+								b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
+							}
 							b.{{ $fieldName }} = make([]*{{ selectorType . }}{{ $elementBuilderName }}, len(values))
 							copy(b.{{ $fieldName }}, values)
 							b.fieldSet_[{{ $fieldIndex }}] = true
@@ -330,6 +348,9 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 				//
 				{{ lineComment .Type.Doc }}
 				func (b *{{ $builderName }}) {{ $setterName }}(value {{ $setterType }}) *{{ $builderName }} {
+					if len(b.fieldSet_) == 0 {
+						b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
+					}
 					b.{{ $fieldName }} = value
 					{{ if .Type.IsScalar }}
 						b.fieldSet_[{{ $fieldIndex }}] = true

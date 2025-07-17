@@ -468,4 +468,52 @@ var _ = Describe("Builder", func() {
 			Expect(builder.Empty()).To(BeTrue())
 		})
 	})
+
+	Describe("Defensive initialization", func() {
+		It("Should not panic when using setter on uninitialized builder struct", func() {
+			// Create builder struct directly without using constructor
+			// This simulates the bug condition where fieldSet_ is uninitialized
+			builder := &amv1.RegistryAuthBuilder{}
+
+			// This should not panic - the setter should defensively initialize fieldSet_
+			Expect(func() {
+				builder.Username("test-user")
+			}).ToNot(Panic())
+
+			// Verify the builder can still build successfully
+			auth, err := builder.Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(auth).ToNot(BeNil())
+			Expect(auth.Username()).To(Equal("test-user"))
+		})
+
+		It("Should handle class setters on uninitialized builder", func() {
+			// Test class-specific setters (ID, HREF, Link)
+			builder := &cmv1.ClusterBuilder{}
+
+			Expect(func() {
+				builder.ID("test-id").HREF("test-href")
+			}).ToNot(Panic())
+
+			cluster, err := builder.Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cluster).ToNot(BeNil())
+			Expect(cluster.ID()).To(Equal("test-id"))
+			Expect(cluster.HREF()).To(Equal("test-href"))
+		})
+
+		It("Should handle list setters on uninitialized builder", func() {
+			// Test list attribute setters with GithubIdentityProvider.Teams
+			builder := &cmv1.GithubIdentityProviderBuilder{}
+
+			Expect(func() {
+				builder.Teams("team1", "team2")
+			}).ToNot(Panic())
+
+			provider, err := builder.Build()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(provider).ToNot(BeNil())
+			Expect(provider.Teams()).To(Equal([]string{"team1", "team2"}))
+		})
+	})
 })
