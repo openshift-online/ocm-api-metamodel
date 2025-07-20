@@ -240,7 +240,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 		// {{ $builderCtor }} creates a new builder of '{{ .Type.Name }}' objects.
 		func {{ $builderCtor }}() *{{ $builderName }} {
 			return &{{ $builderName }}{
-				fieldSet_: make([]bool, {{ fieldSetSize .Type }}),
+				fieldSet_: make([]bool, {{ fieldSetSize $.Type }}),
 			}
 		}
 
@@ -248,7 +248,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			// Link sets the flag that indicates if this is a link.
 			func (b *{{ $builderName }}) Link(value bool) *{{ $builderName }} {
 				if len(b.fieldSet_) == 0 {
-					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+					b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
 				}
 				b.fieldSet_[0] = true
 				return b
@@ -257,7 +257,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			// ID sets the identifier of the object.
 			func (b *{{ $builderName }}) ID(value string) *{{ $builderName }} {
 				if len(b.fieldSet_) == 0 {
-					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+					b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
 				}
 				b.id = value
 				b.fieldSet_[1] = true
@@ -267,7 +267,7 @@ func (g *BuildersGenerator) generateStructBuilderSource(typ *concepts.Type) {
 			// HREF sets the link to the object.
 			func (b *{{ $builderName }}) HREF(value string) *{{ $builderName }} {
 				if len(b.fieldSet_) == 0 {
-					b.fieldSet_ = make([]bool, {{ fieldSetSize .Type }})
+					b.fieldSet_ = make([]bool, {{ fieldSetSize $.Type }})
 				}
 				b.href = value
 				b.fieldSet_[2] = true
