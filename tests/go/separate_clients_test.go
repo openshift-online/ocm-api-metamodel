@@ -523,9 +523,33 @@ var _ = Describe("Separately Generated Client", func() {
 		response, err := client.Add().
 			Body(body).
 			Send()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("EOF"))
+		Expect(response).ToNot(BeNil())
 		Expect(response.Status()).To(Equal(http.StatusNoContent))
 		Expect(response.Body()).To(BeNil())
+	})
+
+	It("Returns EOF error when response body is empty for successful request", func() {
+		// Prepare the server to return a successful status with no content:
+		server.AppendHandlers(
+			RespondWith(http.StatusOK, ""),
+		)
+
+		// Create a transport that replaces the response body with an empty reader:
+		transport = &EmptyResponseBodyTransport{
+			wrapped: transport,
+		}
+
+		// Send the request:
+		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
+		response, err := client.List().Send()
+
+		// With the change, EOF error should be preserved instead of being set to nil
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("EOF"))
+		Expect(response).ToNot(BeNil())
+		Expect(response.Status()).To(Equal(http.StatusOK))
 	})
 
 	It("Honors @http in query parameter", func() {
