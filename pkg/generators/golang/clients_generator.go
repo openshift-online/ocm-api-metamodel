@@ -880,7 +880,6 @@ func (g *ClientsGenerator) generateRequestSource(method *concepts.Method) {
 			reader := bufio.NewReader(response.Body)
 			_, err = reader.Peek(1)
 			if err == io.EOF {
-				err = nil
 				return
 			}
 			if result.status >= 400 {
