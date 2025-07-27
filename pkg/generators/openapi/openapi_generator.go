@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/reporter"
@@ -233,12 +234,12 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 	// Generate the specification:
 	g.buffer.StartObject("paths")
 
-	// Add the metadata path:
-	g.generateMetadataPath(version)
-
 	// Add the path for the root resource:
 	empty := []*concepts.Locator{}
 	root := g.absolutePath(version, empty)
+
+	g.generateMetadataPath(version)
+
 	g.generateResourcePaths(root, empty, version.Root())
 
 	// Add the paths for the rest of the resources:
@@ -315,6 +316,10 @@ func (g *OpenAPIGenerator) generateResourcePaths(prefix string,
 func (g *OpenAPIGenerator) generateMethod(path []*concepts.Locator, method *concepts.Method) {
 	g.buffer.StartObject(strings.ToLower(g.binding.Method(method)))
 	g.generateDescription(method.Doc())
+	// Mark as deprecated if either the method or its parent resource is deprecated
+	if annotations.IsDeprecated(method) || annotations.IsDeprecated(method.Owner()) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.generateURLParameters(path, method)
 	parameters := g.binding.RequestBodyParameters(method)
 	if len(parameters) > 0 {
@@ -381,6 +386,9 @@ func (g *OpenAPIGenerator) generateQueryParameter(parameter *concepts.Parameter)
 	g.buffer.Field("name", g.binding.QueryParameterName(parameter))
 	g.generateDescription(parameter.Doc())
 	g.buffer.Field("in", "query")
+	if annotations.IsDeprecated(parameter) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.buffer.StartObject("schema")
 	g.generateSchemaReference(parameter.Type())
 	g.buffer.EndObject()
@@ -428,6 +436,9 @@ func (g *OpenAPIGenerator) genrateParameterProperty(parameter *concepts.Paramete
 	name := g.names.ParameterPropertyName(parameter)
 	g.buffer.StartObject(name)
 	g.generateDescription(parameter.Doc())
+	if annotations.IsDeprecated(parameter) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.generateSchemaReference(parameter.Type())
 	g.buffer.EndObject()
 }
@@ -484,6 +495,9 @@ func (g *OpenAPIGenerator) generateEnumSchema(typ *concepts.Type) {
 	name := g.names.SchemaName(typ)
 	g.buffer.StartObject(name)
 	g.generateDescription(typ.Doc())
+	if annotations.IsDeprecated(typ) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.buffer.Field("type", "string")
 	g.buffer.StartArray("enum")
 	for _, value := range typ.Values() {
@@ -497,6 +511,9 @@ func (g *OpenAPIGenerator) generateStructSchema(typ *concepts.Type) {
 	name := g.names.SchemaName(typ)
 	g.buffer.StartObject(name)
 	g.generateDescription(typ.Doc())
+	if annotations.IsDeprecated(typ) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.buffer.StartObject("properties")
 	if typ.IsClass() {
 		// Kind:
@@ -532,6 +549,9 @@ func (g *OpenAPIGenerator) generateStructProperty(attribute *concepts.Attribute)
 	name := g.names.AttributePropertyName(attribute)
 	g.buffer.StartObject(name)
 	g.generateDescription(attribute.Doc())
+	if annotations.IsDeprecated(attribute) {
+		g.buffer.Field("deprecated", true)
+	}
 	g.generateSchemaReference(attribute.Type())
 	g.buffer.EndObject()
 }

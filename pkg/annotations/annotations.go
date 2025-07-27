@@ -64,6 +64,12 @@ func GoName(concept concepts.Annotated) string {
 	return fmt.Sprintf("%s", name)
 }
 
+// IsDeprecated checks if the given concept has a `deprecated` annotation.
+func IsDeprecated(concept concepts.Annotated) bool {
+	annotation := concept.GetAnnotation("deprecated")
+	return annotation != nil
+}
+
 // Reference checks if the given concept has a `reference` annotation. If it has it then it returns the value
 // of the `path` parameter. It returns an empty string if there is no such annotation or parameter.
 func ReferencePath(concept concepts.Annotated) string {
