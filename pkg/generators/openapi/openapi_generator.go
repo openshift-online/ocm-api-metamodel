@@ -238,19 +238,7 @@ func (g *OpenAPIGenerator) generatePaths(version *concepts.Version) {
 	empty := []*concepts.Locator{}
 	root := g.absolutePath(version, empty)
 
-	// Check if root resource has a GET method that would conflict with metadata path
-	rootHasGet := false
-	for _, method := range version.Root().Methods() {
-		if strings.ToLower(g.binding.Method(method)) == "get" && g.binding.MethodSegment(method) == "" {
-			rootHasGet = true
-			break
-		}
-	}
-
-	// Add the metadata path only if root resource doesn't have a conflicting GET method:
-	if !rootHasGet {
-		g.generateMetadataPath(version)
-	}
+	g.generateMetadataPath(version)
 
 	g.generateResourcePaths(root, empty, version.Root())
 
