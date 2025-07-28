@@ -523,14 +523,13 @@ var _ = Describe("Separately Generated Client", func() {
 		response, err := client.Add().
 			Body(body).
 			Send()
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("EOF"))
+		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 		Expect(response.Status()).To(Equal(http.StatusNoContent))
 		Expect(response.Body()).To(BeNil())
 	})
 
-	It("Returns EOF error when response body is empty for successful request", func() {
+	It("Returns no error when response body is empty for successful request", func() {
 		// Prepare the server to return a successful status with no content:
 		server.AppendHandlers(
 			RespondWith(http.StatusOK, ""),
@@ -541,15 +540,32 @@ var _ = Describe("Separately Generated Client", func() {
 			wrapped: transport,
 		}
 
-		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
-		response, err := client.List().Send()
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
 
-		// With the change, EOF error should be preserved instead of being set to nil
+		// For successful status codes with empty body, no error should be returned
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+		Expect(response.Status()).To(Equal(http.StatusOK))
+	})
+
+	It("Returns EOF error when response body is empty for error status", func() {
+		// Prepare the server to return an error status with no content:
+		server.AppendHandlers(
+			RespondWith(http.StatusInternalServerError, ""),
+		)
+
+		// Create a transport that replaces the response body with an empty reader:
+		transport = &EmptyResponseBodyTransport{
+			wrapped: transport,
+		}
+
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
+
+		// For error status codes with empty body, EOF error should be returned
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("EOF"))
 		Expect(response).ToNot(BeNil())
-		Expect(response.Status()).To(Equal(http.StatusOK))
+		Expect(response.Status()).To(Equal(http.StatusInternalServerError))
 	})
 
 	It("Honors @http in query parameter", func() {
@@ -567,7 +583,6 @@ var _ = Describe("Separately Generated Client", func() {
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.Add().
 			DryRun(true).
@@ -589,7 +604,6 @@ var _ = Describe("Separately Generated Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.TestAnnotations().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -607,7 +621,6 @@ var _ = Describe("Separately Generated Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.TestAnnotations().
 			My(true).

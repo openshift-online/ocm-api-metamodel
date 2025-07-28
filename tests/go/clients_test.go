@@ -504,7 +504,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Accepts `204 No Content` with empty response body", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			RespondWith(http.StatusNoContent, ""),
 		)
@@ -523,33 +522,44 @@ var _ = Describe("Client", func() {
 		response, err := client.Add().
 			Body(body).
 			Send()
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("EOF"))
+		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 		Expect(response.Status()).To(Equal(http.StatusNoContent))
 		Expect(response.Body()).To(BeNil())
 	})
 
-	It("Returns EOF error when response body is empty for successful request", func() {
+	It("Returns no error when response body is empty for successful request", func() {
 		// Prepare the server to return a successful status with no content:
 		server.AppendHandlers(
 			RespondWith(http.StatusOK, ""),
 		)
-
 		// Create a transport that replaces the response body with an empty reader:
 		transport = &EmptyResponseBodyTransport{
 			wrapped: transport,
 		}
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
 
-		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
-		response, err := client.List().Send()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).ToNot(BeNil())
+		Expect(response.Status()).To(Equal(http.StatusOK))
+	})
 
-		// With the change, EOF error should be preserved instead of being set to nil
+	It("Returns EOF error when response body is empty for error status", func() {
+		// Prepare the server to return an error status with no content:
+		server.AppendHandlers(
+			RespondWith(http.StatusBadRequest, ""),
+		)
+		// Create a transport that replaces the response body with an empty reader:
+		transport = &EmptyResponseBodyTransport{
+			wrapped: transport,
+		}
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
+
+		// For error status codes with empty body, EOF error should be returned
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("EOF"))
 		Expect(response).ToNot(BeNil())
-		Expect(response.Status()).To(Equal(http.StatusOK))
+		Expect(response.Status()).To(Equal(http.StatusBadRequest))
 	})
 
 	It("Honors @http in query parameter", func() {
