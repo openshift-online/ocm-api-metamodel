@@ -148,7 +148,6 @@ var _ = Describe("Separately Generated Client", func() {
 			),
 		)
 
-		// Prepare the description of the cluster:
 		cluster, err := cmv1.NewCluster().
 			Name("mycluster").
 			ExternalID("456").
@@ -193,7 +192,6 @@ var _ = Describe("Separately Generated Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.RegisterCluster().
 			SubscriptionID("123").
@@ -401,7 +399,6 @@ var _ = Describe("Separately Generated Client", func() {
 				),
 			)
 
-			// Send the request:
 			client := cmv1.NewClusterClient(transport, "")
 			_, err := client.Get().Parameter("my", value).Send()
 			Expect(err).ToNot(HaveOccurred())
@@ -486,7 +483,6 @@ var _ = Describe("Separately Generated Client", func() {
 			wrapped: transport,
 		}
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		body, err := cmv1.NewCluster().
 			Name("my-cluster").
@@ -546,7 +542,6 @@ var _ = Describe("Separately Generated Client", func() {
 			),
 		)
 
-		// Prepare the body:
 		body, err := cmv1.NewCluster().
 			Name("my").
 			Build()
