@@ -121,7 +121,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can execute action with one input parameter", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -149,14 +148,12 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Prepare the description of the cluster:
 		cluster, err := cmv1.NewCluster().
 			Name("mycluster").
 			ExternalID("456").
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Send the request:
 		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.RegisterDisconnected().
 			Cluster(cluster).
@@ -173,7 +170,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can execute action with multiple input parameters", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -197,7 +193,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClient(transport, "/api/clusters_mgmt/v1")
 		response, err := client.RegisterCluster().
 			SubscriptionID("123").
@@ -215,7 +210,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can retrieve nil list", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -226,19 +220,16 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 
-		// Verify the result:
 		items := response.Items()
 		Expect(items).To(BeNil())
 	})
 
 	It("Can retrieve empty list", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -254,7 +245,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -267,7 +257,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can retrieve list with one element", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -288,7 +277,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -308,7 +296,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can retrieve list with two elements", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -333,7 +320,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -357,7 +343,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Sends paging parameters", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -370,7 +355,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().
 			Page(123).
@@ -381,7 +365,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Can retrieve paging parameters", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -400,7 +383,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.List().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -415,7 +397,6 @@ var _ = Describe("Client", func() {
 	DescribeTable(
 		"Custom query parameters",
 		func(value interface{}, expected string) {
-			// Prepare the server:
 			server.AppendHandlers(
 				CombineHandlers(
 					VerifyFormKV("my", expected),
@@ -423,7 +404,6 @@ var _ = Describe("Client", func() {
 				),
 			)
 
-			// Send the request:
 			client := cmv1.NewClusterClient(transport, "")
 			_, err := client.Get().Parameter("my", value).Send()
 			Expect(err).ToNot(HaveOccurred())
@@ -447,7 +427,6 @@ var _ = Describe("Client", func() {
 	)
 
 	It("Returns error with HTTP status code", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -467,7 +446,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClusterClient(transport, "/api/clusters_mgmt/v1/clusters/123")
 		_, err := client.Delete().Send()
 		Expect(err).To(HaveOccurred())
@@ -480,7 +458,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Sends date parameter in RFC3339 format", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -492,7 +469,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := sbv1.NewStatusesClient(transport, "/api/status_board/v1/statuses")
 		date, err := time.Parse(time.RFC3339, "2022-01-25T15:57:02+01:00")
 		Expect(err).ToNot(HaveOccurred())
@@ -504,7 +480,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Accepts `204 No Content` with empty response body", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			RespondWith(http.StatusNoContent, ""),
 		)
@@ -514,7 +489,6 @@ var _ = Describe("Client", func() {
 			wrapped: transport,
 		}
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		body, err := cmv1.NewCluster().
 			Name("my-cluster").
@@ -523,37 +497,45 @@ var _ = Describe("Client", func() {
 		response, err := client.Add().
 			Body(body).
 			Send()
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("EOF"))
+		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 		Expect(response.Status()).To(Equal(http.StatusNoContent))
 		Expect(response.Body()).To(BeNil())
 	})
 
-	It("Returns EOF error when response body is empty for successful request", func() {
-		// Prepare the server to return a successful status with no content:
+	It("Returns no error when response body is empty for successful request", func() {
 		server.AppendHandlers(
 			RespondWith(http.StatusOK, ""),
 		)
-
 		// Create a transport that replaces the response body with an empty reader:
 		transport = &EmptyResponseBodyTransport{
 			wrapped: transport,
 		}
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
 
-		// Send the request:
-		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
-		response, err := client.List().Send()
-
-		// With the change, EOF error should be preserved instead of being set to nil
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("EOF"))
+		Expect(err).ToNot(HaveOccurred())
 		Expect(response).ToNot(BeNil())
 		Expect(response.Status()).To(Equal(http.StatusOK))
 	})
 
+	It("Returns EOF error when response body is empty for error status", func() {
+		server.AppendHandlers(
+			RespondWith(http.StatusBadRequest, ""),
+		)
+		// Create a transport that replaces the response body with an empty reader:
+		transport = &EmptyResponseBodyTransport{
+			wrapped: transport,
+		}
+		response, err := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters").List().Send()
+
+		// For error status codes with empty body, EOF error should be returned
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("EOF"))
+		Expect(response).ToNot(BeNil())
+		Expect(response.Status()).To(Equal(http.StatusBadRequest))
+	})
+
 	It("Honors @http in query parameter", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyFormKV("dryRun", "true"),
@@ -561,13 +543,11 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Prepare the body:
 		body, err := cmv1.NewCluster().
 			Name("my").
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.Add().
 			DryRun(true).
@@ -578,7 +558,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Honors @http in path segment", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyRequest(
@@ -589,7 +568,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.TestAnnotations().Send()
 		Expect(err).ToNot(HaveOccurred())
@@ -597,7 +575,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Honors @json and ignores @http in request body parameter", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				VerifyJSON(`{
@@ -607,7 +584,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.TestAnnotations().
 			My(true).
@@ -617,7 +593,6 @@ var _ = Describe("Client", func() {
 	})
 
 	It("Honors @json and ignores @http in response body parameter", func() {
-		// Prepare the server:
 		server.AppendHandlers(
 			CombineHandlers(
 				RespondWith(http.StatusOK, `{
@@ -626,7 +601,6 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		// Send the request:
 		client := cmv1.NewClustersClient(transport, "/api/clusters_mgmt/v1/clusters")
 		response, err := client.TestAnnotations().
 			My(true).
