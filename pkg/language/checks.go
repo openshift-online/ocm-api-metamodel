@@ -42,6 +42,9 @@ func (r *Reader) checkVersion(version *concepts.Version) {
 		r.reporter.Errorf("Version '%s' doesn't have a root resource", version)
 	}
 
+	// Check the types:
+	r.checkTypes(version)
+
 	// Check the resources:
 	for _, resource := range version.Resources() {
 		r.checkResource(resource)
@@ -49,6 +52,28 @@ func (r *Reader) checkVersion(version *concepts.Version) {
 
 	// Check that there are no loops in the tree of locators:
 	r.checkLocatorLoops(version)
+}
+
+func (r *Reader) checkTypes(version *concepts.Version) {
+	for _, typ := range version.Types() {
+		r.checkType(typ)
+	}
+}
+
+func (r *Reader) checkType(typ *concepts.Type) {
+	// Validate that classes don't have explicit Id fields that conflict with built-in id
+	if typ.IsClass() {
+		for _, attribute := range typ.Attributes() {
+			attributeName := attribute.Name().String()
+			if attributeName == "id" || attributeName == "ID" {
+				r.reporter.Errorf(
+					"Class '%s' cannot have an explicit '%s' field because classes automatically get a built-in 'id' field. "+
+						"Use a struct instead of a class if you need an explicit '%s' field",
+					typ.Name(), attributeName, attributeName,
+				)
+			}
+		}
+	}
 }
 
 func (r *Reader) checkResource(resource *concepts.Resource) {

@@ -324,22 +324,6 @@ func (g *TypesGenerator) generateEnumTypeSource(typ *concepts.Type) {
 }
 
 func (g *TypesGenerator) generateStructTypeSource(typ *concepts.Type) {
-	// Validate that classes don't have explicit Id fields that conflict with built-in id
-	if typ.IsClass() {
-		for _, attribute := range typ.Attributes() {
-			attributeName := attribute.Name().String()
-			if attributeName == "Id" || attributeName == "ID" {
-				g.reporter.Errorf(
-					"Class '%s' cannot have an explicit '%s' field because classes automatically get a built-in 'id' field. "+
-						"Use a struct instead of a class if you need an explicit '%s' field",
-					typ.Name(), attributeName, attributeName,
-				)
-				g.errors++
-				return
-			}
-		}
-	}
-
 	g.buffer.Import("time", "")
 	g.buffer.Emit(`
 		{{ $objectName := objectName .Type }}
