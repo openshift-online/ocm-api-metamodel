@@ -18,7 +18,6 @@ package golang
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/openshift-online/ocm-api-metamodel/pkg/annotations"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
@@ -902,46 +901,6 @@ func (g *JSONSupportGenerator) generateReadValue(variable string, typ *concepts.
 	)
 }
 
-func (g *JSONSupportGenerator) generateWriteBodyParameter(object string,
-	parameter *concepts.Parameter,
-) string {
-	typ := parameter.Type()
-	field := g.parameterFieldName(parameter)
-	tag := g.binding.BodyParameterName(parameter)
-	var value string
-	var linkOwner *concepts.Version
-	if typ.IsScalar() && !typ.IsInterface() {
-		value = g.buffer.Eval(
-			`*{{ .Object }}.{{ .Field }}`,
-			"Object", object,
-			"Field", field,
-		)
-	} else {
-		value = g.buffer.Eval(
-			`{{ .Object }}.{{ .Field }}`,
-			"Object", object,
-			"Field", field,
-		)
-	}
-	return g.buffer.Eval(`
-		if {{ .Object }}.{{ .Field }} != nil {
-			if count > 0 {
-				stream.WriteMore()
-			}
-			stream.WriteObjectField("{{ .Tag }}")
-			{{ generateWriteValue .Value .Type false .LinkOwner }}
-			count++
-		}
-		`,
-		"Object", object,
-		"Field", field,
-		"Tag", tag,
-		"Value", value,
-		"Type", typ,
-		"LinkOwner", linkOwner,
-	)
-}
-
 func (g *JSONSupportGenerator) generateWriteValue(value string,
 	typ *concepts.Type,
 	link bool,
@@ -1019,10 +978,6 @@ func (g *JSONSupportGenerator) typeFile(typ *concepts.Type) string {
 	return g.names.File(names.Cat(typ.Name(), nomenclator.Type, nomenclator.JSON))
 }
 
-func (g *JSONSupportGenerator) resourceFile(resource *concepts.Resource) string {
-	return g.names.File(names.Cat(resource.Name(), nomenclator.Resource, nomenclator.JSON))
-}
-
 func (g *JSONSupportGenerator) marshalTypeFunc(typ *concepts.Type) string {
 	name := annotations.GoName(typ)
 	if name == "" {
@@ -1071,115 +1026,6 @@ func (g *JSONSupportGenerator) readRefTypeFunc(typ *concepts.Type, refVersion *c
 
 func (g *JSONSupportGenerator) fieldName(attribute *concepts.Attribute) string {
 	return g.names.Private(attribute.Name())
-}
-
-func (g *JSONSupportGenerator) parameterFieldName(parameter *concepts.Parameter) string {
-	return g.names.Private(parameter.Name())
-}
-
-func (g *JSONSupportGenerator) clientRequestName(method *concepts.Method) string {
-	resource := method.Owner()
-	var name string
-	if resource.IsRoot() {
-		name = annotations.GoName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := annotations.GoName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := annotations.GoName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
-	}
-	name += "Request"
-	return name
-}
-
-func (g *JSONSupportGenerator) clientResponseName(method *concepts.Method) string {
-	resource := method.Owner()
-	var name string
-	if resource.IsRoot() {
-		name = annotations.GoName(method)
-		if name == "" {
-			name = g.names.Public(method.Name())
-		}
-	} else {
-		resourceName := annotations.GoName(resource)
-		if resourceName == "" {
-			resourceName = g.names.Public(resource.Name())
-		}
-		methodName := annotations.GoName(method)
-		if methodName == "" {
-			methodName = g.names.Public(method.Name())
-		}
-		name = resourceName + methodName
-	}
-	name += "Response"
-	return name
-}
-
-func (g *JSONSupportGenerator) writeRequestFunc(method *concepts.Method) string {
-	resource := method.Owner()
-	var name *names.Name
-	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Write,
-			method.Name(),
-			nomenclator.Request,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Write,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Request,
-		)
-	}
-	return g.names.Private(name)
-}
-
-func (g *JSONSupportGenerator) readResponseFunc(method *concepts.Method) string {
-	resource := method.Owner()
-	var name *names.Name
-	if resource.IsRoot() {
-		name = names.Cat(
-			nomenclator.Read,
-			method.Name(),
-			nomenclator.Response,
-		)
-	} else {
-		name = names.Cat(
-			nomenclator.Read,
-			resource.Name(),
-			method.Name(),
-			nomenclator.Response,
-		)
-	}
-	return g.names.Private(name)
-}
-
-func (g *JSONSupportGenerator) defaultValue(parameter *concepts.Parameter) string {
-	switch value := parameter.Default().(type) {
-	case nil:
-		return "nil"
-	case bool:
-		return strconv.FormatBool(value)
-	case int:
-		return strconv.FormatInt(int64(value), 10)
-	case string:
-		return strconv.Quote(value)
-	default:
-		g.reporter.Errorf(
-			"Don't know how to render default value '%v' for parameter '%s'",
-			value, parameter,
-		)
-		return ""
-	}
 }
 
 func (g JSONSupportGenerator) selectorFromLinkOwner(linkOwner *concepts.Version) string {

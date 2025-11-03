@@ -458,9 +458,7 @@ func (b *Buffer) byteArray(data []byte) string {
 // `-go` suffix if present, and removing any dashes. For example, the string `ocm-sdk-go` will be
 // translated into `sdk`.
 func (b *Buffer) cleanPkg(name string) string {
-	if strings.HasSuffix(name, "-go") {
-		name = name[0 : len(name)-3]
-	}
+	strings.TrimSuffix(name, "-go")
 	index := strings.LastIndex(name, "-")
 	if index > 0 {
 		name = name[index+1:]

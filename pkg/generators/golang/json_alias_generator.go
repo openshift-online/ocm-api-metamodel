@@ -18,6 +18,7 @@ package golang
 
 import (
 	"fmt"
+
 	"github.com/openshift-online/ocm-api-metamodel/pkg/concepts"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/http"
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
@@ -308,13 +309,12 @@ func (g *JSONSupportAliasGenerator) generateListTypeAliasSupport(version *concep
 	g.buffer.Import(g.packages.APIVersionImport(version), g.packages.APIVersionSelector(version))
 
 	// Generate the code:
-	g.generateListTypeAliasSource(version, typ)
+	g.generateListTypeAliasSource(typ)
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
 func (g *JSONSupportAliasGenerator) generateListTypeAliasSource(
-	version *concepts.Version,
 	typ *concepts.Type,
 ) {
 	var linkOwner *concepts.Version

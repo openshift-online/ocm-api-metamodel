@@ -134,27 +134,12 @@ func (m *Method) IsAsyncUpdate() bool {
 // IsAction determined if this method is an action instead of a regular REST method.
 func (m *Method) IsAction() bool {
 	switch {
-	case m.IsAdd():
-		return false
-	case m.IsAsyncAdd():
-		return false
-	case m.IsDelete():
-		return false
-	case m.IsAsyncDelete():
-		return false
-	case m.IsGet():
-		return false
-	case m.IsList():
-		return false
-	case m.IsPost():
-		return false
-	case m.IsAsyncPost():
-		return false
-	case m.IsSearch():
-		return false
-	case m.IsUpdate():
-		return false
-	case m.IsAsyncUpdate():
+	case m.IsAdd(), m.IsAsyncAdd(),
+		m.IsDelete(), m.IsAsyncDelete(),
+		m.IsGet(), m.IsList(),
+		m.IsPost(), m.IsAsyncPost(),
+		m.IsUpdate(), m.IsAsyncUpdate(),
+		m.IsSearch():
 		return false
 	default:
 		return true

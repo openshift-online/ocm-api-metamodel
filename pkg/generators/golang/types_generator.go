@@ -221,13 +221,13 @@ func (g *TypesGenerator) generateVersionMetadataTypeFile(version *concepts.Versi
 	}
 
 	// Generate the source:
-	g.generateVersionMetadataTypeSource(version)
+	g.generateVersionMetadataTypeSource()
 
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
-func (g *TypesGenerator) generateVersionMetadataTypeSource(version *concepts.Version) {
+func (g *TypesGenerator) generateVersionMetadataTypeSource() {
 	g.buffer.Emit(`
 		// Metadata contains the version metadata.
 		type Metadata struct {

@@ -299,13 +299,13 @@ func (g *ClientsGenerator) generateVersionMetadataClient(version *concepts.Versi
 	}
 
 	// Generate the code:
-	g.generateVersionMetadataClientSource(version)
+	g.generateVersionMetadataClientSource()
 
 	// Write the generated code:
 	return g.buffer.Write()
 }
 
-func (g *ClientsGenerator) generateVersionMetadataClientSource(version *concepts.Version) {
+func (g *ClientsGenerator) generateVersionMetadataClientSource() {
 	g.buffer.Import("bufio", "")
 	g.buffer.Import("context", "")
 	g.buffer.Import("io", "")
