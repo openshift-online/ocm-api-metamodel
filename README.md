@@ -4,7 +4,7 @@
 
 ```bash
 make binary      # Build the ocm-metamodel-tool
-make go_tests    # Run tests
+make test        # Run tests
 ```
 
 This project contains the code for the `ocm-metamodel-tool` command line utility,
