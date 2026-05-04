@@ -13,20 +13,18 @@ which is used to generate code from the API model.
 ### Building
 
 ```bash
-make binary           # Build the ocm-metamodel-tool binary
+make binary           # Build the metamodel binary
 ```
 
 The binary is placed in the project root directory.
 
 ## Usage
 
-Generate Go code from an API model:
+This tool is used as part of the OCM SDK and API model code generation pipeline.
+It processes model definitions from [ocm-api-model](https://github.com/openshift-online/ocm-api-model)
+and generates Go source code for [ocm-sdk-go](https://github.com/openshift-online/ocm-sdk-go).
 
-```bash
-./ocm-metamodel-tool generate   --model=/path/to/ocm-api-model/model   --output=/path/to/output
-```
-
-Run `./ocm-metamodel-tool --help` for all available commands and options.
+See the ocm-api-model and ocm-sdk-go repositories for the full generation workflow.
 
 ## Development
 
@@ -40,7 +38,10 @@ make generate         # Regenerate ANTLR parser code
 ### Testing
 
 ```bash
-make go_tests         # Run Go unit tests
+make test             # Run all tests
+make unit_tests       # Run unit tests only
+make go_tests         # Run Go integration tests
+make openapi_tests    # Run OpenAPI validation tests
 make docs_tests       # Run documentation tests
 ```
 
@@ -48,5 +49,5 @@ make docs_tests       # Run documentation tests
 
 1. Fork this repository
 2. Make your changes
-3. Run `make go_tests` to verify
+3. Run `make test` to verify
 4. Submit a pull request
