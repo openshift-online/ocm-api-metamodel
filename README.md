@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-make binary      # Build the ocm-metamodel-tool
+make binary      # Build the metamodel binary
 make test        # Run tests
 ```
 
