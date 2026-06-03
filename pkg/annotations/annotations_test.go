@@ -23,6 +23,79 @@ import (
 	"github.com/openshift-online/ocm-api-metamodel/pkg/names"
 )
 
+var _ = Describe("Required annotation support", func() {
+	Describe("IsRequired function", func() {
+		var annotatedConcept concepts.Annotated
+
+		BeforeEach(func() {
+			annotatedConcept = concepts.NewType()
+		})
+
+		Context("when concept has required annotation", func() {
+			It("should return true for required annotation without parameters", func() {
+				requiredAnnotation := concepts.NewAnnotation()
+				requiredAnnotation.SetName("required")
+				annotatedConcept.AddAnnotation(requiredAnnotation)
+
+				result := IsRequired(annotatedConcept)
+				Expect(result).To(BeTrue())
+			})
+
+			It("should return true when required annotation exists among multiple annotations", func() {
+				jsonAnnotation := concepts.NewAnnotation()
+				jsonAnnotation.SetName("json")
+				annotatedConcept.AddAnnotation(jsonAnnotation)
+
+				requiredAnnotation := concepts.NewAnnotation()
+				requiredAnnotation.SetName("required")
+				annotatedConcept.AddAnnotation(requiredAnnotation)
+
+				result := IsRequired(annotatedConcept)
+				Expect(result).To(BeTrue())
+			})
+		})
+
+		Context("when concept does not have required annotation", func() {
+			It("should return false for concept with no annotations", func() {
+				result := IsRequired(annotatedConcept)
+				Expect(result).To(BeFalse())
+			})
+
+			It("should return false for concept with other annotations but no required", func() {
+				deprecatedAnnotation := concepts.NewAnnotation()
+				deprecatedAnnotation.SetName("deprecated")
+				annotatedConcept.AddAnnotation(deprecatedAnnotation)
+
+				result := IsRequired(annotatedConcept)
+				Expect(result).To(BeFalse())
+			})
+
+			It("should return false for annotation with similar but different name", func() {
+				similarAnnotation := concepts.NewAnnotation()
+				similarAnnotation.SetName("requires")
+				annotatedConcept.AddAnnotation(similarAnnotation)
+
+				result := IsRequired(annotatedConcept)
+				Expect(result).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("Integration with different concept types", func() {
+		It("should work correctly with Attribute", func() {
+			attribute := concepts.NewAttribute()
+			attribute.SetName(names.ParseUsingCase("testAttribute"))
+
+			requiredAnnotation := concepts.NewAnnotation()
+			requiredAnnotation.SetName("required")
+			attribute.AddAnnotation(requiredAnnotation)
+
+			result := IsRequired(attribute)
+			Expect(result).To(BeTrue())
+		})
+	})
+})
+
 var _ = Describe("Deprecation annotation support", func() {
 	Describe("IsDeprecated function", func() {
 		var annotatedConcept concepts.Annotated

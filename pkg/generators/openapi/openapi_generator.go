@@ -542,6 +542,19 @@ func (g *OpenAPIGenerator) generateStructSchema(typ *concepts.Type) {
 		g.generateStructProperty(attribute)
 	}
 	g.buffer.EndObject()
+	var required []string
+	for _, attribute := range typ.Attributes() {
+		if annotations.IsRequired(attribute) {
+			required = append(required, g.names.AttributePropertyName(attribute))
+		}
+	}
+	if len(required) > 0 {
+		g.buffer.StartArray("required")
+		for _, name := range required {
+			g.buffer.Item(name)
+		}
+		g.buffer.EndArray()
+	}
 	g.buffer.EndObject()
 }
 

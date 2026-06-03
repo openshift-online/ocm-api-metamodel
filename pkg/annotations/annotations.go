@@ -70,6 +70,12 @@ func IsDeprecated(concept concepts.Annotated) bool {
 	return annotation != nil
 }
 
+// IsRequired checks if the given concept has a `required` annotation.
+func IsRequired(concept concepts.Annotated) bool {
+	annotation := concept.GetAnnotation("required")
+	return annotation != nil
+}
+
 // Reference checks if the given concept has a `reference` annotation. If it has it then it returns the value
 // of the `path` parameter. It returns an empty string if there is no such annotation or parameter.
 func ReferencePath(concept concepts.Annotated) string {
