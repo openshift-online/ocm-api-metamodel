@@ -2,10 +2,18 @@
 
 approvers:
 - ahitacat
+- andreadecorte
+- gdbranco
+- lucasponce
 - nimrodshn
+- robpblake
 - vkareh
 reviewers:
 - ahitacat
+- andreadecorte
+- gdbranco
+- lucasponce
 - nimrodshn
+- robpblake
 emeritus_approvers:
 - mnecas # 2024
