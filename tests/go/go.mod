@@ -1,6 +1,6 @@
 module github.com/openshift-online/ocm-api-metamodel/tests/go
 
-go 1.17
+go 1.25.8
 
 require (
 	github.com/golang/glog v1.0.0

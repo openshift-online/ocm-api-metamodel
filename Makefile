@@ -65,6 +65,15 @@ ginkgo_install:
 goimports_install:
 	@GOBIN=$(LOCAL_BIN_PATH) go install golang.org/x/tools/cmd/goimports@v0.0.0-20200518194103-259583f2d8a9
 
+.PHONY: verify-model verify-sdk verify-downstream
+verify-model: binary
+	hack/verify-downstream.sh model
+
+verify-sdk: binary
+	hack/verify-downstream.sh sdk
+
+verify-downstream: verify-model verify-sdk
+
 .PHONY: fmt
 fmt:
 	gofmt -s -l -w \

@@ -1,6 +1,6 @@
 module github.com/openshift-online/ocm-api-metamodel
 
-go 1.17
+go 1.25.8
 
 require (
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211106181442-e4c1a74c66bd
