@@ -29,12 +29,56 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout the source
-      uses: actions/checkout@v2
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
+      with:
+        persist-credentials: false
 
     - name: Setup Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
       with:
-        go-version: 1.17
+        go-version: 1.25.8
 
     - name: Run the tests
       run: make tests
+
+  verify-model:
+    name: Verify model
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    env:
+      OCM_API_MODEL_REF: main
+    steps:
+    - name: Checkout the source
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
+      with:
+        persist-credentials: false
+
+    - name: Setup Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      with:
+        go-version: 1.25.8
+
+    - name: Verify ocm-api-model compiles
+      run: make verify-model
+
+  verify-sdk:
+    name: Verify SDK
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    env:
+      OCM_SDK_GO_REF: main
+    steps:
+    - name: Checkout the source
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
+      with:
+        persist-credentials: false
+
+    - name: Setup Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      with:
+        go-version: 1.25.8
+
+    - name: Verify ocm-sdk-go compiles
+      run: make verify-sdk
