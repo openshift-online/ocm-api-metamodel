@@ -145,3 +145,10 @@ clean:
 		openapi_generator \
 		tests/*/generated \
 		$(NULL)
+
+.PHONY: boilerplate-update
+boilerplate-update:
+	@boilerplate/update
+
+# Include after the existing targets to preserve the default goal.
+include boilerplate/generated-includes.mk
